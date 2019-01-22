@@ -15,9 +15,9 @@
  */
 package org.jitsi.nlj.dtls
 
+import org.bouncycastle.crypto.tls.Certificate
 import org.bouncycastle.crypto.tls.DTLSTransport
 import org.bouncycastle.crypto.tls.DatagramTransport
-import org.bouncycastle.crypto.tls.TlsClient
 import org.bouncycastle.crypto.tls.TlsContext
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.getLogger
@@ -82,6 +82,20 @@ abstract class DtlsStack : DatagramTransport {
 
     val localFingerprintHashFunction: String
         get() = DtlsStack.getCertificate().localFingerprintHashFunction
+
+    /**
+     * The remote fingerprints sent to us over the signaling path.
+     */
+    var remoteFingerprints: Map<String, String> = HashMap()
+
+    /**
+     * Checks that a specific [Certificate] matches the remote fingerprints sent to us over the signaling path.
+     */
+    protected fun verifyAndValidateRemoteCertificate(certificate: Certificate){
+        DtlsUtils.verifyAndValidateCertificate(certificate, remoteFingerprints)
+        // The above throws an exception if the checks fail.
+        logger.debug("Fingerprints verified.")
+    }
 
     /**
      * Incoming DTLS packets received from the network are stored here via [processIncomingDtlsPackets].  They are read
