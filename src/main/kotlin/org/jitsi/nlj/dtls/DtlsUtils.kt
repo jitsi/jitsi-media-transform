@@ -219,14 +219,14 @@ class DtlsUtils {
             // (SDP)" defines that "[a] certificate fingerprint MUST be computed
             // using the same one-way hash function as is used in the certificate's
             // signature algorithm."
-            var hashFunction = certificate.getHash()
+            val hashFunction = certificate.getHash()
 
             // As RFC 5763 "Framework for Establishing a Secure Real-time Transport
             // Protocol (SRTP) Security Context Using Datagram Transport Layer
             // Security (DTLS)" states, "the certificate presented during the DTLS
             // handshake MUST match the fingerprint exchanged via the signaling path
             // in the SDP."
-            var remoteFingerprint = remoteFingerprints[hashFunction]
+            val remoteFingerprint = remoteFingerprints[hashFunction]
 
             // TODO(boris) check if the below is still true, and re-introduce the hack if it is.
             // Unfortunately, Firefox does not comply with RFC 5763 at the time

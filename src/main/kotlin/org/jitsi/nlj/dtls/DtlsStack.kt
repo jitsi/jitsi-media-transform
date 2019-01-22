@@ -86,7 +86,7 @@ abstract class DtlsStack : DatagramTransport {
     /**
      * The remote fingerprints sent to us over the signaling path.
      */
-    var remoteFingerprints: Map<String, String> = HashMap()
+    val remoteFingerprints: Map<String, String> = HashMap()
 
     /**
      * Checks that a specific [Certificate] matches the remote fingerprints sent to us over the signaling path.

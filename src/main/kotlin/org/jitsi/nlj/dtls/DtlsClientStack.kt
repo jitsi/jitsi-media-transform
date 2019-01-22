@@ -23,8 +23,8 @@ import java.security.SecureRandom
 class DtlsClientStack(
         private val dtlsClientProtocol: DTLSClientProtocol = DTLSClientProtocol(SecureRandom())
 ) : DtlsStack() {
-    private var tlsClient: TlsClientImpl
-            = TlsClientImpl(this@DtlsClientStack::verifyAndValidateRemoteCertificate)
+    private val tlsClient: TlsClientImpl
+            = TlsClientImpl(::verifyAndValidateRemoteCertificate)
 
     fun connect() {
         try {

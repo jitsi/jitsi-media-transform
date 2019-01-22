@@ -40,8 +40,8 @@ class TlsClientImpl(
         /**
          * The function to call when the server certificate is available.
          */
-        private val notifyServerCertificate: (Certificate) -> Unit)
-        : DefaultTlsClient() {
+    private val notifyServerCertificate: (Certificate) -> Unit
+) : DefaultTlsClient() {
 
     private val logger = getLogger(this.javaClass)
 
@@ -137,13 +137,14 @@ class TlsClientImpl(
     override fun getMinimumVersion(): ProtocolVersion = ProtocolVersion.DTLSv10;
 
     override fun notifyAlertRaised(alertLevel: Short, alertDescription: Short, message: String?, cause: Throwable?) {
-        with(StringBuffer()) {
+        val stack = with(StringBuffer()) {
             val e = Exception()
             for (el in e.stackTrace) {
                 appendln(el.toString())
             }
             toString()
         }
+        logger.info(stack)
     }
 
     override fun notifyAlertReceived(alertLevel: Short, alertDescription: Short) {
