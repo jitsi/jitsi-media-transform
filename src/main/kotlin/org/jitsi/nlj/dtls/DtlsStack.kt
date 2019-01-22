@@ -20,6 +20,7 @@ import org.bouncycastle.crypto.tls.DTLSTransport
 import org.bouncycastle.crypto.tls.DatagramTransport
 import org.bouncycastle.crypto.tls.TlsContext
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.DtlsProtocolPacket
 import org.jitsi.rtp.UnparsedPacket
@@ -94,7 +95,7 @@ abstract class DtlsStack : DatagramTransport {
     protected fun verifyAndValidateRemoteCertificate(certificate: Certificate){
         DtlsUtils.verifyAndValidateCertificate(certificate, remoteFingerprints)
         // The above throws an exception if the checks fail.
-        logger.debug("Fingerprints verified.")
+        logger.cdebug { "Fingerprints verified." }
     }
 
     /**
