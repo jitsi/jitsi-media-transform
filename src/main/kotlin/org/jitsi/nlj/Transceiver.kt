@@ -232,11 +232,6 @@ class Transceiver(
         payloadTypes.clear()
     }
 
-    fun addDynamicRtpPayloadTypeOverride(originalPt: Byte, overloadPt: Byte) {
-        //TODO
-        logger.cinfo { "Overriding payload type $originalPt to $overloadPt" }
-    }
-
     fun addRtpExtension(extensionId: Byte, rtpExtension: RTPExtension) {
         logger.cinfo { "Adding RTP extension: $extensionId -> $rtpExtension" }
         rtpExtensions[extensionId] = rtpExtension
