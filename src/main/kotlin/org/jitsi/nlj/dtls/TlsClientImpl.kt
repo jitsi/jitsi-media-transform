@@ -30,7 +30,9 @@ import org.bouncycastle.crypto.tls.TlsCredentials
 import org.bouncycastle.crypto.tls.TlsSRTPUtils
 import org.bouncycastle.crypto.tls.TlsUtils
 import org.bouncycastle.crypto.tls.UseSRTPData
+import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.getLogger
+import org.jitsi.nlj.util.getStackTrace
 import java.util.*
 
 /**
@@ -76,7 +78,7 @@ class TlsClientImpl(
                         context,
                         certificateInfo.certificate,
                         certificateInfo.keyPair.private,
-                        SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa)
+                        SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
                     )
                 }
                 return clientCredentials!!
@@ -132,19 +134,14 @@ class TlsClientImpl(
         //context.exportKeyingMaterial()
     }
 
-    override fun getClientVersion(): ProtocolVersion = ProtocolVersion.DTLSv10;
+    override fun getClientVersion(): ProtocolVersion = ProtocolVersion.DTLSv12
 
-    override fun getMinimumVersion(): ProtocolVersion = ProtocolVersion.DTLSv10;
+    override fun getMinimumVersion(): ProtocolVersion = ProtocolVersion.DTLSv12;
 
     override fun notifyAlertRaised(alertLevel: Short, alertDescription: Short, message: String?, cause: Throwable?) {
-        val stack = with(StringBuffer()) {
-            val e = Exception()
-            for (el in e.stackTrace) {
-                appendln(el.toString())
-            }
-            toString()
+        logger.cerror { "TLS Client alert raised: $alertLevel $alertDescription $message $cause\n" +
+                getStackTrace()
         }
-        logger.info(stack)
     }
 
     override fun notifyAlertReceived(alertLevel: Short, alertDescription: Short) {
