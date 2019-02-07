@@ -15,13 +15,13 @@
  */
 package org.jitsi.nlj.dtls
 
-import org.bouncycastle.crypto.tls.DTLSClientProtocol
+import org.bouncycastle.tls.DTLSClientProtocol
+import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
-import java.security.SecureRandom
 
 class DtlsClientStack(
-        private val dtlsClientProtocol: DTLSClientProtocol = DTLSClientProtocol(SecureRandom())
+        private val dtlsClientProtocol: DTLSClientProtocol = DTLSClientProtocol()
 ) : DtlsStack() {
     private val tlsClient: TlsClientImpl
             = TlsClientImpl(::verifyAndValidateRemoteCertificate)
@@ -30,12 +30,10 @@ class DtlsClientStack(
         try {
             dtlsTransport = dtlsClientProtocol.connect(this.tlsClient, this)
             logger.cinfo { "DTLS handshake finished" }
-            handshakeCompleteHandler(tlsClient.getContext())
+            handshakeCompleteHandler(tlsClient.chosenSrtpProtectionProfile, TlsRole.CLIENT, tlsClient.srtpKeyingMaterial)
         } catch (e: Exception) {
             logger.cerror{ "Error during DTLS connection: $e" }
             throw e
         }
     }
-
-    override fun getChosenSrtpProtectionProfile() = tlsClient.chosenSrtpProtectionProfile
 }
