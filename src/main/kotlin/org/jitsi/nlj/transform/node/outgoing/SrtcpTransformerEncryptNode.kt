@@ -15,12 +15,12 @@
  */
 package org.jitsi.nlj.transform.node.outgoing
 
-import org.jitsi.impl.neomedia.transform.SinglePacketTransformer
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.AbstractSrtpTransformerNode
 import org.jitsi.rtp.SrtcpPacket
 import org.jitsi.rtp.util.ByteBufferUtils
 import org.jitsi.service.neomedia.RawPacket
+import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 import java.nio.ByteBuffer
 
 class SrtcpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTCP Encrypt wrapper") {

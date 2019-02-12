@@ -15,12 +15,12 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import org.jitsi.impl.neomedia.transform.SinglePacketTransformer
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.AbstractSrtpTransformerNode
 import org.jitsi.nlj.util.toRawPacket
 import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.util.ByteBufferUtils
+import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 
 class SrtcpTransformerDecryptNode : AbstractSrtpTransformerNode("SRTCP decrypt") {
     override fun doTransform(pkts: List<PacketInfo>, transformer: SinglePacketTransformer): List<PacketInfo> {

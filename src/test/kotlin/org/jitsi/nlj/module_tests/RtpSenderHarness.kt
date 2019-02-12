@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj.module_tests
 
-import org.jitsi.impl.neomedia.transform.SinglePacketTransformer
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpExtensionAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
@@ -31,6 +30,7 @@ import org.jitsi.nlj.util.safeShutdown
 import org.jitsi.rtp.RtpPacket
 import org.jitsi.rtp.util.RtpProtocol
 import org.jitsi.service.neomedia.RTPExtension
+import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 import java.net.URI
 import java.time.Duration
 import java.util.Random

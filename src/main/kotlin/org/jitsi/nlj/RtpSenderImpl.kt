@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj
 
-import org.jitsi.impl.neomedia.transform.SinglePacketTransformer
 import org.jitsi.nlj.rtcp.KeyframeRequester
 import org.jitsi.nlj.rtcp.NackHandler
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
@@ -45,6 +44,7 @@ import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.service.neomedia.MediaType
 import org.jitsi.util.Logger
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
+import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
