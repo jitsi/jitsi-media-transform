@@ -547,12 +547,13 @@ public class SRTPCryptoContext
      * shall not use SRTP TransformConnector. We should use the original method
      * (RTPManager managed transportation) instead.
      *
-     * @param pkt the RTP packet that is just received
+     * @param srtpPacket the RTP packet that is just received
      * @return <tt>true</tt> if the packet can be accepted; <tt>false</tt> if
      * the packet failed authentication or failed replay check
      */
-    synchronized public boolean reverseTransformPacket(RawPacket pkt)
+    synchronized public RtpPacket reverseTransformPacket(SrtpPacket srtpPacket)
     {
+        RawPacket pkt = PacketExtensionsKt.toRawPacket(srtpPacket);
         if (logger.isDebugEnabled())
         {
             logger.debug(
@@ -579,7 +580,6 @@ public class SRTPCryptoContext
         // Guess the SRTP index (48 bit), see RFC 3711, 3.3.1
         // Stores the guessed rollover counter (ROC) in this.guessedROC.
         long guessedIndex = guessIndex(seqNo);
-        boolean b = false;
 
         // Replay control
         if (checkReplay(seqNo, guessedIndex))
@@ -615,26 +615,28 @@ public class SRTPCryptoContext
                 // Update the rollover counter and highest sequence number if
                 // necessary.
                 update(seqNo, guessedIndex);
-
-                b = true;
+                return new RtpPacket(
+                        ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()));
             }
-            else if (logger.isDebugEnabled())
+            else
             {
-                logger.debug("SRTP auth failed for SSRC " + ssrc);
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug("SRTP auth failed for SSRC " + ssrc);
+                }
+                if (seqNumWasJustSet)
+                {
+                    // We set the initial value of s_l as a result of processing this
+                    // packet, but the packet failed to authenticate. We shouldn't
+                    // update our state based on an untrusted packet, so we revert
+                    // seqNumSet.
+                    seqNumSet = false;
+                    s_l = 0;
+                }
+                return null;
             }
         }
-
-        if (!b && seqNumWasJustSet)
-        {
-            // We set the initial value of s_l as a result of processing this
-            // packet, but the packet failed to authenticate. We shouldn't
-            // update our state based on an untrusted packet, so we revert
-            // seqNumSet.
-            seqNumSet = false;
-            s_l = 0;
-        }
-
-        return b;
+        return null;
     }
 
     /**

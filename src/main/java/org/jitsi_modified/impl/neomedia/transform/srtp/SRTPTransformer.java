@@ -188,54 +188,20 @@ public class SRTPTransformer
      * Reverse-transforms a specific packet (i.e. transforms a transformed
      * packet back).
      *
-     * @param srtpPacket the transformed packet to be restored
+     * @param packet the transformed packet to be restored
      * @return the restored packet
      */
     @Override
-    public Packet reverseTransform(Packet srtpPacket)
+    public Packet reverseTransform(Packet packet)
     {
-        RawPacket pkt = PacketExtensionsKt.toRawPacket(srtpPacket);
-//        System.out.println("BRIAN: packet " + pkt.getSSRCAsLong() + " " +
-//                pkt.getSequenceNumber() + " (length: " + pkt.getLength() + " before decrypt: " +
-//                SRTPCryptoContext.toHexArrayDef(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()) +
-//                "\n will get context from factory " + reverseFactory.hashCode());
-        // only accept RTP version 2 (SNOM phones send weird packages when on
-        // hold, ignore them with this check (RTP Version must be equal to 2)
-        if((pkt.readByte(0) & 0xC0) != 0x80)
-            return null;
-
+        SrtpPacket srtpPacket = (SrtpPacket)packet;
         SRTPCryptoContext context
             = getContext(
-                    pkt.getSSRC(),
+                    (int)srtpPacket.getHeader().getSsrc(),
                     reverseFactory,
-                    pkt.getSequenceNumber());
+                    srtpPacket.getHeader().getSequenceNumber());
 
-        RawPacket res =
-            ((context != null) && context.reverseTransformPacket(pkt))
-                ? pkt
-                : null;
-//        System.out.println("BRIAN: packet " + pkt.getSSRCAsLong() + " " +
-//                pkt.getSequenceNumber() + " (length: " + pkt.getLength() + " after decrypt: " +
-//                SRTPCryptoContext.toHexArrayDef(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()));
-//        if (res != null && res.getPayloadType() == 100) {
-//            intBuffer.putInt(0, res.getLength());
-//            try
-//            {
-//                fileWriter.write(intBuffer);
-//                fileWriter.write(ByteBuffer.wrap(res.getBuffer(), 0, res.getLength()));
-//
-//                intBuffer.rewind();
-//            } catch (IOException e)
-//            {
-//                e.printStackTrace();
-//            }
-//        }
-        if (res != null)
-        {
-            return new RtpPacket(
-                    ByteBufferUtils.Companion.wrapSubArray(res.getBuffer(), res.getOffset(), res.getLength()));
-        }
-        return null;
+        return context == null ? null : context.reverseTransformPacket(srtpPacket);
     }
 
     /**
