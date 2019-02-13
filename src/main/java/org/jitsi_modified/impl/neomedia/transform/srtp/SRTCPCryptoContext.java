@@ -18,8 +18,11 @@ package org.jitsi_modified.impl.neomedia.transform.srtp;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
 import org.jitsi.impl.neomedia.transform.srtp.*;
+import org.jitsi.rtp.extensions.*;
+import org.jitsi.rtp.util.*;
 import org.jitsi.service.neomedia.*;
 
+import java.nio.*;
 import java.util.*;
 
 /**
@@ -333,7 +336,7 @@ public class SRTCPCryptoContext
             pkt.shrink(tagLength + 4);
 
             // compute, then save authentication in tagStore
-            authenticatePacketHMAC(pkt, indexEflag);
+            authenticatePacketHMAC(ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()), indexEflag);
 
             // compare authentication tags using constant time comparison
             int nonEqual = 0;
@@ -411,7 +414,7 @@ public class SRTCPCryptoContext
         // it in network order in rbStore variable.
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)
         {
-            authenticatePacketHMAC(pkt, index);
+            authenticatePacketHMAC(ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()), index);
             pkt.append(rbStore, 4);
             pkt.append(tagStore, policy.getAuthTagLength());
         }
