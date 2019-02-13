@@ -38,7 +38,7 @@ class SrtcpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTCP Encrypt w
             // the offset into account correctly
             val bufCopy = ByteBuffer.allocate(packetBuf.limit())
             bufCopy.put(packetBuf).flip()
-            val rtcpPacket = UnparsedPacket(bufCopy)
+            val rtcpPacket = RtcpPacket.fromBuffer(bufCopy)
             transformer.transform(rtcpPacket)?.let { srtcpPacket ->
                 it.packet = srtcpPacket
                 encryptedPackets.add(it)

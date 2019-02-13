@@ -79,6 +79,8 @@ class SrtpSample {
         )
 
         // SRTCP -> RTCP
+        // NOTE(brian): this ended up being a compound RTCP packet,
+        // so there are multiple in here
         private val incomingEncryptedRtcpData = byteBufferOf(
             0x80, 0xC8, 0x00, 0x06, 0x75, 0x6D, 0x56, 0x40,
             0x0C, 0x24, 0x4E, 0x44, 0xF9, 0xE1, 0x4A, 0x5E,

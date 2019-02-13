@@ -149,10 +149,9 @@ public class SRTCPTransformer
     }
 
     private SRTCPCryptoContext getContext(
-            RawPacket pkt,
+            int ssrc,
             SRTPContextFactory engine)
     {
-        int ssrc = (int) pkt.getRTCPSSRC();
         SRTCPCryptoContext context = null;
 
         synchronized (contexts)
@@ -182,8 +181,9 @@ public class SRTCPTransformer
     @Override
     public Packet reverseTransform(Packet packet)
     {
-        RawPacket pkt = PacketExtensionsKt.toRawPacket(packet);
-        SRTCPCryptoContext context = getContext(pkt, reverseFactory);
+        SrtcpPacket srtcpPacket = (SrtcpPacket)packet;
+        SRTCPCryptoContext context = getContext((int)srtcpPacket.getHeader().getSenderSsrc(), reverseFactory);
+        RawPacket pkt = PacketExtensionsKt.toRawPacket(srtcpPacket);
 
         if (context == null)
         {
@@ -191,7 +191,7 @@ public class SRTCPTransformer
         }
         if (context.reverseTransformPacket(pkt))
         {
-            return new UnparsedPacket(
+            return RtcpPacket.Companion.fromBuffer(
                     ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength())
             );
         }
@@ -207,8 +207,9 @@ public class SRTCPTransformer
     @Override
     public Packet transform(Packet packet)
     {
-        RawPacket rawPacket = PacketExtensionsKt.toRawPacket(packet);
-        SRTCPCryptoContext context = getContext(rawPacket, forwardFactory);
+        RtcpPacket rtcpPacket = (RtcpPacket)packet;
+        SRTCPCryptoContext context = getContext((int)rtcpPacket.getHeader().getSenderSsrc(), forwardFactory);
+        RawPacket rawPacket = PacketExtensionsKt.toRawPacket(rtcpPacket);
 
         if(context != null)
         {
