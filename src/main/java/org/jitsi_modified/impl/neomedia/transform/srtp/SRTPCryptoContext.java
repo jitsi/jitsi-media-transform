@@ -18,6 +18,8 @@ package org.jitsi_modified.impl.neomedia.transform.srtp;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
 import org.jitsi.impl.neomedia.transform.srtp.*;
+import org.jitsi.nlj.util.*;
+import org.jitsi.rtp.*;
 import org.jitsi.rtp.extensions.*;
 import org.jitsi.rtp.util.*;
 import org.jitsi.service.neomedia.*;
@@ -649,8 +651,9 @@ public class SRTPCryptoContext
      *
      * @param pkt the RTP packet that is going to be sent out
      */
-    synchronized public boolean transformPacket(RawPacket pkt)
+    synchronized public SrtpPacket transformPacket(RtpPacket rtpPacket)
     {
+        RawPacket pkt = PacketExtensionsKt.toRawPacket(rtpPacket);
         int seqNo = pkt.getSequenceNumber();
 
         logger.debug(
@@ -676,7 +679,9 @@ public class SRTPCryptoContext
          * replay protection but as a consistency check of our implementation.
          */
         if (!checkReplay(seqNo, guessedIndex))
-            return false;
+        {
+            return null;
+        }
 
         switch (policy.getEncType())
         {
@@ -703,7 +708,8 @@ public class SRTPCryptoContext
         // Update the ROC if necessary.
         update(seqNo, guessedIndex);
 
-        return true;
+        return new SrtpPacket(
+                ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()));
     }
 
     /**

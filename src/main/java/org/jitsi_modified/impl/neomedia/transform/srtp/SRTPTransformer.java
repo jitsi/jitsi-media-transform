@@ -251,15 +251,6 @@ public class SRTPTransformer
         SRTPCryptoContext context
             = getContext((int)rtpPacket.getHeader().getSsrc(), forwardFactory, 0);
 
-        if (context == null)
-            return null;
-
-        RawPacket pkt = PacketExtensionsKt.toRawPacket(rtpPacket);
-        if (context.transformPacket(pkt))
-        {
-            return new RtpPacket(
-                    ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()));
-        }
-        return null;
+        return context == null ? null : context.transformPacket(rtpPacket);
     }
 }
