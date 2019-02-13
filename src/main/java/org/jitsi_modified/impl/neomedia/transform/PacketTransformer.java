@@ -15,6 +15,7 @@
  */
 package org.jitsi_modified.impl.neomedia.transform;
 
+import org.jitsi.rtp.*;
 import org.jitsi.service.neomedia.*;
 
 /**
@@ -40,7 +41,7 @@ public interface PacketTransformer
      * @param pkts the transformed packets to be restored.
      * @return the restored packets.
      */
-    public RawPacket[] reverseTransform(RawPacket[] pkts);
+    public Packet[] reverseTransform(Packet[] pkts);
 
     /**
      * Transforms each packet in an array of packets. Null values must be
@@ -49,5 +50,5 @@ public interface PacketTransformer
      * @param pkts the packets to be transformed
      * @return the transformed packets
      */
-    public RawPacket[] transform(RawPacket[] pkts);
+    public Packet[] transform(Packet[] pkts);
 }

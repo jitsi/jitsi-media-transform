@@ -21,8 +21,6 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi.nlj.resources.srtp_samples.SrtpSample
 import org.jitsi.nlj.srtp.SrtpUtil
-import org.jitsi.nlj.util.toRawPacket
-import java.nio.ByteBuffer
 
 internal class SrtcpTransformerEncryptNodeTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -36,11 +34,9 @@ internal class SrtcpTransformerEncryptNodeTest : ShouldSpec() {
 
     init {
         "encrypting a packet" {
-            val rawPacket = SrtpSample.outgoingUnencryptedRtcpPacket.toRawPacket()
-            val encryptedRawPacket = srtcpTransformer.transform(rawPacket)
+            val encryptedPacket = srtcpTransformer.transform(SrtpSample.outgoingUnencryptedRtcpPacket)
             should("encrypt the data correctly") {
-                val encryptedBuf = ByteBuffer.wrap(encryptedRawPacket.buffer, encryptedRawPacket.offset, encryptedRawPacket.length)
-                SrtpSample.expectedEncryptedRtcpData.compareTo(encryptedBuf) shouldBe 0
+                SrtpSample.expectedEncryptedRtcpData.compareTo(encryptedPacket.getBuffer()) shouldBe 0
             }
         }
     }

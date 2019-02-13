@@ -21,8 +21,6 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi.nlj.resources.srtp_samples.SrtpSample
 import org.jitsi.nlj.srtp.SrtpUtil
-import org.jitsi.nlj.util.toRawPacket
-import java.nio.ByteBuffer
 
 internal class SrtpTransformerDecryptNodeTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -36,12 +34,10 @@ internal class SrtpTransformerDecryptNodeTest : ShouldSpec() {
 
     init {
         "decrypting a packet" {
-            val rawPacket = SrtpSample.incomingEncryptedRtpPacket.toRawPacket()
-            val decryptedRawPacket = srtpTransformer.reverseTransform(rawPacket)
+            val decryptedPacket = srtpTransformer.reverseTransform(SrtpSample.incomingEncryptedRtpPacket)
 
             should("decrypt the data correctly") {
-                val decryptedBuf = ByteBuffer.wrap(decryptedRawPacket.buffer, decryptedRawPacket.offset, decryptedRawPacket.length)
-                SrtpSample.expectedDecryptedRtpData.compareTo(decryptedBuf) shouldBe 0
+                SrtpSample.expectedDecryptedRtpData.compareTo(decryptedPacket.getBuffer()) shouldBe 0
             }
         }
     }

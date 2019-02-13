@@ -30,21 +30,28 @@ class SrtpTransformerDecryptNode : AbstractSrtpTransformerNode("SRTP decrypt wra
     override fun doTransform(pkts: List<PacketInfo>, transformer: SinglePacketTransformer): List<PacketInfo> {
         val decryptedPackets = mutableListOf<PacketInfo>()
         pkts.forEach {
-            val rp = it.packet.toRawPacket();
-            transformer.reverseTransform(rp)?.let { decryptedRawPacket ->
-                val rtpPacket = RtpPacket(
-                    ByteBufferUtils.wrapSubArray(
-                        decryptedRawPacket.buffer,
-                        decryptedRawPacket.offset,
-                        decryptedRawPacket.length
-                    )
-                )
-                it.packet = rtpPacket
+            transformer.reverseTransform(it.packet)?.let { decryptedPacket ->
+                it.packet = decryptedPacket
                 decryptedPackets.add(it)
             } ?: run {
                 logger.cerror { "SRTP decryption failed for packet ${it.packetAs<SrtpPacket>().header.ssrc} ${it.packetAs<SrtpPacket>().header.sequenceNumber}" }
                 numDecryptFailures++
             }
+//            val rp = it.packet.toRawPacket();
+//            transformer.reverseTransform(rp)?.let { decryptedRawPacket ->
+//                val rtpPacket = RtpPacket(
+//                    ByteBufferUtils.wrapSubArray(
+//                        decryptedRawPacket.buffer,
+//                        decryptedRawPacket.offset,
+//                        decryptedRawPacket.length
+//                    )
+//                )
+//                it.packet = rtpPacket
+//                decryptedPackets.add(it)
+//            } ?: run {
+//                logger.cerror { "SRTP decryption failed for packet ${it.packetAs<SrtpPacket>().header.ssrc} ${it.packetAs<SrtpPacket>().header.sequenceNumber}" }
+//                numDecryptFailures++
+//            }
         }
         return decryptedPackets
     }

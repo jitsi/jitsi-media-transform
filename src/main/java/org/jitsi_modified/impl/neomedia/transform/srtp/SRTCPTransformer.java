@@ -16,9 +16,15 @@
 package org.jitsi_modified.impl.neomedia.transform.srtp;
 
 import org.jitsi.impl.neomedia.transform.srtp.*;
+import org.jitsi.nlj.util.*;
+import org.jitsi.rtp.*;
+import org.jitsi.rtp.extensions.*;
+import org.jitsi.rtp.rtcp.*;
+import org.jitsi.rtp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi_modified.impl.neomedia.transform.*;
 
+import java.nio.*;
 import java.util.*;
 
 /**
@@ -84,7 +90,7 @@ public class SRTCPTransformer
 
     /**
      * Sets a new key factory when key material has changed.
-     * 
+     *
      * @param factory The associated context factory for transformations.
      * @param forward <tt>true</tt> if the supplied factory is for forward
      *            transformations, <tt>false</tt> for the reverse transformation
@@ -170,35 +176,46 @@ public class SRTCPTransformer
     /**
      * Decrypts a SRTCP packet
      *
-     * @param pkt encrypted SRTCP packet to be decrypted
+     * @param packet encrypted SRTCP packet to be decrypted
      * @return decrypted SRTCP packet
      */
     @Override
-    public RawPacket reverseTransform(RawPacket pkt)
+    public Packet reverseTransform(Packet packet)
     {
+        RawPacket pkt = PacketExtensionsKt.toRawPacket(packet);
         SRTCPCryptoContext context = getContext(pkt, reverseFactory);
 
-        return
-            ((context != null) && context.reverseTransformPacket(pkt))
-                ? pkt
-                : null;
+        if (context == null)
+        {
+            return null;
+        }
+        if (context.reverseTransformPacket(pkt))
+        {
+            return new UnparsedPacket(
+                    ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength())
+            );
+        }
+        return null;
     }
 
     /**
      * Encrypts a SRTCP packet
      *
-     * @param pkt plain SRTCP packet to be encrypted
+     * @param packet plain SRTCP packet to be encrypted
      * @return encrypted SRTCP packet
      */
     @Override
-    public RawPacket transform(RawPacket pkt)
+    public Packet transform(Packet packet)
     {
-        SRTCPCryptoContext context = getContext(pkt, forwardFactory);
+        RawPacket rawPacket = PacketExtensionsKt.toRawPacket(packet);
+        SRTCPCryptoContext context = getContext(rawPacket, forwardFactory);
 
         if(context != null)
         {
-            context.transformPacket(pkt);
-            return pkt;
+            context.transformPacket(rawPacket);
+            return new SrtcpPacket(
+                    ByteBufferUtils.Companion.wrapSubArray(rawPacket.getBuffer(), rawPacket.getOffset(), rawPacket.getLength())
+            );
         }
         else
         {

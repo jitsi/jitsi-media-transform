@@ -18,6 +18,8 @@ package org.jitsi.nlj.transform.node.outgoing
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.AbstractSrtpTransformerNode
 import org.jitsi.rtp.SrtcpPacket
+import org.jitsi.rtp.UnparsedPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.util.ByteBufferUtils
 import org.jitsi.service.neomedia.RawPacket
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
@@ -36,18 +38,27 @@ class SrtcpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTCP Encrypt w
             // the offset into account correctly
             val bufCopy = ByteBuffer.allocate(packetBuf.limit())
             bufCopy.put(packetBuf).flip()
-            val rp = RawPacket(bufCopy.array(), bufCopy.arrayOffset(), bufCopy.limit())
-            transformer.transform(rp)?.let { encryptedRawPacket ->
-                val srtcpPacket = SrtcpPacket(
-                    ByteBufferUtils.wrapSubArray(
-                        encryptedRawPacket.buffer,
-                        encryptedRawPacket.offset,
-                        encryptedRawPacket.length
-                    )
-                )
+            val rtcpPacket = UnparsedPacket(bufCopy)
+            transformer.transform(rtcpPacket)?.let { srtcpPacket ->
                 it.packet = srtcpPacket
                 encryptedPackets.add(it)
+            } ?: run {
+                logger.error("Error encrypting RTCP")
             }
+
+
+//            val rp = RawPacket(bufCopy.array(), bufCopy.arrayOffset(), bufCopy.limit())
+//            transformer.transform(rp)?.let { encryptedRawPacket ->
+//                val srtcpPacket = SrtcpPacket(
+//                    ByteBufferUtils.wrapSubArray(
+//                        encryptedRawPacket.buffer,
+//                        encryptedRawPacket.offset,
+//                        encryptedRawPacket.length
+//                    )
+//                )
+//                it.packet = srtcpPacket
+//                encryptedPackets.add(it)
+//            }
         }
         return encryptedPackets
     }

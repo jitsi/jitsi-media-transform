@@ -16,6 +16,9 @@
 package org.jitsi_modified.impl.neomedia.transform.srtp;
 
 import org.jitsi.impl.neomedia.transform.srtp.*;
+import org.jitsi.nlj.util.*;
+import org.jitsi.rtp.*;
+import org.jitsi.rtp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi_modified.impl.neomedia.transform.*;
 
@@ -96,7 +99,7 @@ public class SRTPTransformer
 
     /**
      * Sets a new key factory when key material has changed.
-     * 
+     *
      * @param factory The associated context factory for transformations.
      * @param forward <tt>true</tt> if the supplied factory is for forward
      *            transformations, <tt>false</tt> for the reverse transformation
@@ -186,12 +189,13 @@ public class SRTPTransformer
      * Reverse-transforms a specific packet (i.e. transforms a transformed
      * packet back).
      *
-     * @param pkt the transformed packet to be restored
+     * @param srtpPacket the transformed packet to be restored
      * @return the restored packet
      */
     @Override
-    public RawPacket reverseTransform(RawPacket pkt)
+    public Packet reverseTransform(Packet srtpPacket)
     {
+        RawPacket pkt = PacketExtensionsKt.toRawPacket(srtpPacket);
 //        System.out.println("BRIAN: packet " + pkt.getSSRCAsLong() + " " +
 //                pkt.getSequenceNumber() + " (length: " + pkt.getLength() + " before decrypt: " +
 //                SRTPCryptoContext.toHexArrayDef(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()) +
@@ -227,23 +231,36 @@ public class SRTPTransformer
 //                e.printStackTrace();
 //            }
 //        }
-        return res;
+        if (res != null)
+        {
+            return new RtpPacket(
+                    ByteBufferUtils.Companion.wrapSubArray(res.getBuffer(), res.getOffset(), res.getLength()));
+        }
+        return null;
     }
 
     /**
      * Transforms a specific packet.
      *
-     * @param pkt the packet to be transformed
+     * @param packet the packet to be transformed
      * @return the transformed packet
      */
     @Override
-    public RawPacket transform(RawPacket pkt)
+    public Packet transform(Packet packet)
     {
+        RtpPacket rtpPacket = (RtpPacket)packet;
         SRTPCryptoContext context
-            = getContext(pkt.getSSRC(), forwardFactory, 0);
+            = getContext((int)rtpPacket.getHeader().getSsrc(), forwardFactory, 0);
 
         if (context == null)
             return null;
-        return context.transformPacket(pkt) ? pkt : null;
+
+        RawPacket pkt = PacketExtensionsKt.toRawPacket(rtpPacket);
+        if (context.transformPacket(pkt))
+        {
+            return new RtpPacket(
+                    ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()));
+        }
+        return null;
     }
 }

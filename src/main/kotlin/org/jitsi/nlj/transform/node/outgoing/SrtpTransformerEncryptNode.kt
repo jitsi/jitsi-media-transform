@@ -29,17 +29,16 @@ class SrtpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTP Encrypt wra
     private var numEncryptFailures = 0
     override fun doTransform(pkts: List<PacketInfo>, transformer: SinglePacketTransformer): List<PacketInfo> {
         pkts.forEach {
-            val rp = it.packet.toRawPacket()
-            transformer.transform(rp)?.let { encryptedRawPacket ->
-                val srtpPacket = SrtpPacket(
-                    ByteBufferUtils.wrapSubArray(
-                        encryptedRawPacket.buffer,
-                        encryptedRawPacket.offset,
-                        encryptedRawPacket.length
-                    )
-                )
+            transformer.transform(it.packet)?.let { encryptedPacket ->
+//                val srtpPacket = SrtpPacket(
+//                    ByteBufferUtils.wrapSubArray(
+//                        encryptedRawPacket.buffer,
+//                        encryptedRawPacket.offset,
+//                        encryptedRawPacket.length
+//                    )
+//                )
                 // Change the PacketInfo to contain the new packet
-                it.packet = srtpPacket
+                it.packet = encryptedPacket
             } ?: run {
                 logger.cerror { "SRTP encryption failed for packet ${it.packetAs<RtpPacket>().header.ssrc} ${it.packetAs<RtpPacket>().header.sequenceNumber}" }
                 numEncryptFailures++
