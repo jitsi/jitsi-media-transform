@@ -15,7 +15,6 @@
  */
 package org.jitsi_modified.impl.neomedia.transform.srtp;
 
-import org.jitsi.impl.neomedia.transform.srtp.*;
 import org.jitsi.nlj.util.*;
 import org.jitsi.rtp.*;
 import org.jitsi.rtp.util.*;
