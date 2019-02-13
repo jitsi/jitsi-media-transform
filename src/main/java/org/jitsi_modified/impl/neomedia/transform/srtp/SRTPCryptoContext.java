@@ -18,6 +18,7 @@ package org.jitsi_modified.impl.neomedia.transform.srtp;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
 import org.jitsi.impl.neomedia.transform.srtp.*;
+import org.jitsi.rtp.extensions.*;
 import org.jitsi.rtp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
@@ -202,8 +203,8 @@ public class SRTPCryptoContext
                 "\nssrc " + (ssrc & 0xFFFF_FFFFL) +
                 "\nroc: " + roc +
                 "\nkeyDerivationRate: " + keyDerivationRate +
-                "\nmasterK: " + toHex(masterK) +
-                "\nmasterS: " + toHex(masterS) +
+                "\nmasterK: " + ByteBufferKt.toHex(ByteBuffer.wrap(masterK)) +
+                "\nmasterS: " + ByteBufferKt.toHex(ByteBuffer.wrap(masterS)) +
                 "\npolicy: " + policy.toString());
 
         this.sender = sender;
@@ -461,7 +462,7 @@ public class SRTPCryptoContext
      *
      * @param pkt the RTP packet to be encrypted/decrypted
      */
-    public void processPacketAESCM(RawPacket pkt)
+    private void processPacketAESCM(RawPacket pkt)
     {
         int ssrc = pkt.getSSRC();
         int seqNo = pkt.getSequenceNumber();
@@ -510,7 +511,7 @@ public class SRTPCryptoContext
      *
      * @param pkt the RTP packet to be encrypted/decrypted
      */
-    public void processPacketAESF8(RawPacket pkt)
+    private void processPacketAESF8(RawPacket pkt)
     {
         // 11 bytes of the RTP header are the 11 bytes of the iv
         // the first byte of the RTP header is not used.
@@ -744,82 +745,16 @@ public class SRTPCryptoContext
         }
     }
 
-    private static final char[] HEX_ENCODE_TABLE
-            = {
-            '0', '1', '2', '3', '4', '5', '6', '7',
-            '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-    };
-    public static String toHex(byte[] fingerprint)
-    {
-        return toHex(fingerprint, 0, fingerprint.length);
-    }
-
-    public static String toHex(byte[] data, int off, int length)
-    {
-        try
-        {
-            char[] chars = new char[3 * length - 1];
-
-            for (int f = off, fLast = off + length - 1, c = 0;
-                 f <= fLast;
-                 f++)
-            {
-                int b = data[f] & 0xff;
-
-                chars[c++] = HEX_ENCODE_TABLE[b >>> 4];
-                chars[c++] = HEX_ENCODE_TABLE[b & 0x0f];
-            }
-            return new String(chars);
-        } catch (Exception e) {
-            System.out.println("BRIAN: exception converting to hex: " + e.toString());
-            return e.toString();
-        }
-    }
-
-    public static String toHexArrayDef(byte[] data, int off, int length)
-    {
-        try
-        {
-            char[] chars = new char[20 * length - 1];
-
-            for (int f = off, fLast = off + length - 1, c = 0;
-                 f <= fLast;
-                 f++)
-            {
-                int b = data[f] & 0xff;
-
-                chars[c++] = '(';
-                chars[c++] = 'b';
-                chars[c++] = 'y';
-                chars[c++] = 't';
-                chars[c++] = 'e';
-                chars[c++] = ')';
-                chars[c++] = '0';
-                chars[c++] = 'x';
-                chars[c++] = HEX_ENCODE_TABLE[b >>> 4];
-                chars[c++] = HEX_ENCODE_TABLE[b & 0x0f];
-                chars[c++] = ',';
-                chars[c++] = ' ';
-            }
-            return new String(chars);
-        } catch (Exception e) {
-            System.out.println("BRIAN: exception converting to hex: " + e.toString());
-            return e.toString();
-        }
-
-    }
-
-
     @Override
     public String toString()
     {
         return "" +
                 this.hashCode() +
                 " ssrc: " + ssrc +
-                " masterK: " + toHex(masterKey) +
-                " masterS: " + toHex(masterSalt) +
-                " encKey: " + toHex(encKey) +
-                " saltKey: " + toHex(saltKey) +
+                " masterK: " + ByteBufferKt.toHex(ByteBuffer.wrap(masterKey)) +
+                " masterS: " + ByteBufferKt.toHex(ByteBuffer.wrap(masterSalt)) +
+                " encKey: " + ByteBufferKt.toHex(ByteBuffer.wrap(encKey)) +
+                " saltKey: " + ByteBufferKt.toHex(ByteBuffer.wrap(saltKey)) +
                 " policy: " + policy +
                 " sender? " + sender +
                 " roc: " + roc +
