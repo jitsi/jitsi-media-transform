@@ -17,12 +17,8 @@ package org.jitsi_modified.impl.neomedia.transform.srtp;
 
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
-import org.jitsi.impl.neomedia.transform.srtp.*;
 import org.jitsi.rtp.*;
-import org.jitsi.rtp.extensions.*;
 import org.jitsi.rtp.rtcp.*;
-import org.jitsi.rtp.util.*;
-import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
 import java.nio.*;
@@ -214,48 +210,14 @@ public class SRTCPCryptoContext
     }
 
     /**
-     * Performs Counter Mode AES encryption
-     *
-     * @param pkt the RTP packet to be encrypted
-     */
-    private SrtcpPacket processPacketAESCM(RtcpPacket pkt, int index)
-    {
-        int ssrc = (int)pkt.getHeader().getSenderSsrc();
-        //NOTE: we need to create the SrtcpPacket first, because if we use the buffer from
-        // pkt (RtcpPacket), then we'll need to call getBuffer() to get it out (to create the
-        // SrtcpPacket), but getBuffer in RtcpPacket will try and set all sorts of fields and
-        // interpret the data as an RtcpPacket, which won't make sense because it is now
-        // encrypted
-        //TODO?(brian): if we had an explicit 'finalize' method (or something of that sort)
-        // in Packet which would finalize all the header fields, do padding, etc. then
-        // getBuffer() could be simple and we wouldn't have this problem
-        SrtcpPacket srtcpPacket = new SrtcpPacket(pkt.getBuffer());
-        processDataAESCM(ssrc, index, srtcpPacket.getPayload());
-
-        return srtcpPacket;
-    }
-
-    /**
-     * Performs Counter Mode AES decryption
-     *
-     * @param pkt the RTP packet to be decrypted
-     */
-    private RtcpPacket processPacketAESCM(SrtcpPacket pkt, int index)
-    {
-        int ssrc = (int)pkt.getHeader().getSenderSsrc();
-        processDataAESCM(ssrc, index, pkt.getPayload());
-        // SrtcpPacket doesn't do any work in getBuffer
-        return RtcpPacket.Companion.fromBuffer(pkt.getBuffer());
-    }
-
-    /**
      * Performs Counter Mode AES encryption/decryption
-     * @param ssrc the ssrc of the SRTP stream to which this data belongs
-     *             (i.e. the sender ssrc)
-     * @param index the SRTCP index
-     * @param data the RTCP/SRTCP packet payload to encrypt/decrypt
+     * @param rtcoSenderSsrc the ssrc of the SRTP stream to which this data belongs
+     *                       (i.e. the sender ssrc)
+     * @param srtcpIndex the SRTCP index
+     * @param data the RTCP/SRTCP packet payload to encrypt/decrypt.  Will be
+     *             encrypted/decrypted in place.
      */
-    public void processDataAESCM(int ssrc, int index, ByteBuffer data)
+    private void processDataAESCM(ByteBuffer data, int rtcoSenderSsrc, int srtcpIndex)
     {
         /* Compute the CM IV (refer to chapter 4.1.1 in RFC 3711):
          *
@@ -272,18 +234,18 @@ public class SRTCPCryptoContext
         ivStore[3] = saltKey[3];
 
         // The shifts transform the ssrc and index into network order
-        ivStore[4] = (byte) (((ssrc >> 24) & 0xff) ^ saltKey[4]);
-        ivStore[5] = (byte) (((ssrc >> 16) & 0xff) ^ saltKey[5]);
-        ivStore[6] = (byte) (((ssrc >> 8) & 0xff) ^ saltKey[6]);
-        ivStore[7] = (byte) ((ssrc & 0xff) ^ saltKey[7]);
+        ivStore[4] = (byte) (((rtcoSenderSsrc >> 24) & 0xff) ^ saltKey[4]);
+        ivStore[5] = (byte) (((rtcoSenderSsrc >> 16) & 0xff) ^ saltKey[5]);
+        ivStore[6] = (byte) (((rtcoSenderSsrc >> 8) & 0xff) ^ saltKey[6]);
+        ivStore[7] = (byte) ((rtcoSenderSsrc & 0xff) ^ saltKey[7]);
 
         ivStore[8] = saltKey[8];
         ivStore[9] = saltKey[9];
 
-        ivStore[10] = (byte) (((index >> 24) & 0xff) ^ saltKey[10]);
-        ivStore[11] = (byte) (((index >> 16) & 0xff) ^ saltKey[11]);
-        ivStore[12] = (byte) (((index >> 8) & 0xff) ^ saltKey[12]);
-        ivStore[13] = (byte) ((index & 0xff) ^ saltKey[13]);
+        ivStore[10] = (byte) (((srtcpIndex >> 24) & 0xff) ^ saltKey[10]);
+        ivStore[11] = (byte) (((srtcpIndex >> 16) & 0xff) ^ saltKey[11]);
+        ivStore[12] = (byte) (((srtcpIndex >> 8) & 0xff) ^ saltKey[12]);
+        ivStore[13] = (byte) ((srtcpIndex & 0xff) ^ saltKey[13]);
 
         ivStore[14] = ivStore[15] = 0;
 
@@ -292,11 +254,14 @@ public class SRTCPCryptoContext
     }
 
     /**
-     * Performs F8 Mode AES encryption
+     * Performs F8 Mode AES encryption/decryption
      *
-     * @param pkt the RTP packet to be encrypted
+     * @param header the header of the packet being processed
+     * @param payload the payload of the packet being processed.  Will be
+     *                encrypted/decrypted in place
+     * @param srtcpIndex the SRTCP index
      */
-    private SrtcpPacket processPacketAESF8(RtcpPacket pkt, int index)
+    private void processDataAESF8(ByteBuffer header, ByteBuffer payload, int srtcpIndex)
     {
         // 4 bytes of the iv are zero
         // the first byte of the RTP header is not used.
@@ -306,52 +271,18 @@ public class SRTCPCryptoContext
         ivStore[3] = 0;
 
         // Need the encryption flag
-        index = index | 0x80000000;
+        srtcpIndex = srtcpIndex | 0x80000000;
 
         // set the index and the encrypt flag in network order into IV
-        ivStore[4] = (byte) (index >> 24);
-        ivStore[5] = (byte) (index >> 16);
-        ivStore[6] = (byte) (index >> 8);
-        ivStore[7] = (byte) index;
-
-        SrtcpPacket srtcpPacket = new SrtcpPacket(pkt.getBuffer());
-        // The fixed header follows and fills the rest of the IV
-        System.arraycopy(srtcpPacket.getHeader().getBuffer().array(), 0, ivStore, 8, 8);
-
-        cipherF8.process(srtcpPacket.getPayload().array(), 0, srtcpPacket.getPayload().limit(), ivStore);
-
-        return srtcpPacket;
-    }
-
-    /**
-     * Performs F8 Mode AES decryption
-     *
-     * @param pkt the RTP packet to be decrypted
-     */
-    private RtcpPacket processPacketAESF8(SrtcpPacket pkt, int index)
-    {
-        // 4 bytes of the iv are zero
-        // the first byte of the RTP header is not used.
-        ivStore[0] = 0;
-        ivStore[1] = 0;
-        ivStore[2] = 0;
-        ivStore[3] = 0;
-
-        // Need the encryption flag
-        index = index | 0x80000000;
-
-        // set the index and the encrypt flag in network order into IV
-        ivStore[4] = (byte) (index >> 24);
-        ivStore[5] = (byte) (index >> 16);
-        ivStore[6] = (byte) (index >> 8);
-        ivStore[7] = (byte) index;
+        ivStore[4] = (byte) (srtcpIndex >> 24);
+        ivStore[5] = (byte) (srtcpIndex >> 16);
+        ivStore[6] = (byte) (srtcpIndex >> 8);
+        ivStore[7] = (byte) srtcpIndex;
 
         // The fixed header follows and fills the rest of the IV
-        System.arraycopy(pkt.getHeader().getBuffer().array(), 0, ivStore, 8, 8);
+        System.arraycopy(header.array(), header.arrayOffset(), ivStore, 8, 8);
 
-        cipherF8.process(pkt.getPayload().array(), 0, pkt.getPayload().limit(), ivStore);
-
-        return RtcpPacket.Companion.fromBuffer(pkt.getBuffer());
+        cipherF8.process(payload.array(), payload.arrayOffset(), payload.limit(), ivStore);
     }
 
     /**
@@ -426,19 +357,24 @@ public class SRTCPCryptoContext
         RtcpPacket rtcpPacket = null;
         if (decrypt)
         {
+            ByteBuffer packetBuf = pkt.getBuffer();
+            ByteBuffer header = pkt.getHeader().getBuffer();
+            ByteBuffer encryptedPayload = pkt.getPayload();
+            int rtcpSenderSsrc = (int)pkt.getHeader().getSenderSsrc();
             /* Decrypt the packet using Counter Mode encryption */
             if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION
                     || policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
             {
-                rtcpPacket = processPacketAESCM(pkt, index);
+                processDataAESCM(encryptedPayload, rtcpSenderSsrc, index);
             }
 
             /* Decrypt the packet using F8 Mode encryption */
             else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION
                     || policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
             {
-                rtcpPacket = processPacketAESF8(pkt, index);
+                processDataAESF8(header, encryptedPayload, index);
             }
+            rtcpPacket = RtcpPacket.Companion.fromBuffer(packetBuf);
         }
         update(index);
 
@@ -462,24 +398,26 @@ public class SRTCPCryptoContext
      */
     synchronized public SrtcpPacket transformPacket(RtcpPacket pkt)
     {
-        //TODO(brian): should we still support null cipher (as in,
-        // not actually encrypting here or decrypting in reverseTransformPacket)?
         boolean encrypt = false;
-        SrtcpPacket srtcpPacket = null;
+        ByteBuffer packetBuf = pkt.getBuffer();
+        ByteBuffer encryptedPayload = pkt.getPayload();
         /* Encrypt the packet using Counter Mode encryption */
         if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION ||
                 policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
         {
-            srtcpPacket = processPacketAESCM(pkt, sentIndex);
+            int rtcpSenderSsrc = (int)pkt.getHeader().getSenderSsrc();
+            processDataAESCM(encryptedPayload, rtcpSenderSsrc, sentIndex);
             encrypt = true;
         }
         /* Encrypt the packet using F8 Mode encryption */
         else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION ||
                 policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
         {
-            srtcpPacket = processPacketAESF8(pkt, sentIndex);
+            ByteBuffer header = pkt.getHeader().getBuffer();
+            processDataAESF8(header, encryptedPayload, sentIndex);
             encrypt = true;
         }
+        SrtcpPacket srtcpPacket = new SrtcpPacket(packetBuf);
         int index = 0;
         if (encrypt)
         {
