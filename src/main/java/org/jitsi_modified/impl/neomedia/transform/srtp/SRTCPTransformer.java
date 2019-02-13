@@ -183,19 +183,12 @@ public class SRTCPTransformer
     {
         SrtcpPacket srtcpPacket = (SrtcpPacket)packet;
         SRTCPCryptoContext context = getContext((int)srtcpPacket.getHeader().getSenderSsrc(), reverseFactory);
-        RawPacket pkt = PacketExtensionsKt.toRawPacket(srtcpPacket);
 
         if (context == null)
         {
             return null;
         }
-        if (context.reverseTransformPacket(pkt))
-        {
-            return RtcpPacket.Companion.fromBuffer(
-                    ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength())
-            );
-        }
-        return null;
+        return context.reverseTransformPacket(srtcpPacket);
     }
 
     /**
@@ -209,14 +202,10 @@ public class SRTCPTransformer
     {
         RtcpPacket rtcpPacket = (RtcpPacket)packet;
         SRTCPCryptoContext context = getContext((int)rtcpPacket.getHeader().getSenderSsrc(), forwardFactory);
-        RawPacket rawPacket = PacketExtensionsKt.toRawPacket(rtcpPacket);
 
         if(context != null)
         {
-            context.transformPacket(rawPacket);
-            return new SrtcpPacket(
-                    ByteBufferUtils.Companion.wrapSubArray(rawPacket.getBuffer(), rawPacket.getOffset(), rawPacket.getLength())
-            );
+            return context.transformPacket(rtcpPacket);
         }
         else
         {
