@@ -17,7 +17,6 @@ package org.jitsi_modified.impl.neomedia.transform.srtp;
 
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
-import org.jitsi.impl.neomedia.transform.srtp.*;
 import org.jitsi.nlj.util.*;
 import org.jitsi.rtp.*;
 import org.jitsi.rtp.extensions.*;
@@ -25,7 +24,6 @@ import org.jitsi.rtp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
-import javax.media.*;
 import javax.media.Buffer;
 import java.nio.*;
 import java.util.*;
@@ -216,33 +214,31 @@ public class SRTPCryptoContext
 //        readConfigurationServicePropertiesOnce();
     }
 
-    /**c
-     * Authenticates a specific <tt>RawPacket</tt> if the <tt>policy</tt> of
+
+    /**
+     * Authenticates a specific <tt>SrtpPacket</tt> if the <tt>policy</tt> of
      * this <tt>SRTPCryptoContext</tt> specifies that authentication is to be
      * performed.
      *
-     * @param pkt the <tt>RawPacket</tt> to acuthenticate
+     * @param srtpPacket the <tt>SrtpPacket</tt> to acuthenticate
      * @return <tt>true</tt> if the <tt>policy</tt> of this
      * <tt>SRTPCryptoContext</tt> specifies that authentication is to not be
      * performed or <tt>pkt</tt> was successfully authenticated; otherwise,
      * <tt>false</tt>
      */
-    private boolean authenticatePacket(RawPacket pkt)
+    private boolean authenticatePacket(SrtpPacket srtpPacket)
     {
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)
         {
             int tagLength = policy.getAuthTagLength();
 
             // get original authentication and store in tempStore
-            pkt.readRegionToBuff(
-                    pkt.getLength() - tagLength,
-                    tagLength,
-                    tempStore);
-
-            pkt.shrink(tagLength);
+            ByteBuffer authTag = srtpPacket.getAuthTag(tagLength);
+            srtpPacket.removeAuthTag(tagLength);
+            authTag.get(tempStore, 0, tagLength);
 
             // save computed authentication in tagStore
-            authenticatePacketHMAC(ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()), guessedROC);
+            authenticatePacketHMAC(srtpPacket.getBuffer(), guessedROC);
 
             // compare authentication tags using constant time comparison
             int nonEqual = 0;
@@ -251,7 +247,9 @@ public class SRTPCryptoContext
                 nonEqual |= (tempStore[i] ^ tagStore[i]);
             }
             if (nonEqual != 0)
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -459,6 +457,14 @@ public class SRTPCryptoContext
         return (((long) guessedROC) << 16) | seqNo;
     }
 
+
+    /**
+     * Performs Counter Mode AES encryption/decryption
+     *
+     * @param ssrc
+     * @param seqNum
+     * @param payload
+     */
     private void processPacketAESCM(int ssrc, int seqNum, ByteBuffer payload)
     {
         long index = (((long) guessedROC) << 16) | seqNum;
@@ -497,54 +503,11 @@ public class SRTPCryptoContext
     }
 
     /**
-     * Performs Counter Mode AES encryption/decryption
+     * Performs F8 Mode AES encryption/decryption
      *
-     * @param pkt the RTP packet to be encrypted/decrypted
+     * @param header
+     * @param payload
      */
-    private void processPacketAESCM(RawPacket pkt)
-    {
-        int ssrc = pkt.getSSRC();
-        int seqNo = pkt.getSequenceNumber();
-        long index = (((long) guessedROC) << 16) | seqNo;
-
-        // byte[] iv = new byte[16];
-        ivStore[0] = saltKey[0];
-        ivStore[1] = saltKey[1];
-        ivStore[2] = saltKey[2];
-        ivStore[3] = saltKey[3];
-
-        int i;
-
-        for (i = 4; i < 8; i++)
-        {
-            ivStore[i] = (byte)
-                (
-                    (0xFF & (ssrc >> ((7 - i) * 8)))
-                    ^
-                    saltKey[i]
-                );
-        }
-
-        for (i = 8; i < 14; i++)
-        {
-            ivStore[i] = (byte)
-                (
-                    (0xFF & (byte) (index >> ((13 - i) * 8)))
-                    ^
-                    saltKey[i]
-                );
-        }
-
-        ivStore[14] = ivStore[15] = 0;
-
-        int payloadOffset = pkt.getHeaderLength();
-        int payloadLength = pkt.getPayloadLength();
-
-        cipherCtr.process(
-                pkt.getBuffer(), pkt.getOffset() + payloadOffset, payloadLength,
-                ivStore);
-    }
-
     private void processPacketAESF8(ByteBuffer header, ByteBuffer payload)
     {
         // 11 bytes of the RTP header are the 11 bytes of the iv
@@ -564,34 +527,6 @@ public class SRTPCryptoContext
     }
 
     /**
-     * Performs F8 Mode AES encryption/decryption
-     *
-     * @param pkt the RTP packet to be encrypted/decrypted
-     */
-    private void processPacketAESF8(RawPacket pkt)
-    {
-        // 11 bytes of the RTP header are the 11 bytes of the iv
-        // the first byte of the RTP header is not used.
-        System.arraycopy(pkt.getBuffer(), pkt.getOffset(), ivStore, 0, 12);
-        ivStore[0] = 0;
-
-        // set the ROC in network order into IV
-        int roc = guessedROC;
-
-        ivStore[12] = (byte) (roc >> 24);
-        ivStore[13] = (byte) (roc >> 16);
-        ivStore[14] = (byte) (roc >> 8);
-        ivStore[15] = (byte) roc;
-
-        int payloadOffset = pkt.getHeaderLength();
-        int payloadLength = pkt.getPayloadLength();
-
-        cipherF8.process(
-                pkt.getBuffer(), pkt.getOffset() + payloadOffset, payloadLength,
-                ivStore);
-    }
-
-    /**
      * Transforms an SRTP packet into an RTP packet. The method is called when
      * an SRTP packet is received. Operations done by the this operation
      * include: authentication check, packet replay check and decryption. Both
@@ -608,70 +543,71 @@ public class SRTPCryptoContext
      */
     synchronized public RtpPacket reverseTransformPacket(SrtpPacket srtpPacket)
     {
-        RawPacket pkt = PacketExtensionsKt.toRawPacket(srtpPacket);
+        int seqNum = srtpPacket.getHeader().getSequenceNumber();
         if (logger.isDebugEnabled())
         {
             logger.debug(
                     System.identityHashCode(this) + " Reverse transform for SSRC " +
                             (this.ssrc & 0xFFFF_FFFFL)
-                        + " SeqNo=" + pkt.getSequenceNumber()
+                        + " SeqNo=" + seqNum
                         + " s_l=" + s_l
                         + " seqNumSet=" + seqNumSet
                         + " guessedROC=" + guessedROC
                         + " roc=" + roc);
         }
 
-        int seqNo = pkt.getSequenceNumber();
 
         // Whether s_l was initialized while processing this packet.
         boolean seqNumWasJustSet = false;
         if (!seqNumSet)
         {
             seqNumSet = true;
-            s_l = seqNo;
+            s_l = seqNum;
             seqNumWasJustSet = true;
         }
 
         // Guess the SRTP index (48 bit), see RFC 3711, 3.3.1
         // Stores the guessed rollover counter (ROC) in this.guessedROC.
-        long guessedIndex = guessIndex(seqNo);
+        long guessedIndex = guessIndex(seqNum);
 
         // Replay control
-        if (checkReplay(seqNo, guessedIndex))
+        if (checkReplay(seqNum, guessedIndex))
         {
             // Authenticate the packet.
-            if (authenticatePacket(pkt))
+            if (authenticatePacket(srtpPacket))
             {
                 // If a RawPacket is flagged with Buffer.FLAG_DISCARD, then it
                 // should have been discarded earlier. Anyway, at least skip its
                 // decrypting. We flag a RawPacket with Buffer.FLAG_SILENCE when
                 // we want to ignore its payload. In the context of SRTP, we
                 // want to skip its decrypting.
-                if ((pkt.getFlags()
-                            & (Buffer.FLAG_DISCARD | Buffer.FLAG_SILENCE))
-                        == 0)
+                //TODO(brian): bring these back if we need them here.  if so, that'd
+                // also mean we want PacketInfo here (since that is where we'd store
+                // this info)
+//                if ((pkt.getFlags()
+//                            & (Buffer.FLAG_DISCARD | Buffer.FLAG_SILENCE))
+//                        == 0)
                 {
                     switch (policy.getEncType())
                     {
                     // Decrypt the packet using Counter Mode encryption.
                     case SRTPPolicy.AESCM_ENCRYPTION:
                     case SRTPPolicy.TWOFISH_ENCRYPTION:
-                        processPacketAESCM(pkt);
+                        processPacketAESCM((int)srtpPacket.getHeader().getSsrc(), seqNum, srtpPacket.getPayload());
                         break;
 
                     // Decrypt the packet using F8 Mode encryption.
                     case SRTPPolicy.AESF8_ENCRYPTION:
                     case SRTPPolicy.TWOFISHF8_ENCRYPTION:
-                        processPacketAESF8(pkt);
+                        processPacketAESF8(srtpPacket.getHeader().getBuffer(), srtpPacket.getPayload());
                         break;
                     }
                 }
 
                 // Update the rollover counter and highest sequence number if
                 // necessary.
-                update(seqNo, guessedIndex);
-                return new RtpPacket(
-                        ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()));
+                update(seqNum, guessedIndex);
+                return new RtpPacket(srtpPacket.getBuffer());
             }
             else
             {
@@ -747,14 +683,6 @@ public class SRTPCryptoContext
         case SRTPPolicy.AESCM_ENCRYPTION:
         case SRTPPolicy.TWOFISH_ENCRYPTION:
             processPacketAESCM((int)rtpPacket.getHeader().getSsrc(), seqNum, payload);
-            //TODO(brian): so this is a bit tricky.  it's possible that the ByteBuffer
-            // used to hold the payload of an RTP packet is different from the one
-            // holding its header.  this means that the packetBuf we hold, above,
-            // won't reflect the newly-updated payload buf and we need to get
-            // them in sync again by calling rtpPacket.getBuffer()
-            // We could also add a new SrtpPacket ctor which allowed taking in
-            // separate header and payload buffers, which might make sense?
-            rtpPacket.getBuffer();
             break;
 
         // Encrypt the packet using F8 Mode encryption.
@@ -765,6 +693,14 @@ public class SRTPCryptoContext
             rtpPacket.getBuffer();
             break;
         }
+        //TODO(brian): so this is a bit tricky.  with RtpPacket specifically, it's
+        // possible that the ByteBuffer used to hold the payload is different from the one
+        // holding its header.  this means that the packetBuf we hold, above,
+        // won't reflect the newly-updated payload buf and we need to get
+        // them in sync again by calling rtpPacket.getBuffer()
+        // We could also add a new SrtpPacket ctor which allowed taking in
+        // separate header and payload buffers, which might make sense?
+        rtpPacket.getBuffer();
         SrtpPacket srtpPacket = new SrtpPacket(packetBuf);
 
         /* Authenticate the packet. */
