@@ -109,7 +109,7 @@ public class SRTPCryptoContext
      * For the receiver only, the rollover counter guessed from the sequence
      * number of the received packet that is currently being processed (i.e. the
      * value is valid during the execution of
-     * {@link #reverseTransformPacket(RawPacket)} only.) RFC 3711 refers to it
+     * {@link #reverseTransformPacket(SrtpPacket)} only.) RFC 3711 refers to it
      * by the name <tt>v</tt>.
      */
     private int guessedROC;
@@ -459,6 +459,43 @@ public class SRTPCryptoContext
         return (((long) guessedROC) << 16) | seqNo;
     }
 
+    private void processPacketAESCM(int ssrc, int seqNum, ByteBuffer payload)
+    {
+        long index = (((long) guessedROC) << 16) | seqNum;
+
+        // byte[] iv = new byte[16];
+        ivStore[0] = saltKey[0];
+        ivStore[1] = saltKey[1];
+        ivStore[2] = saltKey[2];
+        ivStore[3] = saltKey[3];
+
+        int i;
+
+        for (i = 4; i < 8; i++)
+        {
+            ivStore[i] = (byte)
+                    (
+                            (0xFF & (ssrc >> ((7 - i) * 8)))
+                                    ^
+                                    saltKey[i]
+                    );
+        }
+
+        for (i = 8; i < 14; i++)
+        {
+            ivStore[i] = (byte)
+                    (
+                            (0xFF & (byte) (index >> ((13 - i) * 8)))
+                                    ^
+                                    saltKey[i]
+                    );
+        }
+
+        ivStore[14] = ivStore[15] = 0;
+
+        cipherCtr.process(payload.array(), payload.arrayOffset(), payload.limit(), ivStore);
+    }
+
     /**
      * Performs Counter Mode AES encryption/decryption
      *
@@ -506,6 +543,24 @@ public class SRTPCryptoContext
         cipherCtr.process(
                 pkt.getBuffer(), pkt.getOffset() + payloadOffset, payloadLength,
                 ivStore);
+    }
+
+    private void processPacketAESF8(ByteBuffer header, ByteBuffer payload)
+    {
+        // 11 bytes of the RTP header are the 11 bytes of the iv
+        // the first byte of the RTP header is not used.
+        System.arraycopy(header.array(), header.arrayOffset(), ivStore, 0, 12);
+        ivStore[0] = 0;
+
+        // set the ROC in network order into IV
+        int roc = guessedROC;
+
+        ivStore[12] = (byte) (roc >> 24);
+        ivStore[13] = (byte) (roc >> 16);
+        ivStore[14] = (byte) (roc >> 8);
+        ivStore[15] = (byte) roc;
+
+        cipherF8.process(payload.array(), payload.arrayOffset(), payload.limit(), ivStore);
     }
 
     /**
@@ -651,17 +706,16 @@ public class SRTPCryptoContext
      * shall not use SRTP TransformConnector. We should use the original method
      * (RTPManager managed transportation) instead.
      *
-     * @param pkt the RTP packet that is going to be sent out
+     * @param rtpPacket the RTP packet that is going to be sent out
      */
     synchronized public SrtpPacket transformPacket(RtpPacket rtpPacket)
     {
-        RawPacket pkt = PacketExtensionsKt.toRawPacket(rtpPacket);
-        int seqNo = pkt.getSequenceNumber();
+        int seqNum = rtpPacket.getHeader().getSequenceNumber();
 
         logger.debug(
                 System.identityHashCode(this) + " Transform for SSRC " +
                         (this.ssrc & 0xFFFF_FFFFL)
-                        + " SeqNo=" + pkt.getSequenceNumber()
+                        + " SeqNo=" + seqNum
                         + " s_l=" + s_l
                         + " seqNumSet=" + seqNumSet
                         + " guessedROC=" + guessedROC
@@ -669,49 +723,61 @@ public class SRTPCryptoContext
         if (!seqNumSet)
         {
             seqNumSet = true;
-            s_l = seqNo;
+            s_l = seqNum;
         }
 
         // Guess the SRTP index (48 bit), see RFC 3711, 3.3.1
         // Stores the guessed ROC in this.guessedROC
-        long guessedIndex = guessIndex(seqNo);
+        long guessedIndex = guessIndex(seqNum);
 
         /*
          * XXX The invocation of the checkReplay method here is not meant as
          * replay protection but as a consistency check of our implementation.
          */
-        if (!checkReplay(seqNo, guessedIndex))
+        if (!checkReplay(seqNum, guessedIndex))
         {
             return null;
         }
 
+        ByteBuffer packetBuf = rtpPacket.getBuffer();
+        ByteBuffer payload = rtpPacket.getPayload();
         switch (policy.getEncType())
         {
         // Encrypt the packet using Counter Mode encryption.
         case SRTPPolicy.AESCM_ENCRYPTION:
         case SRTPPolicy.TWOFISH_ENCRYPTION:
-            processPacketAESCM(pkt);
+            processPacketAESCM((int)rtpPacket.getHeader().getSsrc(), seqNum, payload);
+            //TODO(brian): so this is a bit tricky.  it's possible that the ByteBuffer
+            // used to hold the payload of an RTP packet is different from the one
+            // holding its header.  this means that the packetBuf we hold, above,
+            // won't reflect the newly-updated payload buf and we need to get
+            // them in sync again by calling rtpPacket.getBuffer()
+            // We could also add a new SrtpPacket ctor which allowed taking in
+            // separate header and payload buffers, which might make sense?
+            rtpPacket.getBuffer();
             break;
 
         // Encrypt the packet using F8 Mode encryption.
         case SRTPPolicy.AESF8_ENCRYPTION:
         case SRTPPolicy.TWOFISHF8_ENCRYPTION:
-            processPacketAESF8(pkt);
+            ByteBuffer header = rtpPacket.getHeader().getBuffer();
+            processPacketAESF8(header, payload);
+            rtpPacket.getBuffer();
             break;
         }
+        SrtpPacket srtpPacket = new SrtpPacket(packetBuf);
 
         /* Authenticate the packet. */
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)
         {
-            authenticatePacketHMAC(ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()), guessedROC);
-            pkt.append(tagStore, policy.getAuthTagLength());
+            authenticatePacketHMAC(srtpPacket.getBuffer(), guessedROC);
+            srtpPacket.addAuthTag(ByteBuffer.wrap(tagStore, 0, policy.getAuthTagLength()));
         }
 
         // Update the ROC if necessary.
-        update(seqNo, guessedIndex);
+        update(seqNum, guessedIndex);
 
-        return new SrtpPacket(
-                ByteBufferUtils.Companion.wrapSubArray(pkt.getBuffer(), pkt.getOffset(), pkt.getLength()));
+        return srtpPacket;
     }
 
     /**
