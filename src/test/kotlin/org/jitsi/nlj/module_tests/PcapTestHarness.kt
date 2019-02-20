@@ -27,8 +27,8 @@ import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.NameableThreadFactory
 import org.jitsi.nlj.util.safeShutdown
-import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.extensions.clone
+import org.jitsi.rtp.new_scheme3.UnparsedPacket
 import org.jitsi.service.neomedia.RTPExtension
 import java.lang.Thread.sleep
 import java.net.URI

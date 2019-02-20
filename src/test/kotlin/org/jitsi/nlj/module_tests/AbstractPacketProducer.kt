@@ -21,7 +21,7 @@ import io.pkts.packet.UDPPacket
 import io.pkts.protocol.Protocol
 import org.jitsi.nlj.srtp.SrtpProfileInformation
 import org.jitsi.nlj.srtp.TlsRole
-import org.jitsi.rtp.UnparsedPacket
+import org.jitsi.rtp.new_scheme3.UnparsedPacket
 import org.jitsi.rtp.util.ByteBufferUtils
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -34,7 +34,7 @@ abstract class AbstractPacketProducer : PacketProducer {
         handlers.add(handler)
     }
 
-    protected fun onPacket(packet: org.jitsi.rtp.Packet) {
+    protected fun onPacket(packet: org.jitsi.rtp.new_scheme3.Packet) {
         handlers.forEach { it(packet) }
     }
 }

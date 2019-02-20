@@ -27,7 +27,7 @@ import org.jitsi.nlj.srtp.SrtpProfileInformation
 import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.util.safeShutdown
-import org.jitsi.rtp.RtpPacket
+import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
 import org.jitsi.rtp.util.RtpProtocol
 import org.jitsi.service.neomedia.RTPExtension
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
@@ -128,10 +128,10 @@ fun main(args: Array<String>) {
     producer.subscribe { pkt ->
         senders.forEach {
             if (RtpProtocol.isRtp(pkt.getBuffer())) {
-                val rtpPacket = RtpPacket(pkt.getBuffer())
+                val rtpPacket = RtpPacket.fromBuffer(pkt.getBuffer())
                 it.sendPackets(listOf(PacketInfo(rtpPacket.clone())))
             } else {
-                it.sendRtcp(listOf(org.jitsi.rtp.rtcp.RtcpPacket.fromBuffer(pkt.clone().getBuffer())))
+                it.sendRtcp(listOf(org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket.parse(pkt.clone().getBuffer())))
             }
         }
     }
