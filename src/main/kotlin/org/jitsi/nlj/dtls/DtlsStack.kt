@@ -22,9 +22,9 @@ import org.bouncycastle.crypto.tls.TlsContext
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.rtp.DtlsProtocolPacket
-import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.extensions.clone
+import org.jitsi.rtp.new_scheme3.DtlsProtocolPacket
+import org.jitsi.rtp.new_scheme3.UnparsedPacket
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.LinkedBlockingQueue
@@ -160,9 +160,9 @@ abstract class DtlsStack : DatagramTransport {
     override fun receive(buf: ByteArray, off: Int, length: Int, waitMillis: Int): Int {
         val packetInfo = incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
         val packet = packetInfo.packet
-        System.arraycopy(packet.getBuffer().array(), 0, buf, off, Math.min(length, packet.size))
+        System.arraycopy(packet.getBuffer().array(), 0, buf, off, Math.min(length, packet.sizeBytes))
 
-        return packet.size
+        return packet.sizeBytes
     }
 
     /**
