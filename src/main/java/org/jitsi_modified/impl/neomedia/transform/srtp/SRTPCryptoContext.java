@@ -15,11 +15,13 @@
  */
 package org.jitsi_modified.impl.neomedia.transform.srtp;
 
+import kotlin.*;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
 import org.jitsi.nlj.util.*;
-import org.jitsi.rtp.*;
 import org.jitsi.rtp.extensions.*;
+import org.jitsi.rtp.new_scheme3.rtp.*;
+import org.jitsi.rtp.new_scheme3.srtp.*;
 import org.jitsi.rtp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
@@ -588,26 +590,31 @@ public class SRTPCryptoContext
 //                            & (Buffer.FLAG_DISCARD | Buffer.FLAG_SILENCE))
 //                        == 0)
                 {
-                    switch (policy.getEncType())
-                    {
-                    // Decrypt the packet using Counter Mode encryption.
-                    case SRTPPolicy.AESCM_ENCRYPTION:
-                    case SRTPPolicy.TWOFISH_ENCRYPTION:
-                        processPacketAESCM((int)srtpPacket.getHeader().getSsrc(), seqNum, srtpPacket.getPayload());
-                        break;
+                    srtpPacket.modifyPayload(payload -> {
+                        switch (policy.getEncType())
+                        {
+                            // Decrypt the packet using Counter Mode encryption.
+                            case SRTPPolicy.AESCM_ENCRYPTION:
+                            case SRTPPolicy.TWOFISH_ENCRYPTION:
+                                processPacketAESCM((int)srtpPacket.getHeader().getSsrc(), seqNum, payload);
+                                break;
 
-                    // Decrypt the packet using F8 Mode encryption.
-                    case SRTPPolicy.AESF8_ENCRYPTION:
-                    case SRTPPolicy.TWOFISHF8_ENCRYPTION:
-                        processPacketAESF8(srtpPacket.getHeader().getBuffer(), srtpPacket.getPayload());
-                        break;
-                    }
+                            // Decrypt the packet using F8 Mode encryption.
+                            case SRTPPolicy.AESF8_ENCRYPTION:
+                            case SRTPPolicy.TWOFISHF8_ENCRYPTION:
+                                processPacketAESF8(srtpPacket.getHeader().getBuffer(), payload);
+                                break;
+                        }
+
+                        return Unit.INSTANCE;
+                    });
                 }
 
                 // Update the rollover counter and highest sequence number if
                 // necessary.
                 update(seqNum, guessedIndex);
-                return new RtpPacket(srtpPacket.getBuffer());
+                //TODO(brian): re-use buffer
+                return new RtpPacket(srtpPacket.getHeader(), srtpPacket.getPayload(), null);
             }
             else
             {
@@ -675,24 +682,28 @@ public class SRTPCryptoContext
             return null;
         }
 
-        ByteBuffer packetBuf = rtpPacket.getBuffer();
-        ByteBuffer payload = rtpPacket.getPayload();
-        switch (policy.getEncType())
-        {
-        // Encrypt the packet using Counter Mode encryption.
-        case SRTPPolicy.AESCM_ENCRYPTION:
-        case SRTPPolicy.TWOFISH_ENCRYPTION:
-            processPacketAESCM((int)rtpPacket.getHeader().getSsrc(), seqNum, payload);
-            break;
+//        ByteBuffer packetBuf = rtpPacket.getBuffer();
+//        ByteBuffer payload = rtpPacket.getPayload();
+        rtpPacket.modifyPayload(payload -> {
+            switch (policy.getEncType())
+            {
+                // Encrypt the packet using Counter Mode encryption.
+                case SRTPPolicy.AESCM_ENCRYPTION:
+                case SRTPPolicy.TWOFISH_ENCRYPTION:
+                    processPacketAESCM((int)rtpPacket.getHeader().getSsrc(), seqNum, payload);
+                    break;
 
-        // Encrypt the packet using F8 Mode encryption.
-        case SRTPPolicy.AESF8_ENCRYPTION:
-        case SRTPPolicy.TWOFISHF8_ENCRYPTION:
-            ByteBuffer header = rtpPacket.getHeader().getBuffer();
-            processPacketAESF8(header, payload);
-            rtpPacket.getBuffer();
-            break;
-        }
+                // Encrypt the packet using F8 Mode encryption.
+                case SRTPPolicy.AESF8_ENCRYPTION:
+                case SRTPPolicy.TWOFISHF8_ENCRYPTION:
+                    //TODO(brian)
+//            ByteBuffer header = rtpPacket.getHeader().getBuffer();
+//            processPacketAESF8(header, payload);
+//            rtpPacket.getBuffer();
+                    break;
+            }
+            return Unit.INSTANCE;
+        });
         //TODO(brian): so this is a bit tricky.  with RtpPacket specifically, it's
         // possible that the ByteBuffer used to hold the payload is different from the one
         // holding its header.  this means that the packetBuf we hold, above,
@@ -700,8 +711,10 @@ public class SRTPCryptoContext
         // them in sync again by calling rtpPacket.getBuffer()
         // We could also add a new SrtpPacket ctor which allowed taking in
         // separate header and payload buffers, which might make sense?
-        rtpPacket.getBuffer();
-        SrtpPacket srtpPacket = new SrtpPacket(packetBuf);
+//        rtpPacket.getBuffer();
+//        SrtpPacket srtpPacket = new SrtpPacket(packetBuf);
+        //TODO(brian): pass along buffer
+        SrtpPacket srtpPacket = new SrtpPacket(rtpPacket.getHeader(), rtpPacket.getPayload(), null);
 
         /* Authenticate the packet. */
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)

@@ -15,7 +15,7 @@
  */
 package org.jitsi_modified.impl.neomedia.transform;
 
-import org.jitsi.rtp.*;
+import org.jitsi.rtp.new_scheme3.*;
 import org.jitsi.service.neomedia.*;
 
 /**
