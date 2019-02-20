@@ -18,15 +18,11 @@ package org.jitsi_modified.impl.neomedia.transform.srtp;
 import kotlin.*;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
-import org.jitsi.nlj.util.*;
 import org.jitsi.rtp.extensions.*;
 import org.jitsi.rtp.new_scheme3.rtp.*;
 import org.jitsi.rtp.new_scheme3.srtp.*;
-import org.jitsi.rtp.util.*;
-import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
-import javax.media.Buffer;
 import java.nio.*;
 import java.util.*;
 
@@ -614,7 +610,7 @@ public class SRTPCryptoContext
                 // necessary.
                 update(seqNum, guessedIndex);
                 //TODO(brian): re-use buffer
-                return new RtpPacket(srtpPacket.getHeader(), srtpPacket.getPayload(), null);
+                return srtpPacket.toOtherRtpPacketType(RtpPacket::new);
             }
             else
             {
@@ -714,7 +710,7 @@ public class SRTPCryptoContext
 //        rtpPacket.getBuffer();
 //        SrtpPacket srtpPacket = new SrtpPacket(packetBuf);
         //TODO(brian): pass along buffer
-        SrtpPacket srtpPacket = new SrtpPacket(rtpPacket.getHeader(), rtpPacket.getPayload(), null);
+       SrtpPacket srtpPacket = (SrtpPacket)rtpPacket.toOtherRtpPacketType(SrtpPacket::new);
 
         /* Authenticate the packet. */
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)
