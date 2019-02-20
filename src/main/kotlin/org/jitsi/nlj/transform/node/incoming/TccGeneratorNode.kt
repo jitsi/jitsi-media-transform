@@ -86,7 +86,7 @@ class TccGeneratorNode(
 
         if (isTccReadyToSend()) {
             val mediaSsrc = if (mediaSsrcs.isNotEmpty()) mediaSsrcs.iterator().next() else -1L
-            currTcc.mediaSourceSsrc = mediaSsrc.toInt()
+            currTcc.mediaSourceSsrc = mediaSsrc
             onTccPacketReady(currTcc)
             numTccSent++
             // Create a new TCC instance for the next set of information
