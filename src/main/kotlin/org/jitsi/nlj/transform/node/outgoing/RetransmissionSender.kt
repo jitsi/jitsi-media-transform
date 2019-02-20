@@ -29,8 +29,8 @@ import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.rtp.RtpPacket
-import org.jitsi.rtp.RtxPacket
+import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.new_scheme3.rtp.RtxPacket
 import unsigned.toUInt
 import java.util.concurrent.ConcurrentHashMap
 
@@ -76,10 +76,12 @@ class RetransmissionSender : Node("Retransmission sender") {
             // in the map, get the value and increment it by 1
             val rtxSeqNum = rtxStreamSeqNums.merge(rtxSsrc, 1, Integer::sum)!!
 
-            val rtxPacket = RtxPacket(pkt)
-            rtxPacket.header.ssrc = rtxSsrc
-            rtxPacket.header.payloadType = rtxPt
-            rtxPacket.header.sequenceNumber = rtxSeqNum
+            val rtxPacket = RtxPacket.fromRtpPacket(pkt)
+            rtxPacket.modifyHeader {
+                ssrc = rtxSsrc
+                payloadType = rtxPt
+                sequenceNumber = rtxSeqNum
+            }
             logger.cdebug { "Retransmission sender ${hashCode()} sending RTX packet with " +
                     "ssrc $rtxSsrc with pt $rtxPt and seqNum $rtxSeqNum" }
             packetInfo.packet = rtxPacket
