@@ -20,10 +20,10 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtcp.RtcpListener
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.rtp.rtcp.RtcpPacket
-import org.jitsi.rtp.rtcp.RtcpReportBlock
-import org.jitsi.rtp.rtcp.RtcpRrPacket
-import org.jitsi.rtp.rtcp.RtcpSrPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpReportBlock
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpRrPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpSrPacket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
