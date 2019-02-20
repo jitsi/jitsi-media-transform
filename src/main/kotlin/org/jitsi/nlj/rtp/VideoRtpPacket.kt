@@ -16,10 +16,10 @@
 package org.jitsi.nlj.rtp
 
 import org.jitsi.impl.neomedia.rtp.RTPEncodingDesc
-import org.jitsi.rtp.Packet
-import org.jitsi.rtp.RtpHeader
-import org.jitsi.rtp.RtpPacket
 import org.jitsi.rtp.extensions.clone
+import org.jitsi.rtp.new_scheme3.Packet
+import org.jitsi.rtp.new_scheme3.rtp.RtpHeader
+import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
 import java.nio.ByteBuffer
 
 open class VideoRtpPacket : RtpPacket {
@@ -30,7 +30,7 @@ open class VideoRtpPacket : RtpPacket {
      */
     var bitrateSnapshot: Long? = null
 
-    constructor(buf: ByteBuffer) : super(buf)
+//    constructor(buf: ByteBuffer) : super(buf)
 
     constructor(
         header: RtpHeader = RtpHeader(),
@@ -38,7 +38,7 @@ open class VideoRtpPacket : RtpPacket {
     ) : super(header, payload)
 
     override fun clone(): Packet {
-        val clone = VideoRtpPacket(getBuffer().clone())
+        val clone = VideoRtpPacket(header.clone(), payload.clone())
         clone.isKeyFrame = isKeyFrame
         clone.trackEncodings = trackEncodings
 
