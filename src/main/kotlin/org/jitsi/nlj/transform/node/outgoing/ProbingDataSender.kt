@@ -102,7 +102,7 @@ class ProbingDataSender(
             while (lastNPacketIter.hasNext())
             {
                 val packet = lastNPacketIter.next()
-                val packetLen = packet.size
+                val packetLen = packet.sizeBytes
                 if (bytesSent + packetLen > numBytes) {
                     // We don't have enough 'room' to send this packet; we're done
                     break
