@@ -22,8 +22,8 @@ import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.PacketCache
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.rtp.Packet
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbNackPacket
+import org.jitsi.rtp.new_scheme3.Packet
+import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbNackPacket
 
 /**
  * When a nack packet is received, the [NackHandler] will try to retrieve the
