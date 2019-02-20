@@ -164,7 +164,7 @@ class RetransmissionRequester(
             logger.cdebug { "$ssrc doing work at ${clock.instant()}" }
             val now = clock.instant()
             val missingSeqNums = getMissingSeqNums()
-            val nackPacket = RtcpFbNackPacket.fromFields(mediaSourceSsrc = ssrc.toInt(), missingSeqNums = missingSeqNums)
+            val nackPacket = RtcpFbNackPacket.fromFields(mediaSourceSsrc = ssrc, missingSeqNums = missingSeqNums)
             notifyNackSent(now, missingSeqNums)
             rtcpSender(nackPacket)
         }
