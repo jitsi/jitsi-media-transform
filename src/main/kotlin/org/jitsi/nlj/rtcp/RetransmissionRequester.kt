@@ -24,8 +24,8 @@ import org.jitsi.nlj.util.getLogger
 import org.jitsi.nlj.util.isNextAfter
 import org.jitsi.nlj.util.isOlderThan
 import org.jitsi.nlj.util.numPacketsTo
-import org.jitsi.rtp.rtcp.RtcpPacket
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbNackPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
+import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbNackPacket
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -164,7 +164,7 @@ class RetransmissionRequester(
             logger.cdebug { "$ssrc doing work at ${clock.instant()}" }
             val now = clock.instant()
             val missingSeqNums = getMissingSeqNums()
-            val nackPacket = RtcpFbNackPacket(ssrc, missingSeqNums)
+            val nackPacket = RtcpFbNackPacket.fromFields(mediaSourceSsrc = ssrc.toInt(), missingSeqNums = missingSeqNums)
             notifyNackSent(now, missingSeqNums)
             rtcpSender(nackPacket)
         }
