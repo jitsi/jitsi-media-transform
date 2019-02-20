@@ -22,7 +22,11 @@ import org.jitsi.rtp.new_scheme3.rtp.RtpHeader
 import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
 import java.nio.ByteBuffer
 
-open class VideoRtpPacket : RtpPacket {
+open class VideoRtpPacket(
+    header: RtpHeader = RtpHeader(),
+    payload: ByteBuffer = ByteBuffer.allocate(0),
+    backingBuffer: ByteBuffer? = null
+) : RtpPacket(header, payload, backingBuffer) {
     var isKeyFrame: Boolean = false
     var trackEncodings: Array<RTPEncodingDesc>? = null
     /**
@@ -30,15 +34,8 @@ open class VideoRtpPacket : RtpPacket {
      */
     var bitrateSnapshot: Long? = null
 
-//    constructor(buf: ByteBuffer) : super(buf)
-
-    constructor(
-        header: RtpHeader = RtpHeader(),
-        payload: ByteBuffer = ByteBuffer.allocate(0)
-    ) : super(header, payload)
-
     override fun clone(): Packet {
-        val clone = VideoRtpPacket(header.clone(), payload.clone())
+        val clone = VideoRtpPacket(_header.clone(), payload.clone())
         clone.isKeyFrame = isKeyFrame
         clone.trackEncodings = trackEncodings
 

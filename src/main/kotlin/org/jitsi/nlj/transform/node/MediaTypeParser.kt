@@ -42,8 +42,8 @@ class MediaTypeParser : Node("Media type parser") {
                 return@forEachAs
             }
             pktInfo.packet = when (mediaType) {
-                MediaType.AUDIO -> AudioRtpPacket(pkt.header, pkt.payload)
-                MediaType.VIDEO -> VideoRtpPacket(pkt.header, pkt.payload)
+                MediaType.AUDIO -> pkt.toOtherRtpPacketType(::AudioRtpPacket)
+                MediaType.VIDEO -> pkt.toOtherRtpPacketType(::VideoRtpPacket)
                 else -> throw Exception("Unrecognized media type: '$mediaType'")
             }
         }
