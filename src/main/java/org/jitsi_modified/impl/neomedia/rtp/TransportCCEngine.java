@@ -22,7 +22,7 @@ import org.jitsi.impl.neomedia.rtcp.*;
 import org.jitsi.impl.neomedia.rtp.*;
 import org.jitsi.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateObserver;
 import org.jitsi.impl.neomedia.transform.*;
-import org.jitsi.rtp.rtcp.rtcpfb.*;
+import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.rtp.*;
 import org.jitsi.util.*;
