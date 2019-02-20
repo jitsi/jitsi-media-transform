@@ -20,7 +20,7 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeClearEvent
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.rtp.SrtpPacket
+import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
 import unsigned.toUInt
 import java.util.concurrent.ConcurrentHashMap
 
@@ -29,7 +29,7 @@ class PayloadTypeFilterNode : Node("RTP payload type filter") {
 
     override fun doProcessPackets(p: List<PacketInfo>) {
         val filteredPackets = p
-            .filter { acceptedPayloadTypes.contains(it.packetAs<SrtpPacket>().header.payloadType) }
+            .filter { acceptedPayloadTypes.contains(it.packetAs<RtpPacket>().header.payloadType) }
         next(filteredPackets)
     }
 
