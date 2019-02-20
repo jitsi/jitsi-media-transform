@@ -17,11 +17,7 @@ package org.jitsi.nlj.transform.node.outgoing
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.AbstractSrtpTransformerNode
-import org.jitsi.rtp.SrtcpPacket
-import org.jitsi.rtp.UnparsedPacket
-import org.jitsi.rtp.rtcp.RtcpPacket
-import org.jitsi.rtp.util.ByteBufferUtils
-import org.jitsi.service.neomedia.RawPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 import java.nio.ByteBuffer
 
@@ -38,7 +34,7 @@ class SrtcpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTCP Encrypt w
             // the offset into account correctly
             val bufCopy = ByteBuffer.allocate(packetBuf.limit())
             bufCopy.put(packetBuf).flip()
-            val rtcpPacket = RtcpPacket.fromBuffer(bufCopy)
+            val rtcpPacket = RtcpPacket.parse(bufCopy)
             transformer.transform(rtcpPacket)?.let { srtcpPacket ->
                 it.packet = srtcpPacket
                 encryptedPackets.add(it)
