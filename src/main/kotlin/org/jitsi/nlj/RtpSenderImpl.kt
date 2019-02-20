@@ -40,7 +40,7 @@ import org.jitsi.nlj.util.Util.Companion.getMbps
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
 import org.jitsi.service.neomedia.MediaType
 import org.jitsi.util.Logger
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
@@ -159,7 +159,9 @@ class RtpSenderImpl(
                 val senderSsrc = localVideoSsrc ?: return@simpleNode emptyList<PacketInfo>()
                 pktInfos.forEachAs<RtcpPacket> { _, pkt ->
                     if (pkt.header.senderSsrc == 0L) {
-                        pkt.header.senderSsrc = senderSsrc
+                        pkt.modifyHeader {
+                            this.senderSsrc = senderSsrc
+                        }
                     }
                 }
                 pktInfos
@@ -173,7 +175,7 @@ class RtpSenderImpl(
 
     override fun sendPackets(pkts: List<PacketInfo>) {
         pkts.forEach {
-            numIncomingBytes += it.packet.size
+            numIncomingBytes += it.packet.sizeBytes
             it.addEvent(PACKET_QUEUE_ENTRY_EVENT)
         }
         pkts.forEach(incomingPacketQueue::add)

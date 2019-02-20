@@ -17,7 +17,7 @@
 package org.jitsi.nlj.rtcp
 
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
