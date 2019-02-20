@@ -15,10 +15,11 @@
  */
 package org.jitsi_modified.impl.neomedia.transform.srtp;
 
+import kotlin.*;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
-import org.jitsi.rtp.*;
-import org.jitsi.rtp.rtcp.*;
+import org.jitsi.rtp.new_scheme3.rtcp.*;
+import org.jitsi.rtp.new_scheme3.srtcp.*;
 import org.jitsi.util.*;
 
 import java.nio.*;
@@ -325,8 +326,7 @@ public class SRTCPCryptoContext
 
             // Shrink packet to remove the authentication tag and index
             // because this is part of authenicated data
-            //TODO(brian): add separate helper to remove auth tag and srtcp index?
-            pkt.removeAuthTag(tagLength + 4);
+            pkt.removeAuthTagAndSrtcpIndex(tagLength);
 
             // compute, then save authentication in tagStore
             //TODO(brian): i don't understand the value we pass in here.  it's supposed to be the ROC, but we pass
@@ -354,24 +354,26 @@ public class SRTCPCryptoContext
         RtcpPacket rtcpPacket = null;
         if (decrypt)
         {
-            ByteBuffer packetBuf = pkt.getBuffer();
             ByteBuffer header = pkt.getHeader().getBuffer();
-            ByteBuffer encryptedPayload = pkt.getPayload();
             int rtcpSenderSsrc = (int)pkt.getHeader().getSenderSsrc();
-            /* Decrypt the packet using Counter Mode encryption */
-            if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION
-                    || policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
-            {
-                processDataAESCM(encryptedPayload, rtcpSenderSsrc, index);
-            }
+            pkt.modifyPayload(encryptedPayload -> {
+                /* Decrypt the packet using Counter Mode encryption */
+                if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION
+                        || policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
+                {
+                    processDataAESCM(encryptedPayload, rtcpSenderSsrc, index);
+                }
 
-            /* Decrypt the packet using F8 Mode encryption */
-            else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION
-                    || policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
-            {
-                processDataAESF8(header, encryptedPayload, index);
-            }
-            rtcpPacket = RtcpPacket.Companion.fromBuffer(packetBuf);
+                /* Decrypt the packet using F8 Mode encryption */
+                else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION
+                        || policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
+                {
+                    processDataAESF8(header, encryptedPayload, index);
+                }
+
+                return Unit.INSTANCE;
+            });
+            rtcpPacket = RtcpPacket.Companion.parse(pkt.getBuffer());
         }
         update(index);
 
@@ -396,25 +398,30 @@ public class SRTCPCryptoContext
     synchronized public SrtcpPacket transformPacket(RtcpPacket pkt)
     {
         boolean encrypt = false;
-        ByteBuffer packetBuf = pkt.getBuffer();
-        ByteBuffer encryptedPayload = pkt.getPayload();
+        ByteBuffer header = pkt.getHeader().getBuffer();
+//        ByteBuffer encryptedPayload = pkt.getPayload();
         /* Encrypt the packet using Counter Mode encryption */
         if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION ||
                 policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
         {
             int rtcpSenderSsrc = (int)pkt.getHeader().getSenderSsrc();
-            processDataAESCM(encryptedPayload, rtcpSenderSsrc, sentIndex);
+            pkt.modifyPayload(unencryptedPayload -> {
+                processDataAESCM(unencryptedPayload, rtcpSenderSsrc, sentIndex);
+                return Unit.INSTANCE;
+            });
             encrypt = true;
         }
         /* Encrypt the packet using F8 Mode encryption */
         else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION ||
                 policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
         {
-            ByteBuffer header = pkt.getHeader().getBuffer();
-            processDataAESF8(header, encryptedPayload, sentIndex);
+            pkt.modifyPayload(unencryptedPayload -> {
+                processDataAESF8(header, unencryptedPayload, sentIndex);
+                return Unit.INSTANCE;
+            });
             encrypt = true;
         }
-        SrtcpPacket srtcpPacket = new SrtcpPacket(packetBuf);
+        SrtcpPacket srtcpPacket = pkt.toOtherRtcpPacketType(SrtcpPacket::new);
         int index = 0;
         if (encrypt)
         {
@@ -428,7 +435,7 @@ public class SRTCPCryptoContext
         {
             authenticatePacketHMAC(srtcpPacket.getBuffer(), index);
             //TODO(brian): add separate helper to allocate space for srtcp index and auth tag at once?
-            srtcpPacket.addSrtcpIndex(ByteBuffer.wrap(rbStore, 0, 4).getInt());
+            srtcpPacket.addSrtcpIndex(ByteBuffer.wrap(rbStore, 0, 4).getInt(), policy.getAuthTagLength());
             srtcpPacket.addAuthTag(ByteBuffer.wrap(tagStore, 0, policy.getAuthTagLength()));
         }
         sentIndex++;

@@ -710,7 +710,7 @@ public class SRTPCryptoContext
 //        rtpPacket.getBuffer();
 //        SrtpPacket srtpPacket = new SrtpPacket(packetBuf);
         //TODO(brian): pass along buffer
-       SrtpPacket srtpPacket = (SrtpPacket)rtpPacket.toOtherRtpPacketType(SrtpPacket::new);
+       SrtpPacket srtpPacket = rtpPacket.toOtherRtpPacketType(SrtpPacket::new);
 
         /* Authenticate the packet. */
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)
