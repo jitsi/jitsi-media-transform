@@ -18,10 +18,10 @@ package org.jitsi.nlj.resources.srtp_samples
 
 import org.jitsi.nlj.srtp.SrtpProfileInformation
 import org.jitsi.nlj.srtp.TlsRole
-import org.jitsi.rtp.RtpPacket
-import org.jitsi.rtp.SrtcpPacket
-import org.jitsi.rtp.SrtpPacket
-import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
+import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.new_scheme3.srtcp.SrtcpPacket
+import org.jitsi.rtp.new_scheme3.srtp.SrtpPacket
 import org.jitsi.rtp.util.byteBufferOf
 
 /**
@@ -66,7 +66,7 @@ class SrtpSample {
             0x6C, 0x6A, 0x11, 0x0D, 0x44, 0x91, 0x33, 0xBE,
             0xE1, 0xD7, 0x0D, 0x41, 0xE4, 0x8B
         )
-        val incomingEncryptedRtpPacket = SrtpPacket(incomingEncryptedRtpData)
+        val incomingEncryptedRtpPacket = SrtpPacket.create(incomingEncryptedRtpData)
 
         val expectedDecryptedRtpData = byteBufferOf(
             0x90, 0xEF, 0x43, 0xD7, 0xCF, 0x6F, 0xDE, 0x8F,
@@ -92,7 +92,7 @@ class SrtpSample {
             0x80, 0x00, 0x00, 0x01, 0x3C, 0xB4, 0xC8, 0xE6,
             0xB8, 0x19, 0xFB, 0xEE, 0xCE, 0xA2
         )
-        val incomingEncryptedRtcpPacket = SrtcpPacket(incomingEncryptedRtcpData)
+        val incomingEncryptedRtcpPacket = SrtcpPacket.create(incomingEncryptedRtcpData)
 
         val expectedDecryptedRtcpData = byteBufferOf(
             0x80, 0xC8, 0x00, 0x06, 0x75, 0x6D, 0x56, 0x40,
@@ -115,7 +115,7 @@ class SrtpSample {
             0x3A, 0x18, 0x98, 0xEE, 0x62, 0xCB, 0x60, 0xFF,
             0x6C, 0x1B, 0x29, 0x00
         )
-        val outgoingUnencryptedRtpPacket = RtpPacket(outgoingUnencryptedRtpData)
+        val outgoingUnencryptedRtpPacket = RtpPacket.fromBuffer(outgoingUnencryptedRtpData)
 
         val expectedEncryptedRtpData = byteBufferOf(
             0x90, 0xEF, 0x36, 0xD6, 0x6C, 0x25, 0xF2, 0x81,
@@ -135,7 +135,7 @@ class SrtpSample {
             0x56, 0x29, 0x97, 0x7A, 0x00, 0x01, 0x00, 0x01,
             0x95, 0xBE, 0x64, 0x00, 0xD0, 0x00, 0x00, 0x00
         )
-        val outgoingUnencryptedRtcpPacket = RtcpPacket.fromBuffer(outgoignUnecryptedRtcpData)
+        val outgoingUnencryptedRtcpPacket = RtcpPacket.parse(outgoignUnecryptedRtcpData)
 
         val expectedEncryptedRtcpData = byteBufferOf(
             0x8F, 0xCD, 0x00, 0x05, 0xE7, 0x46, 0x52, 0x23,
