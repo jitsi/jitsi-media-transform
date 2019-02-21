@@ -356,23 +356,20 @@ public class SRTCPCryptoContext
         {
             ByteBuffer header = pkt.getHeader().getBuffer();
             int rtcpSenderSsrc = (int)pkt.getHeader().getSenderSsrc();
-            pkt.modifyPayload(encryptedPayload -> {
-                /* Decrypt the packet using Counter Mode encryption */
-                if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION
-                        || policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
-                {
-                    processDataAESCM(encryptedPayload, rtcpSenderSsrc, index);
-                }
+            SrtcpPacketForDecryption srtcpPacketForDecryption = pkt.prepareForDecryption();
+            /* Decrypt the packet using Counter Mode encryption */
+            if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION
+                    || policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
+            {
+                processDataAESCM(srtcpPacketForDecryption.getPayload(), rtcpSenderSsrc, index);
+            }
 
-                /* Decrypt the packet using F8 Mode encryption */
-                else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION
-                        || policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
-                {
-                    processDataAESF8(header, encryptedPayload, index);
-                }
-
-                return Unit.INSTANCE;
-            });
+            /* Decrypt the packet using F8 Mode encryption */
+            else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION
+                    || policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
+            {
+                processDataAESF8(header, srtcpPacketForDecryption.getPayload(), index);
+            }
             rtcpPacket = RtcpPacket.Companion.parse(pkt.getBuffer());
         }
         update(index);
@@ -398,30 +395,25 @@ public class SRTCPCryptoContext
     synchronized public SrtcpPacket transformPacket(RtcpPacket pkt)
     {
         boolean encrypt = false;
-        ByteBuffer header = pkt.getHeader().getBuffer();
-//        ByteBuffer encryptedPayload = pkt.getPayload();
+        RtcpPacketForEncryption rtcpPacketForEncryption = pkt.prepareForEncryption();
         /* Encrypt the packet using Counter Mode encryption */
         if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION ||
                 policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
         {
             int rtcpSenderSsrc = (int)pkt.getHeader().getSenderSsrc();
-            pkt.modifyPayload(unencryptedPayload -> {
-                processDataAESCM(unencryptedPayload, rtcpSenderSsrc, sentIndex);
-                return Unit.INSTANCE;
-            });
+            processDataAESCM(rtcpPacketForEncryption.getPayload(), rtcpSenderSsrc, sentIndex);
             encrypt = true;
         }
         /* Encrypt the packet using F8 Mode encryption */
         else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION ||
                 policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
         {
-            pkt.modifyPayload(unencryptedPayload -> {
-                processDataAESF8(header, unencryptedPayload, sentIndex);
-                return Unit.INSTANCE;
-            });
+            processDataAESF8(pkt.getHeader().getBuffer(), rtcpPacketForEncryption.getPayload(), sentIndex);
             encrypt = true;
         }
-        SrtcpPacket srtcpPacket = pkt.toOtherRtcpPacketType(SrtcpPacket::new);
+        SrtcpPacket srtcpPacket = pkt.toOtherRtcpPacketType((header, backingBuffer) -> {
+           return new SrtcpPacket(header, rtcpPacketForEncryption.getPayload(), backingBuffer);
+        });
         int index = 0;
         if (encrypt)
         {
