@@ -18,6 +18,8 @@ package org.jitsi_modified.impl.neomedia.transform.srtp;
 import kotlin.*;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
+import org.jitsi.rtp.extensions.*;
+import org.jitsi.rtp.new_scheme3.*;
 import org.jitsi.rtp.new_scheme3.rtcp.*;
 import org.jitsi.rtp.new_scheme3.srtcp.*;
 import org.jitsi.util.*;
@@ -278,7 +280,9 @@ public class SRTCPCryptoContext
         ivStore[7] = (byte) srtcpIndex;
 
         // The fixed header follows and fills the rest of the IV
-        System.arraycopy(header.array(), header.arrayOffset(), ivStore, 8, 8);
+        // TODO(brian): using this method instead of array copy means we can read the data correctly with
+        // header being read-only.  make sure it works (don't know how to force aesf8 crypto right now)
+        header.get(ivStore, 8, 8);
 
         cipherF8.process(payload.array(), payload.arrayOffset(), payload.limit(), ivStore);
     }
@@ -294,46 +298,55 @@ public class SRTCPCryptoContext
      * SRTP TransformConnector. We should use the original method (RTPManager
      * managed transportation) instead.
      *
-     * @param pkt the received RTCP packet
-     * @return <tt>true</tt> if the packet can be accepted or <tt>false</tt> if
-     * authentication or replay check failed
+     * @param srtcpPacket the received RTCP packet
+     * @return an unparsed packet containing the decrypted data, or null if authentication
+     * or decryption failed.
+     *
      */
-    synchronized public RtcpPacket reverseTransformPacket(SrtcpPacket pkt)
+    synchronized public UnparsedPacket reverseTransformPacket(SrtcpPacket srtcpPacket)
     {
         boolean decrypt = false;
         int tagLength = policy.getAuthTagLength();
 
-        boolean isEncrypted = pkt.isEncrypted(tagLength);
+        boolean isEncrypted = srtcpPacket.isEncrypted(tagLength);
         if (isEncrypted)
         {
             decrypt = true;
         }
 
-        int index = pkt.getSrtcpIndex(tagLength);
+        int index = srtcpPacket.getSrtcpIndex(tagLength);
 
         /* Replay control */
         if (!checkReplay(index))
         {
             return null;
         }
+        System.out.println("Packet before auth:\n" + ByteBufferKt.toHex(srtcpPacket.getBuffer()));
+        System.out.println("size: " + srtcpPacket.getBuffer().limit() + ", tag length: " + policy.getAuthTagLength());
 
         /* Authenticate the packet */
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)
         {
             // get original authentication data and store in tempStore
-            ByteBuffer authTag = pkt.getAuthTag(tagLength);
+            ByteBuffer authTag = srtcpPacket.getAuthTag(tagLength);
             authTag.get(tempStore, 0, tagLength);
 
             // Shrink packet to remove the authentication tag and index
             // because this is part of authenicated data
-            pkt.removeAuthTagAndSrtcpIndex(tagLength);
+            srtcpPacket.removeAuthTagAndSrtcpIndex(tagLength);
+            System.out.println("Packet before auth, after removing auth tag and srtcp index:\n" + ByteBufferKt.toHex(srtcpPacket.getBuffer()));
+            System.out.println("Auth tag: " + ByteBufferKt.toHex(authTag));
+
 
             // compute, then save authentication in tagStore
             //TODO(brian): i don't understand the value we pass in here.  it's supposed to be the ROC, but we pass
             // in the entire srtcp index field (including the encrypted flag)?  these are separate in SrtcpPacket
             // so have to re-add the E flag here
             int rocIn = isEncrypted ? index | 0x80000000 : index;
-            authenticatePacketHMAC(pkt.getBuffer(), rocIn);
+            System.out.println("rocIn: " + rocIn);
+            authenticatePacketHMAC(srtcpPacket.getBuffer(), rocIn);
+            System.out.println("tempStore: " + ByteBufferKt.toHex(ByteBuffer.wrap(tempStore, 0, tagLength)));
+            System.out.println("tagStore: " + ByteBufferKt.toHex(ByteBuffer.wrap(tagStore, 0, tagLength)));
 
             // compare authentication tags using constant time comparison
             int nonEqual = 0;
@@ -351,12 +364,13 @@ public class SRTCPCryptoContext
             }
         }
 
-        RtcpPacket rtcpPacket = null;
+        UnparsedPacket decryptedPacket;
         if (decrypt)
         {
-            ByteBuffer header = pkt.getHeader().getBuffer();
-            int rtcpSenderSsrc = (int)pkt.getHeader().getSenderSsrc();
-            SrtcpPacketForDecryption srtcpPacketForDecryption = pkt.prepareForDecryption();
+//            System.out.println("RTCP packet before decrypt:\n" + ByteBufferKt.toHex(srtcpPacket.getBuffer()));
+//            System.out.println("size: " + srtcpPacket.getBuffer().limit());
+            int rtcpSenderSsrc = (int)srtcpPacket.getHeader().getSenderSsrc();
+            RtcpPacketForCrypto srtcpPacketForDecryption = srtcpPacket.prepareForCrypto();
             /* Decrypt the packet using Counter Mode encryption */
             if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION
                     || policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
@@ -368,13 +382,18 @@ public class SRTCPCryptoContext
             else if (policy.getEncType() == SRTPPolicy.AESF8_ENCRYPTION
                     || policy.getEncType() == SRTPPolicy.TWOFISHF8_ENCRYPTION)
             {
-                processDataAESF8(header, srtcpPacketForDecryption.getPayload(), index);
+                processDataAESF8(srtcpPacketForDecryption.getHeader().getBuffer(), srtcpPacketForDecryption.getPayload(), index);
             }
-            rtcpPacket = RtcpPacket.Companion.parse(pkt.getBuffer());
+            decryptedPacket = new UnparsedPacket(srtcpPacketForDecryption.getBuffer());
+        }
+        else
+        {
+            decryptedPacket = new UnparsedPacket(srtcpPacket.getBuffer());
         }
         update(index);
 
-        return rtcpPacket;
+        System.out.println("RTCP packet after decrypt:\n" + ByteBufferKt.toHex(decryptedPacket.getBuffer()));
+        return decryptedPacket;
     }
 
 
@@ -395,7 +414,7 @@ public class SRTCPCryptoContext
     synchronized public SrtcpPacket transformPacket(RtcpPacket pkt)
     {
         boolean encrypt = false;
-        RtcpPacketForEncryption rtcpPacketForEncryption = pkt.prepareForEncryption();
+        RtcpPacketForCrypto rtcpPacketForEncryption = pkt.prepareForCrypto();
         /* Encrypt the packet using Counter Mode encryption */
         if (policy.getEncType() == SRTPPolicy.AESCM_ENCRYPTION ||
                 policy.getEncType() == SRTPPolicy.TWOFISH_ENCRYPTION)
