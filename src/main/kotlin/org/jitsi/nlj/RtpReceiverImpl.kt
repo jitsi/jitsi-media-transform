@@ -210,7 +210,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
                             }
                             pkts
                         }
-                        node(PacketParser("RTCP parser") { RtcpPacket.parse(it.getBuffer()) })
                         //TODO: probably just make a class for this, but for now we're using the cache above to debug
                         simpleNode("Compound RTCP splitter") { pktInfos ->
                             try {
