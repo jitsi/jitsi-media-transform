@@ -53,7 +53,7 @@ class KeyframeRequester : Node("Keyframe Requester") {
             numKeyframeRequestsDropped++
         } else {
             keyframeRequests[mediaSsrc] = now
-            val firPacket = RtcpFbFirPacket.fromValues(mediaSourceSsrc = mediaSsrc, commandSeqNum = firCommandSequenceNumber++)
+            val firPacket = RtcpFbFirPacket.fromValues(firSsrc = mediaSsrc, commandSeqNum = firCommandSequenceNumber++)
             logger.cdebug { "Keyframe requester requesting keyframe with FIR for $mediaSsrc" }
             numKeyframesRequestedByBridge++
             processPackets(listOf(PacketInfo(firPacket)))
