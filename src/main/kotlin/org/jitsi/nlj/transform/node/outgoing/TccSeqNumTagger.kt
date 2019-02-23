@@ -23,8 +23,8 @@ import org.jitsi.nlj.forEachAs
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.toRawPacket
-import org.jitsi.rtp.RtpPacket
 import org.jitsi.rtp.TccHeaderExtension
+import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
 import org.jitsi.service.neomedia.RTPExtension
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import unsigned.toUInt
@@ -39,7 +39,9 @@ class TccSeqNumTagger(
         p.forEachAs<RtpPacket> { _, pkt ->
             tccExtensionId?.let { tccExtId ->
                 val ext = TccHeaderExtension(tccExtId, currTccSeqNum++)
-                pkt.header.addExtension(tccExtId, ext)
+                pkt.modifyHeader {
+                    addExtension(tccExtId, ext)
+                }
             }
         }
         transportCcEngine?.egressEngine?.rtpTransformer?.transform(p.map { it.packet.toRawPacket() }.toTypedArray())
