@@ -321,8 +321,8 @@ public class SRTCPCryptoContext
         {
             return null;
         }
-        System.out.println("Packet before auth:\n" + ByteBufferKt.toHex(srtcpPacket.getBuffer()));
-        System.out.println("size: " + srtcpPacket.getBuffer().limit() + ", tag length: " + policy.getAuthTagLength());
+//        System.out.println("Packet before auth:\n" + ByteBufferKt.toHex(srtcpPacket.getBuffer()));
+//        System.out.println("size: " + srtcpPacket.getBuffer().limit() + ", tag length: " + policy.getAuthTagLength());
 
         /* Authenticate the packet */
         if (policy.getAuthType() != SRTPPolicy.NULL_AUTHENTICATION)
@@ -334,8 +334,8 @@ public class SRTCPCryptoContext
             // Shrink packet to remove the authentication tag and index
             // because this is part of authenicated data
             srtcpPacket.removeAuthTagAndSrtcpIndex(tagLength);
-            System.out.println("Packet before auth, after removing auth tag and srtcp index:\n" + ByteBufferKt.toHex(srtcpPacket.getBuffer()));
-            System.out.println("Auth tag: " + ByteBufferKt.toHex(authTag));
+//            System.out.println("Packet before auth, after removing auth tag and srtcp index:\n" + ByteBufferKt.toHex(srtcpPacket.getBuffer()));
+//            System.out.println("Auth tag: " + ByteBufferKt.toHex(authTag));
 
 
             // compute, then save authentication in tagStore
@@ -343,10 +343,10 @@ public class SRTCPCryptoContext
             // in the entire srtcp index field (including the encrypted flag)?  these are separate in SrtcpPacket
             // so have to re-add the E flag here
             int rocIn = isEncrypted ? index | 0x80000000 : index;
-            System.out.println("rocIn: " + rocIn);
+//            System.out.println("rocIn: " + rocIn);
             authenticatePacketHMAC(srtcpPacket.getBuffer(), rocIn);
-            System.out.println("tempStore: " + ByteBufferKt.toHex(ByteBuffer.wrap(tempStore, 0, tagLength)));
-            System.out.println("tagStore: " + ByteBufferKt.toHex(ByteBuffer.wrap(tagStore, 0, tagLength)));
+//            System.out.println("tempStore: " + ByteBufferKt.toHex(ByteBuffer.wrap(tempStore, 0, tagLength)));
+//            System.out.println("tagStore: " + ByteBufferKt.toHex(ByteBuffer.wrap(tagStore, 0, tagLength)));
 
             // compare authentication tags using constant time comparison
             int nonEqual = 0;
@@ -392,7 +392,7 @@ public class SRTCPCryptoContext
         }
         update(index);
 
-        System.out.println("RTCP packet after decrypt:\n" + ByteBufferKt.toHex(decryptedPacket.getBuffer()));
+//        System.out.println("RTCP packet after decrypt:\n" + ByteBufferKt.toHex(decryptedPacket.getBuffer()));
         return decryptedPacket;
     }
 

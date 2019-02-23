@@ -27,7 +27,6 @@ import org.jitsi.nlj.srtp.SrtpProfileInformation
 import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.util.safeShutdown
-import org.jitsi.rtp.new_scheme3.CloneTest
 import org.jitsi.service.neomedia.RTPExtension
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 import java.net.URI
