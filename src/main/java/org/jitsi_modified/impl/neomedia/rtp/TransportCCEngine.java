@@ -167,7 +167,7 @@ public class TransportCCEngine
 
     public void tccReceived(RtcpFbTccPacket tccPacket)
     {
-        tccPacket.getFci().forEach((tccSeqNum, recvTimestamp) ->
+        tccPacket.forEach((tccSeqNum, recvTimestamp) ->
         {
             if (recvTimestamp == -1)
             {
@@ -175,7 +175,7 @@ public class TransportCCEngine
             }
             if (remoteReferenceTimeMs == -1)
             {
-                remoteReferenceTimeMs = tccPacket.getFci().getReferenceTimeMs();
+                remoteReferenceTimeMs = tccPacket.getReferenceTimeMs();
                 localReferenceTimeMs = System.currentTimeMillis();
             }
 
@@ -189,7 +189,7 @@ public class TransportCCEngine
             {
                 return Unit.INSTANCE;
             }
-            long delta = recvTimestamp - tccPacket.getFci().getReferenceTimeMs();
+            long delta = recvTimestamp - tccPacket.getReferenceTimeMs();
 //            logger.info("Got tcc for packet " + tccSeqNum + ", the reference time is " + tccPacket.getFci().getReferenceTimeMs() +
 //                    " and it was received by the far side at " + recvTimestamp + ", meaning it has a delta of " +
 //                            delta + ".  it was originally sent at " +
