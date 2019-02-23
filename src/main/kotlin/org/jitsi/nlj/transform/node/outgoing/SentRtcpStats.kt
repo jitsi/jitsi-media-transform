@@ -20,18 +20,18 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.forEachAs
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.Node
-import org.jitsi.rtp.rtcp.RtcpPacket
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbFirPacket
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPliPacket
+import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
+import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbFirPacket
 
 class SentRtcpStats : Node("Sent RTCP stats") {
     private var numPlisSent = 0
     private var numFirsSent = 0
 
     override fun doProcessPackets(p: List<PacketInfo>) {
-        p.forEachAs<RtcpPacket> { packetInfo, expectedPacketType ->
+        p.forEachAs<RtcpPacket> { _, expectedPacketType ->
             when (expectedPacketType) {
-                is RtcpFbPliPacket -> numPlisSent++
+                //TODO
+//                is RtcpFbPliPacket -> numPlisSent++
                 is RtcpFbFirPacket -> numFirsSent++
             }
         }
