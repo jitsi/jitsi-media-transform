@@ -142,6 +142,7 @@ fun main(args: Array<String>) {
     println("took $time ms")
     senders.forEach(RtpSender::stop)
     senderExecutor.safeShutdown(Duration.ofSeconds(10))
+    backgroundExecutor.safeShutdown(Duration.ofSeconds(10))
 
     senders.forEach { println(it.getNodeStats().prettyPrint()) }
 }
