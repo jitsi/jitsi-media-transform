@@ -430,9 +430,8 @@ public class SRTCPCryptoContext
             processDataAESF8(pkt.getHeader().getBuffer(), rtcpPacketForEncryption.getPayload(), sentIndex);
             encrypt = true;
         }
-        SrtcpPacket srtcpPacket = pkt.toOtherRtcpPacketType((header, backingBuffer) -> {
-           return new SrtcpPacket(header, rtcpPacketForEncryption.getPayload(), backingBuffer);
-        });
+        SrtcpPacket srtcpPacket = rtcpPacketForEncryption.toOtherRtcpPacketType((header, backingBuffer) ->
+                new SrtcpPacket(header, rtcpPacketForEncryption.getPayload(), backingBuffer));
         int index = 0;
         if (encrypt)
         {
@@ -446,7 +445,7 @@ public class SRTCPCryptoContext
         {
             authenticatePacketHMAC(srtcpPacket.getBuffer(), index);
             //TODO(brian): add separate helper to allocate space for srtcp index and auth tag at once?
-            srtcpPacket.addSrtcpIndex(ByteBuffer.wrap(rbStore, 0, 4).getInt(), policy.getAuthTagLength());
+            srtcpPacket.addSrtcpIndex(ByteBuffer.wrap(rbStore, 0, 4).getInt());
             srtcpPacket.addAuthTag(ByteBuffer.wrap(tagStore, 0, policy.getAuthTagLength()));
         }
         sentIndex++;
