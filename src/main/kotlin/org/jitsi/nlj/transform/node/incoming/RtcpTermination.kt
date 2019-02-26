@@ -28,6 +28,7 @@ import org.jitsi.rtp.new_scheme3.rtcp.RtcpSrPacket
 import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbFirPacket
 import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbNackPacket
 import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbTccPacket
+import org.jitsi.rtp.new_scheme3.rtcp.sdes.RtcpSdesPacket
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 
 class RtcpTermination(
@@ -39,6 +40,7 @@ class RtcpTermination(
     private var numPlisReceived = 0
     private var numRrsReceiver = 0
     private var numSrsReceived = 0
+    private var numSdesReceived = 0
 
     override fun doProcessPackets(p: List<PacketInfo>) {
         val outPackets = mutableListOf<PacketInfo>()
@@ -58,6 +60,9 @@ class RtcpTermination(
                 is RtcpByePacket -> {
                     logger.cinfo { "BRIAN: got BYE packet:\n$pkt" }
                     //TODO
+                }
+                is RtcpSdesPacket -> {
+                    numSdesReceived++
                 }
                     //TODO
 //                is RtcpSdesPacket -> {
@@ -98,6 +103,7 @@ class RtcpTermination(
             addStat("num FIR packets rx: $numFirsReceived")
             addStat("num SR packets rx: $numSrsReceived")
             addStat("num RR packets rx: $numRrsReceiver")
+            addStat("num SDES packets rx: $numSdesReceived")
         }
     }
 }
