@@ -138,11 +138,12 @@ class ProbingDataSender(
         val numPackets = (numBytes / packetLength) + 1 /* account for the mod */
         for (i in 0 until numPackets) {
             val paddingPacket = PaddingVideoPacket(
-                RtpHeader.fromValues(
+                RtpHeader(
                     payloadType = pt.pt.toUInt(),
                     ssrc = senderSsrc,
                     timestamp = currDummyTimestamp,
-                    sequenceNumber = currDummySeqNum),
+                    sequenceNumber = currDummySeqNum
+                ),
                 packetLength
             )
             garbageDataSender.processPackets(listOf(PacketInfo(paddingPacket)))

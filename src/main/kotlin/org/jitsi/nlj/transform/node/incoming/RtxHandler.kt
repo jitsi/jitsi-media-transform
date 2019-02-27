@@ -73,11 +73,9 @@ class RtxHandler : Node("RTX handler") {
                 val originalSsrc = associatedSsrcs[pkt.header.ssrc]!!
 
                 val originalPacket = rtxPacket as RtpPacket
-                originalPacket.modifyHeader {
-                    sequenceNumber = originalSeqNum
-                    payloadType = originalPt
-                    ssrc = originalSsrc
-                }
+                originalPacket.header.sequenceNumber = originalSeqNum
+                originalPacket.header.payloadType = originalPt
+                originalPacket.header.ssrc = originalSsrc
                 logger.cdebug { "Recovered RTX packet.  Original packet: $originalSsrc $originalSeqNum" }
                 numRtxPacketsReceived++
                 packetInfo.packet = originalPacket

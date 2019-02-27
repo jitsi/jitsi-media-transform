@@ -34,21 +34,6 @@ class SrtpTransformerDecryptNode : AbstractSrtpTransformerNode("SRTP decrypt wra
                 logger.cerror { "SRTP decryption failed for packet ${it.packetAs<SrtpPacket>().header.ssrc} ${it.packetAs<SrtpPacket>().header.sequenceNumber}" }
                 numDecryptFailures++
             }
-//            val rp = it.packet.toRawPacket();
-//            transformer.reverseTransform(rp)?.let { decryptedRawPacket ->
-//                val rtpPacket = RtpPacket(
-//                    ByteBufferUtils.wrapSubArray(
-//                        decryptedRawPacket.buffer,
-//                        decryptedRawPacket.offset,
-//                        decryptedRawPacket.length
-//                    )
-//                )
-//                it.packet = rtpPacket
-//                decryptedPackets.add(it)
-//            } ?: run {
-//                logger.cerror { "SRTP decryption failed for packet ${it.packetAs<SrtpPacket>().header.ssrc} ${it.packetAs<SrtpPacket>().header.sequenceNumber}" }
-//                numDecryptFailures++
-//            }
         }
         return decryptedPackets
     }

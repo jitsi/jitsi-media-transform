@@ -46,7 +46,7 @@ class Vp8Packet(
     }
 
     override fun clone(): Packet {
-        val clone = Vp8Packet(cloneMutableHeader(), cloneMutablePayload())
+        val clone = Vp8Packet(header.clone(), cloneMutablePayload())
         clone.temporalLayerIndex = temporalLayerIndex
         clone.spatialLayerIndex = spatialLayerIndex
 

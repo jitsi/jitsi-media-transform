@@ -35,7 +35,7 @@ private data class JitterPacketInfo(
 )
 
 private fun createStatPacketInfo(seqNum: Int, sentTime: Long, receivedTime: Long): StatPacketInfo {
-    val packetInfo = PacketInfo(RtpPacket(RtpHeader.fromValues(sequenceNumber = seqNum)))
+    val packetInfo = PacketInfo(RtpPacket(RtpHeader(sequenceNumber = seqNum)))
     packetInfo.receivedTime = receivedTime
     return StatPacketInfo(packetInfo, sentTime)
 }

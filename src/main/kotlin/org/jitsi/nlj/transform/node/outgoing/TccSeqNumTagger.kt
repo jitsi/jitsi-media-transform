@@ -39,9 +39,7 @@ class TccSeqNumTagger(
         p.forEachAs<RtpPacket> { _, pkt ->
             tccExtensionId?.let { tccExtId ->
                 val ext = TccHeaderExtension(tccExtId, currTccSeqNum++)
-                pkt.modifyHeader {
-                    addExtension(tccExtId, ext)
-                }
+                pkt.header.addExtension(tccExtId, ext)
             }
         }
         transportCcEngine?.egressEngine?.rtpTransformer?.transform(p.map { it.packet.toRawPacket() }.toTypedArray())

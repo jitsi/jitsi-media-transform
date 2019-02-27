@@ -77,11 +77,9 @@ class RetransmissionSender : Node("Retransmission sender") {
             val rtxSeqNum = rtxStreamSeqNums.merge(rtxSsrc, 1, Integer::sum)!!
 
             val rtxPacket = RtxPacket.fromRtpPacket(pkt)
-            rtxPacket.modifyHeader {
-                ssrc = rtxSsrc
-                payloadType = rtxPt
-                sequenceNumber = rtxSeqNum
-            }
+            rtxPacket.header.ssrc = rtxSsrc
+            rtxPacket.header.payloadType = rtxPt
+            rtxPacket.header.sequenceNumber = rtxSeqNum
             logger.cdebug { "Retransmission sender ${hashCode()} sending RTX packet with " +
                     "ssrc $rtxSsrc with pt $rtxPt and seqNum $rtxSeqNum" }
             packetInfo.packet = rtxPacket

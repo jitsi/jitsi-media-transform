@@ -36,7 +36,7 @@ open class VideoRtpPacket(
     var bitrateSnapshot: Long? = null
 
     override fun clone(): Packet {
-        val clone = VideoRtpPacket(cloneMutableHeader(), cloneMutablePayload())
+        val clone = VideoRtpPacket(header.clone(), cloneMutablePayload())
         clone.isKeyFrame = isKeyFrame
         clone.trackEncodings = trackEncodings
 
