@@ -55,7 +55,7 @@ class RtcpSrGenerator(
                 )
 
                 val srPacket = RtcpSrPacket(
-                    header = RtcpHeader.fromValues(packetType = RtcpSrPacket.PT, senderSsrc = ssrc),
+                    header = RtcpHeader(packetType = RtcpSrPacket.PT, senderSsrc = ssrc),
                     senderInfo = senderInfo
                 )
                 logger.cdebug { "Sending SR packet $srPacket" }

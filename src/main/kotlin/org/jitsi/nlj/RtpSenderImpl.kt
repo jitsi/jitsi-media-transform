@@ -159,9 +159,7 @@ class RtpSenderImpl(
                 val senderSsrc = localVideoSsrc ?: return@simpleNode emptyList<PacketInfo>()
                 pktInfos.forEachAs<RtcpPacket> { _, pkt ->
                     if (pkt.header.senderSsrc == 0L) {
-                        pkt.modifyHeader {
-                            this.senderSsrc = senderSsrc
-                        }
+                        pkt.header.senderSsrc = senderSsrc
                     }
                 }
                 pktInfos

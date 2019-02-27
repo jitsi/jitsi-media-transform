@@ -93,7 +93,7 @@ class RtcpRrGenerator(
             }
             if (reportBlocks.isNotEmpty()) {
                 val rrPacket = RtcpRrPacket(
-                    header = RtcpHeader.fromValues(
+                    header = RtcpHeader(
                         reportCount = reportBlocks.size,
                         packetType = RtcpRrPacket.PT
                     ),

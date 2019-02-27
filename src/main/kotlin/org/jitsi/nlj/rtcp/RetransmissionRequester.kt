@@ -114,7 +114,8 @@ class RetransmissionRequester(
                     }
                     else -> { // diff > maxMissingSeqNums
                         logger.cwarn {
-                            "$ssrc large jump in sequence numbers detected (${highestReceivedSeqNum numPacketsTo seqNum})" +
+                            "$ssrc large jump in sequence numbers detected (highest received was $highestReceivedSeqNum," +
+                                    " current is $seqNum, jump of ${highestReceivedSeqNum numPacketsTo seqNum})" +
                                     ", not requesting retransmissions"
                         }
                         highestReceivedSeqNum = seqNum
