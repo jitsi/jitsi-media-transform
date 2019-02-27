@@ -59,7 +59,7 @@ class RtxHandler : Node("RTX handler") {
         val outPackets = mutableListOf<PacketInfo>()
         p.forEachAs<RtpPacket> { packetInfo, pkt ->
             if (associatedPayloadTypes.containsKey(pkt.header.payloadType)) {
-                val rtxPacket = RtxPacket.fromRtpPacket(pkt)
+                val rtxPacket = RtxPacket.parseAsRtx(pkt)
 //                logger.cdebug { "Received RTX packet: ssrc ${rtxPacket.header.ssrc}, seq num: ${rtxPacket.header.sequenceNumber} " +
 //                        "rtx payload size: ${rtxPacket.payload.limit()}, padding size: ${rtxPacket.getPaddingSize()} " +
 //                        "buffer:\n${rtxPacket.getBuffer().toHex()}" }
