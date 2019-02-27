@@ -31,17 +31,17 @@ import unsigned.toUInt
 class AbsSendTime : Node("Absolute send time") {
     private val absSendTimeEngine = AbsSendTimeEngine()
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
-        p.forEach { pktInfo ->
-            val rawPacket = pktInfo.packet.toRawPacket()
+    override fun doProcessPackets(packets: List<PacketInfo>): List<PacketInfo> {
+        packets.forEach { packet ->
+            val rawPacket = packet.packet.toRawPacket()
             absSendTimeEngine.transform(rawPacket)
             // We 'lose' some information here because we have to recreate
             // whatever this packet was as an RtpPacket, but I don't think
             // this will be a problem.  Eventually we will port the old transformers
             // over to Packet from RawPacket.
-            pktInfo.packet = RtpPacket(rawPacket.getByteBuffer())
+            packet.packet = RtpPacket(rawPacket.getByteBuffer())
         }
-        next(p)
+        return packets
     }
 
     override fun handleEvent(event: Event) {

@@ -24,14 +24,14 @@ import java.util.concurrent.ConcurrentHashMap
 class OutgoingStatisticsTracker : Node("Outgoing statistics tracker") {
     private val streamStats: MutableMap<Long, OutgoingStreamStatistics> = ConcurrentHashMap()
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<RtpPacket> { pktInfo, rtpPacket ->
             val stats = streamStats.computeIfAbsent(rtpPacket.header.ssrc) {
                 OutgoingStreamStatistics(rtpPacket.header.ssrc)
             }
             stats.packetSent(rtpPacket.size, rtpPacket.header.timestamp)
         }
-        next(p)
+        return p
     }
 
     fun getCurrentStats(): Map<Long, OutgoingStreamStatistics> = streamStats.toMap()

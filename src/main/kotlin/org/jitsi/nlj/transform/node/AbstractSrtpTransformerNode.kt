@@ -54,7 +54,7 @@ abstract class AbstractSrtpTransformerNode(name: String) : Node(name) {
      */
     private var numCachedPackets = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         if (firstPacketReceivedTimestamp == -1L) {
             firstPacketReceivedTimestamp = System.currentTimeMillis()
         }
@@ -66,7 +66,7 @@ abstract class AbstractSrtpTransformerNode(name: String) : Node(name) {
             outPackets.addAll(doTransform(cachedPackets, it))
             cachedPackets.clear()
             outPackets.addAll(doTransform(p, it))
-            next(outPackets)
+            return outPackets
         } ?: run {
             numCachedPackets += p.size
             cachedPackets.addAll(p)
@@ -74,6 +74,7 @@ abstract class AbstractSrtpTransformerNode(name: String) : Node(name) {
                 cachedPackets.removeAt(0)
                 numDroppedPackets++
             }
+            return emptyList()
         }
     }
 

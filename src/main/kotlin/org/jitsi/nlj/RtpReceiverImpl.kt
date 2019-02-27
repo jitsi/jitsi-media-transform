@@ -60,6 +60,7 @@ import org.jitsi.rtp.util.RtpProtocol
 import org.jitsi.util.Logger
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import java.time.Duration
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
@@ -123,8 +124,11 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * place and allowing it to be re-assigned, we wrap it with this.
      */
     private val rtpPacketHandlerWrapper = object : Node("RTP packet handler wrapper") {
-        override fun doProcessPackets(p: List<PacketInfo>) {
+        override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
             rtpPacketHandler?.processPackets(p)
+
+            // No further processing
+            return emptyList()
         }
     }
 
@@ -134,8 +138,11 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * place and allowing it to be re-assigned, we wrap it with this.
      */
     private val rtcpPacketHandlerWrapper = object : Node("RTCP packet handler wrapper") {
-        override fun doProcessPackets(p: List<PacketInfo>) {
+        override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
             rtcpPacketHandler?.processPackets(p)
+
+            // No further processing
+            return emptyList()
         }
     }
 
@@ -287,9 +294,10 @@ class RtpReceiverImpl @JvmOverloads constructor(
     override fun enqueuePacket(p: PacketInfo) {
 //        logger.cinfo { "Receiver ${hashCode()} enqueing data" }
         bytesReceived += p.packet.size
-        p.addEvent(PACKET_QUEUE_ENTRY_EVENT)
-        incomingPacketQueue.add(p)
         packetsReceived++
+        p.addEvent(PACKET_QUEUE_ENTRY_EVENT)
+
+        incomingPacketQueue.add(p)
         if (firstPacketWrittenTime == 0L) {
             firstPacketWrittenTime = System.currentTimeMillis()
         }

@@ -28,9 +28,8 @@ import org.jitsi.nlj.util.cdebug
 class DtlsReceiver(
         private val dtlsStack: DtlsStack
 ) : Node("DTLS Receiver") {
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         logger.cdebug { "DTLS receiver processing incoming DTLS packets" }
-        val appPackets = dtlsStack.processIncomingDtlsPackets(p)
-        next(appPackets)
+        return dtlsStack.processIncomingDtlsPackets(p)
     }
 }

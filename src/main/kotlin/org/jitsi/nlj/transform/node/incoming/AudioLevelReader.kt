@@ -37,9 +37,9 @@ class AudioLevelReader : Node("Audio level reader") {
     companion object {
         const val MUTED_LEVEL = 127L
     }
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(packets: List<PacketInfo>): List<PacketInfo> {
         audioLevelExtId?.let { audioLevelId ->
-            p.forEachAs<RtpPacket> currPkt@ { _, pkt ->
+            packets.forEachAs<RtpPacket> currPkt@ { _, pkt ->
                 val levelExt = pkt.header.getExtension(audioLevelId) ?: return@currPkt
                 val level = (levelExt.data.get() and 0x7F).toLong()
                 if (level != MUTED_LEVEL) {
@@ -47,7 +47,7 @@ class AudioLevelReader : Node("Audio level reader") {
                 }
             }
         }
-        next(p)
+        return packets
     }
 
     override fun handleEvent(event: Event) {

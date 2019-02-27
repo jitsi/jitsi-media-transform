@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj.transform.node
 
-import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.NodeVisitor
 import kotlin.streams.toList
 

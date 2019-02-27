@@ -41,7 +41,7 @@ import kotlin.properties.Delegates
 abstract class Node(
     var name: String
 ) : PacketHandler, EventHandler, NodeStatsProducer, Stoppable {
-    private var nextNode: Node? = null
+    protected var nextNode: Node? = null
     private val inputNodes: MutableList<Node> by lazy { mutableListOf<Node>() }
     // Create these once here so we don't allocate a new string every time
     private val nodeEntryString = "Entered node $name"
@@ -64,11 +64,13 @@ abstract class Node(
 
     /**
      * The function that all subclasses should implement to do the actual
-     * packet processing.  A protected method is used for this so we can
+     * packet processing. A protected method is used for this so we can
      * guarantee all packets pass through this base for stat-tracking
      * purposes.
      */
-    protected abstract fun doProcessPackets(p: List<PacketInfo>)
+    protected open fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
+        return p
+    }
 
     /**
      * Marking this as open since [DemuxerNode] wants to throw an exception
@@ -91,7 +93,7 @@ abstract class Node(
 
     override fun processPackets(pkts: List<PacketInfo>) {
         onEntry(pkts)
-        doProcessPackets(pkts)
+        next(doProcessPackets(pkts))
     }
 
     open fun getChildren(): Collection<Node> {
@@ -121,7 +123,10 @@ abstract class Node(
         }
     }
 
-    protected fun next(outPackets: List<PacketInfo>) {
+    // this is safe to call with nextNode=null.
+    // Implementations should keep nextNode=null if they don't want packets
+    // to be passed anywhere.
+    private fun next(outPackets: List<PacketInfo>) {
         next(nextNode, outPackets)
     }
 

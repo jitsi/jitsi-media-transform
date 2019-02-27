@@ -22,11 +22,11 @@ import org.jitsi.rtp.RtpPacket
 class PacketCacher : Node("Packet cache") {
     private val packetCache = PacketCache()
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEach { packetInfo ->
-            packetCache.cachePacket(packetInfo.packetAs<RtpPacket>())
+            packetCache.cachePacket(packetInfo.packetAs())
         }
-        next(p)
+        return p
     }
 
     fun getPacketCache(): PacketCache = packetCache

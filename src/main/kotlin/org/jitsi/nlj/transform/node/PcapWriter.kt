@@ -45,7 +45,7 @@ class PcapWriter(
     init {
         logger.cinfo { "Pcap writer writing to file $filePath" }
     }
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEach {
             val udpPayload = UnknownPacket.Builder()
             val pktBuf = it.packet.getBuffer()
@@ -88,6 +88,6 @@ class PcapWriter(
             writer.dump(eth)
         }
 
-        next(p)
+        return p
     }
 }

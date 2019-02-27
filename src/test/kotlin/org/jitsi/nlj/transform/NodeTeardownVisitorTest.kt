@@ -50,7 +50,9 @@ internal class NodeTeardownVisitorTest : ShouldSpec() {
     // 'Outgoing' style is harder to define: we actually need multiple separate pipeline that
     // terminate at the same node
     private val testOutgoingPipelineTermination = object : Node("Output termination") {
-        override fun doProcessPackets(p: List<PacketInfo>) {}
+        override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
+            return emptyList()
+        }
     }
 
     private val testOutgoingPipeline1 = pipeline {

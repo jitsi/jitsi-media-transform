@@ -42,7 +42,7 @@ class RtcpTermination(
     private var numRrsReceiver = 0
     private var numSrsReceived = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         val outPackets = mutableListOf<PacketInfo>()
         p.forEach { packetInfo ->
             val pkt = packetInfo.packet
@@ -82,7 +82,7 @@ class RtcpTermination(
             //TODO: keep an eye on if anything in here takes a while it could slow the packet pipeline down
             rtcpEventNotifier.notifyRtcpReceived(packetInfo)
         }
-        next(outPackets)
+        return outPackets
     }
 
     private fun handleTccPacket(tccPacket: RtcpFbTccPacket) {

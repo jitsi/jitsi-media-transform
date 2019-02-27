@@ -35,7 +35,7 @@ class TccSeqNumTagger(
     private var currTccSeqNum: Int = 1
     private var tccExtensionId: Int? = null
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<RtpPacket> { _, pkt ->
             tccExtensionId?.let { tccExtId ->
                 val ext = TccHeaderExtension(tccExtId, currTccSeqNum++)
@@ -43,7 +43,7 @@ class TccSeqNumTagger(
             }
         }
         transportCcEngine?.egressEngine?.rtpTransformer?.transform(p.map { it.packet.toRawPacket() }.toTypedArray())
-        next(p)
+        return p
     }
 
     override fun handleEvent(event: Event) {

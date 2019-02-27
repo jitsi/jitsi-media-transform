@@ -35,7 +35,7 @@ class Vp8Parser : Node("Vp8 parser") {
     // Stats
     private var numKeyframes: Int = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<VideoRtpPacket> { _, pkt ->
             if (pkt is Vp8Packet) {
                 // If this was part of a keyframe, it will have already had it set
@@ -50,7 +50,7 @@ class Vp8Parser : Node("Vp8 parser") {
                 }
             }
         }
-        next(p)
+        return p
     }
 
     override fun getNodeStats(): NodeStatsBlock {

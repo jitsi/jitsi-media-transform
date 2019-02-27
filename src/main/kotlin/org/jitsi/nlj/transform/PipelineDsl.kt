@@ -56,8 +56,8 @@ class PipelineBuilder {
      */
     fun simpleNode(name: String, packetHandler: (List<PacketInfo>) -> List<PacketInfo>) {
         val node = object : Node(name) {
-            override fun doProcessPackets(p: List<PacketInfo>) {
-                next(packetHandler.invoke(p))
+            override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
+                return packetHandler.invoke(p)
             }
         }
         addNode(node)
@@ -66,6 +66,12 @@ class PipelineBuilder {
     fun demux(name: String, block: DemuxerNode.() -> Unit) {
         val demuxer = ExclusivePathDemuxer(name).apply(block)
         addNode(demuxer)
+    }
+
+    fun demux(name: String, vararg paths: ConditionalPacketPath) {
+        val demuxer = DemuxerNode(name)
+        for (path in paths)
+            demuxer.addPacketPath(path)
     }
 
     fun build(): Node = head!!

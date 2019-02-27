@@ -29,11 +29,11 @@ class RetransmissionRequester(
 ) : Node("Retransmission requester") {
     private val retransmissionRequester = RetransmissionRequester(rtcpSender, scheduler)
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<RtpPacket> { _, packet ->
             retransmissionRequester.packetReceived(packet.header.ssrc, packet.header.sequenceNumber)
         }
-        next(p)
+        return p
     }
 
     override fun stop() {

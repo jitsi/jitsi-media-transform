@@ -146,13 +146,14 @@ internal class DtlsStackTest : ShouldSpec() {
             receiver.processPackets(listOf(PacketInfo(UnparsedPacket(ByteBuffer.wrap(buf, off, len)))))
         }
         sender.attach(object : Node("sender network") {
-            override fun doProcessPackets(p: List<PacketInfo>) {
+            override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
                 p.forEach {
                     serverTransport.incomingQueue.add(PacketData(
                             it.packet.getBuffer().array(),
                             it.packet.getBuffer().arrayOffset(),
                             it.packet.getBuffer().limit()))
                 }
+                return p
             }
         })
 

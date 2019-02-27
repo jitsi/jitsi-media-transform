@@ -26,11 +26,11 @@ class PacketLoss(private val lossRate: Double) : Node("Packet loss") {
     private val random = Random()
     private var packetsSeen = 0
     private var packetsDropped = 0
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         packetsSeen += p.size
-        val forwardedPackets = p.filter { random.nextDouble() > lossRate }
-        packetsDropped += (p.size - forwardedPackets.size)
-        next(forwardedPackets)
+        val outPackets = p.filter { random.nextDouble() > lossRate }
+        packetsDropped += (p.size - outPackets.size)
+        return outPackets
     }
 
     override fun getNodeStats(): NodeStatsBlock {
@@ -53,7 +53,7 @@ class BurstPacketLoss(
     private var currentBurstPacketsDropped = 0
 
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         val outPackets = mutableListOf<PacketInfo>()
         p.forEach {
             packetsSeen++
@@ -69,7 +69,7 @@ class BurstPacketLoss(
                 outPackets.add(it)
             }
         }
-        next(outPackets)
+        return outPackets
     }
 
 }

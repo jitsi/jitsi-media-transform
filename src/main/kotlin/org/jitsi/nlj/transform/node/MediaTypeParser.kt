@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 class MediaTypeParser : Node("Media type parser") {
     private val payloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<RtpPacket> { pktInfo, pkt ->
             val mediaType = payloadTypes[pkt.header.payloadType.toUByte()]?.mediaType ?: run {
                 logger.cdebug { "Unable to find format for payload type ${pkt.header.payloadType}" }
@@ -47,7 +47,7 @@ class MediaTypeParser : Node("Media type parser") {
                 else -> throw Exception("Unrecognized media type: '$mediaType'")
             }
         }
-        next(p)
+        return p
     }
 
     override fun handleEvent(event: Event) {

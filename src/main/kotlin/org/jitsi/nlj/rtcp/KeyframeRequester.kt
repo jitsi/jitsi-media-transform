@@ -41,10 +41,10 @@ class KeyframeRequester : Node("Keyframe Requester") {
     private var numKeyframesRequestedByBridge: Int = 0
     private var numKeyframeRequestsDropped: Int = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         //TODO: translation
         //TODO: aggregation
-        next(p)
+        return p
     }
 
     fun requestKeyframe(mediaSsrc: Long) {

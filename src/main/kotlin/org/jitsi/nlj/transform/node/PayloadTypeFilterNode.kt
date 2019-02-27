@@ -27,10 +27,9 @@ import java.util.concurrent.ConcurrentHashMap
 class PayloadTypeFilterNode : Node("RTP payload type filter") {
     private val acceptedPayloadTypes: MutableSet<Int> = ConcurrentHashMap.newKeySet()
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
-        val filteredPackets = p
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
+        return p
             .filter { acceptedPayloadTypes.contains(it.packetAs<SrtpPacket>().header.payloadType) }
-        next(filteredPackets)
     }
 
     override fun handleEvent(event: Event) {

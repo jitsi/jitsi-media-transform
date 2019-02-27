@@ -51,7 +51,7 @@ class TccGeneratorNode(
     private var mediaSsrcs: MutableSet<Long> = mutableSetOf()
     private var numTccSent: Int = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         tccExtensionId?.let { tccExtId ->
             p.forEachAs<SrtpPacket> { pktInfo, pkt ->
                 pkt.header.getExtension(tccExtId).let currPkt@ { tccExt ->
@@ -62,7 +62,7 @@ class TccGeneratorNode(
                 }
             }
         }
-        next(p)
+        return p
     }
 
     override fun handleEvent(event: Event) {

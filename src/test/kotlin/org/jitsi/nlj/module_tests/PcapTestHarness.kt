@@ -144,7 +144,7 @@ fun main(args: Array<String>) {
         var numReceivedPackets = 0
         val doneFuture = CompletableFuture<Unit>()
         rtpReceiver.rtpPacketHandler = (object : Node("Packet receiver") {
-            override fun doProcessPackets(p: List<PacketInfo>) {
+            override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
                 numReceivedPackets += p.size
                 if (numReceivedPackets == numExpectedPackets) {
                     println("ALL PACKETS FORWARDED")
@@ -157,6 +157,7 @@ fun main(args: Array<String>) {
 //                    it.packet = it.packet.clone()
 //                }
                 sender.sendPackets(clonedPackets)
+                return emptyList()
             }
         })
         receivers.add(rtpReceiver)

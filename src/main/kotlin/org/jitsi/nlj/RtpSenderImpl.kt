@@ -109,13 +109,14 @@ class RtpSenderImpl(
     private val nackHandler: NackHandler
 
     private val outputPipelineTerminationNode = object : Node("Output pipeline termination node") {
-        override fun doProcessPackets(p: List<PacketInfo>) {
+        override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
             p.forEach {
                 if (it.timeline.totalDelay() > Duration.ofMillis(100)) {
                     logger.cerror { "Packet took >100ms to get through bridge:\n${it.timeline}"}
                 }
             }
             outgoingPacketHandler?.processPackets(p)
+            return emptyList()
         }
     }
 

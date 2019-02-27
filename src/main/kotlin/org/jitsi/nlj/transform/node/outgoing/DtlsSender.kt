@@ -28,12 +28,15 @@ class DtlsSender(
     private val dtlsStack: DtlsStack
 ) : Node("DTLS sender") {
     init {
-        dtlsStack.onOutgoingProtocolData =  ::next
+        dtlsStack.onOutgoingProtocolData = { p -> this.nextNode?.processPackets(p) }
     }
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         // Pass the packets into the stack.  When the stack is done processing them and they are
         // read to be sent, it will invoke the onOutgoingProtocolData handler above
         p.forEach(dtlsStack::sendDtlsAppData)
+
+        // This is a terminating node.
+        return emptyList()
     }
 }

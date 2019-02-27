@@ -19,10 +19,10 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.rtp.Packet
 
 class PacketParser(name: String, private val action: (Packet) -> Packet) : Node(name) {
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEach {
             it.packet = action(it.packet)
         }
-        next(p)
+        return p
     }
 }

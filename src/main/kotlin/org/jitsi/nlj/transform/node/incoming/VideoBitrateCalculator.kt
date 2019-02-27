@@ -35,7 +35,7 @@ import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
 class VideoBitrateCalculator : Node("Video bitrate calculator") {
     private var mediaStreamTrackDescs: Array<MediaStreamTrackDesc> = arrayOf()
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<VideoRtpPacket> { _, videoRtpPacket ->
             mediaStreamTrackDescs.forEach {
                 it.findRtpEncodingDesc(videoRtpPacket)?.let { encoding ->
@@ -45,7 +45,7 @@ class VideoBitrateCalculator : Node("Video bitrate calculator") {
                 }
             }
         }
-        next(p)
+        return p
     }
 
     override fun handleEvent(event: Event) {

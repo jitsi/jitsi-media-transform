@@ -56,7 +56,7 @@ class RtxHandler : Node("RTX handler") {
         val logger: Logger = Logger.getLogger(this::class.java)
     }
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         val outPackets = mutableListOf<PacketInfo>()
         p.forEachAs<RtpPacket> { packetInfo, pkt ->
             if (associatedPayloadTypes.containsKey(pkt.header.payloadType)) {
@@ -85,7 +85,7 @@ class RtxHandler : Node("RTX handler") {
                 outPackets.add(packetInfo)
             }
         }
-        next(outPackets)
+        return outPackets
     }
 
     override fun handleEvent(event: Event) {

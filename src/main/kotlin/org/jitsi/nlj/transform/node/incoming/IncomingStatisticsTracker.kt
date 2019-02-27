@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap
 class IncomingStatisticsTracker : Node("Incoming statistics tracker") {
     private val streamStats: MutableMap<Long, IncomingStreamStatistics> = ConcurrentHashMap()
     private val payloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<RtpPacket> { packetInfo, rtpPacket ->
             val stats = streamStats.computeIfAbsent(rtpPacket.header.ssrc) {
                 IncomingStreamStatistics(rtpPacket.header.ssrc, rtpPacket.header.sequenceNumber)
@@ -53,7 +53,7 @@ class IncomingStatisticsTracker : Node("Incoming statistics tracker") {
                 stats.packetReceived(rtpPacket, packetSentTimestamp, packetInfo.receivedTime)
             }
         }
-        next(p)
+        return p
     }
 
     fun getCurrentStats(): Map<Long, IncomingStreamStatistics> = streamStats.toMap()
@@ -414,7 +414,7 @@ class StreamStatistics2 {
 class Receiver : Node("RTP receiver"){
     val sources = mutableMapOf<Long, Source>()
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<RtpPacket> { packetInfo, rtpPacket ->
             val source = sources.computeIfAbsent(rtpPacket.header.ssrc) {
                 val newSource = Source()
@@ -426,6 +426,8 @@ class Receiver : Node("RTP receiver"){
             }
             StreamStatistics2.update_seq(source, rtpPacket.header.sequenceNumber.toShort())
         }
+
+        return emptyList()
     }
 
 

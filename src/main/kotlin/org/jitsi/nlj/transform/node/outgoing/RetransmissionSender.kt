@@ -55,7 +55,7 @@ class RetransmissionSender : Node("Retransmission sender") {
     /**
      * Creates RTX packets from the given RTP packets and passes them down the pipeline
      */
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         val outPackets = mutableListOf<PacketInfo>()
         p.forEachAs<RtpPacket> { packetInfo, pkt ->
             logger.cdebug { "Retransmission sender ${hashCode()} retransmitting packet with original ssrc " +
@@ -88,7 +88,7 @@ class RetransmissionSender : Node("Retransmission sender") {
             outPackets.add(packetInfo)
         }
 
-        next(outPackets)
+        return outPackets
     }
 
     override fun handleEvent(event: Event) {

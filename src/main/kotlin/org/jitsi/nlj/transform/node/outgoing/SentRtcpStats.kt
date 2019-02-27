@@ -28,14 +28,14 @@ class SentRtcpStats : Node("Sent RTCP stats") {
     private var numPlisSent = 0
     private var numFirsSent = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         p.forEachAs<RtcpPacket> { packetInfo, expectedPacketType ->
             when (expectedPacketType) {
                 is RtcpFbPliPacket -> numPlisSent++
                 is RtcpFbFirPacket -> numFirsSent++
             }
         }
-        next(p)
+        return p
     }
 
     override fun getNodeStats(): NodeStatsBlock {

@@ -27,7 +27,7 @@ class PaddingTermination : Node("Padding termination") {
     private val replayContexts: MutableMap<Long, MutableSet<Int>> = TreeMap()
     private var numPaddingPacketsSeen = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
+    override fun doProcessPackets(p: List<PacketInfo>): List<PacketInfo> {
         val outPackets = mutableListOf<PacketInfo>()
         p.forEach { packetInfo ->
             checkPacket(packetInfo.packetAs<RtpPacket>())?.let {
@@ -36,7 +36,7 @@ class PaddingTermination : Node("Padding termination") {
                 numPaddingPacketsSeen++
             }
         }
-        next(outPackets)
+        return outPackets
     }
 
     private fun checkPacket(packet: RtpPacket): RtpPacket? {
