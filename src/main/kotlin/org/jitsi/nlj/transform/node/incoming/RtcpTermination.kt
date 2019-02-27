@@ -27,6 +27,7 @@ import org.jitsi.rtp.new_scheme3.rtcp.RtcpRrPacket
 import org.jitsi.rtp.new_scheme3.rtcp.RtcpSrPacket
 import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbFirPacket
 import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbNackPacket
+import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbPliPacket
 import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbTccPacket
 import org.jitsi.rtp.new_scheme3.rtcp.sdes.RtcpSdesPacket
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
@@ -64,17 +65,12 @@ class RtcpTermination(
                 is RtcpSdesPacket -> {
                     numSdesReceived++
                 }
-                    //TODO
-//                is RtcpSdesPacket -> {
-//                }
-                //TODO: re-add pli
-                /*is RtcpFbPliPacket,*/ is RtcpFbFirPacket -> {
-//                    if (pkt is RtcpFbPliPacket) {
-//                        numPlisReceived++
-//                    } else {
-//                        numFirsReceived++
-//                    }
-                    numFirsReceived++
+                is RtcpFbPliPacket, is RtcpFbFirPacket -> {
+                    if (pkt is RtcpFbPliPacket) {
+                        numPlisReceived++
+                    } else {
+                        numFirsReceived++
+                    }
                     // We'll let these pass through and be forwarded to the sender who will be
                     // responsible for translating/aggregating them
                     logger.cdebug { "BRIAN: passing through ${pkt::class} rtcp packet: ${pkt.getBuffer().toHex()}" }
