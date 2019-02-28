@@ -24,11 +24,6 @@ fun Packet.toRawPacket(): RawPacket {
     return RawPacket(packetBuf.array(), packetBuf.arrayOffset(), packetBuf.limit())
 }
 
-fun org.jitsi.rtp.new_scheme3.Packet.toRawPacket(): RawPacket {
-    val packetBuf = getBuffer()
-    return RawPacket(packetBuf.array(), packetBuf.arrayOffset(), packetBuf.limit())
-}
-
 /**
  * Wrap this [RawPacket]'s buffer in a ByteBuffer such that:
  * 1) The ByteBuffer's position 0 will be at the offset position from RawPacket

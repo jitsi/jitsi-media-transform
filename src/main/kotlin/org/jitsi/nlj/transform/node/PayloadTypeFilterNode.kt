@@ -21,7 +21,7 @@ import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeClearEvent
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.rtp.extensions.unsigned.toPositiveInt
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import java.util.concurrent.ConcurrentHashMap
 
 class PayloadTypeFilterNode : Node("RTP payload type filter") {

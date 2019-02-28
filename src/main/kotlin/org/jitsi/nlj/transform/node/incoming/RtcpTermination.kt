@@ -22,14 +22,14 @@ import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.rtp.extensions.toHex
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpByePacket
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpRrPacket
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpSrPacket
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbFirPacket
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbNackPacket
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbPliPacket
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbTccPacket
-import org.jitsi.rtp.new_scheme3.rtcp.sdes.RtcpSdesPacket
+import org.jitsi.rtp.rtcp.RtcpByePacket
+import org.jitsi.rtp.rtcp.RtcpRrPacket
+import org.jitsi.rtp.rtcp.RtcpSrPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbFirPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbNackPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPliPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbTccPacket
+import org.jitsi.rtp.rtcp.sdes.RtcpSdesPacket
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 
 class RtcpTermination(

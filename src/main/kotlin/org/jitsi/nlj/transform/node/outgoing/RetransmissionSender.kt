@@ -21,7 +21,6 @@ import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeClearEvent
 import org.jitsi.nlj.SsrcAssociationEvent
 import org.jitsi.nlj.forEachAs
-import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
@@ -29,8 +28,8 @@ import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
-import org.jitsi.rtp.new_scheme3.rtp.RtxPacket
+import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtxPacket
 import unsigned.toUInt
 import java.util.concurrent.ConcurrentHashMap
 

@@ -18,10 +18,10 @@ package org.jitsi.nlj.resources.srtp_samples
 
 import org.jitsi.nlj.srtp.SrtpProfileInformation
 import org.jitsi.nlj.srtp.TlsRole
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
-import org.jitsi.rtp.new_scheme3.srtcp.SrtcpPacket
-import org.jitsi.rtp.new_scheme3.srtp.SrtpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.rtp.srtcp.SrtcpPacket
+import org.jitsi.rtp.srtp.SrtpPacket
 import org.jitsi.rtp.util.byteBufferOf
 
 /**

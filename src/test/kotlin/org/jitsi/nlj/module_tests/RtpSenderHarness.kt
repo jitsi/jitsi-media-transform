@@ -21,16 +21,13 @@ import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpSender
 import org.jitsi.nlj.RtpSenderImpl
 import org.jitsi.nlj.SsrcAssociationEvent
-import org.jitsi.nlj.format.OpusPayloadType
-import org.jitsi.nlj.format.Vp8PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.util.safeShutdown
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.util.RtpProtocol
-import org.jitsi.service.neomedia.RTPExtension
 import org.jitsi.test_utils.Pcaps
 import org.jitsi.test_utils.SrtpData
-import java.net.URI
 import java.time.Duration
 import java.util.Random
 import java.util.concurrent.ExecutorService
@@ -81,7 +78,7 @@ fun main(args: Array<String>) {
                 val rtpPacket = RtpPacket.fromBuffer(pkt.getBuffer())
                 it.sendPackets(listOf(PacketInfo(rtpPacket.clone())))
             } else {
-                it.sendRtcp(listOf(org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket.parse(pkt.clone().getBuffer())))
+                it.sendRtcp(listOf(RtcpPacket.parse(pkt.clone().getBuffer())))
             }
         }
     }

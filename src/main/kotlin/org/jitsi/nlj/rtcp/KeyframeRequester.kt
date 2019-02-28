@@ -21,7 +21,7 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbFirPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbFirPacket
 
 /**
  * [KeyframeRequester] handles a few things around keyframes:

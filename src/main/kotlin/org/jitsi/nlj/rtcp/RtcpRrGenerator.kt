@@ -18,11 +18,11 @@ package org.jitsi.nlj.rtcp
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.transform.node.incoming.IncomingStreamStatistics
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpHeader
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpReportBlock
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpRrPacket
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpSrPacket
+import org.jitsi.rtp.rtcp.RtcpHeader
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.RtcpReportBlock
+import org.jitsi.rtp.rtcp.RtcpRrPacket
+import org.jitsi.rtp.rtcp.RtcpSrPacket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit

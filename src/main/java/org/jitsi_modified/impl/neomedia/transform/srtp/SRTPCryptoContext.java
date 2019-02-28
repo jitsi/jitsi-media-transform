@@ -19,8 +19,8 @@ import kotlin.*;
 import org.bouncycastle.crypto.params.*;
 import org.jitsi.bccontrib.params.*;
 import org.jitsi.rtp.extensions.*;
-import org.jitsi.rtp.new_scheme3.rtp.*;
-import org.jitsi.rtp.new_scheme3.srtp.*;
+import org.jitsi.rtp.rtp.*;
+import org.jitsi.rtp.srtp.*;
 import org.jitsi.util.*;
 
 import java.nio.*;

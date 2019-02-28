@@ -16,7 +16,7 @@
 
 package org.jitsi.nlj.util
 
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 

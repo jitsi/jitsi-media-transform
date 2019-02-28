@@ -17,7 +17,7 @@ package org.jitsi.nlj
 
 import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.transform.node.outgoing.OutgoingStreamStatistics
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 
 

@@ -18,9 +18,7 @@ package org.jitsi.nlj.rtp.codec.vp8
 
 import org.jitsi.nlj.codec.vp8.Vp8Utils
 import org.jitsi.nlj.rtp.VideoRtpPacket
-import org.jitsi.rtp.extensions.clone
-import org.jitsi.rtp.new_scheme3.Packet
-import org.jitsi.rtp.new_scheme3.rtp.RtpHeader
+import org.jitsi.rtp.rtp.RtpHeader
 import org.jitsi.rtp.util.ByteBufferUtils
 import java.nio.ByteBuffer
 
@@ -45,7 +43,7 @@ class Vp8Packet(
         temporalLayerIndex = Vp8Utils.getTemporalLayerIdOfFrame(payload)
     }
 
-    override fun clone(): Packet {
+    override fun clone(): Vp8Packet {
         val clone = Vp8Packet(header.clone(), cloneMutablePayload())
         clone.temporalLayerIndex = temporalLayerIndex
         clone.spatialLayerIndex = spatialLayerIndex

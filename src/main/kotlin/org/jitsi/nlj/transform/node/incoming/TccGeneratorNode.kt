@@ -25,10 +25,10 @@ import org.jitsi.nlj.forEachAs
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbTccPacket
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.fci.tcc.Tcc
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbTccPacket
+import org.jitsi.rtp.rtcp.rtcpfb.fci.tcc.Tcc
+import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.service.neomedia.RTPExtension
 import unsigned.toUInt
 

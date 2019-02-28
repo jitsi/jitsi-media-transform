@@ -24,7 +24,7 @@ import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getByteBuffer
 import org.jitsi.nlj.util.toRawPacket
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.service.neomedia.RTPExtension
 import unsigned.toUInt
 

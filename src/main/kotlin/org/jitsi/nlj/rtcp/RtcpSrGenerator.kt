@@ -19,10 +19,10 @@ import org.jitsi.nlj.transform.node.outgoing.OutgoingStatisticsTracker
 import org.jitsi.nlj.util.RtpUtils
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpHeader
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpSrPacket
-import org.jitsi.rtp.new_scheme3.rtcp.SenderInfo
+import org.jitsi.rtp.rtcp.RtcpHeader
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.RtcpSrPacket
+import org.jitsi.rtp.rtcp.SenderInfo
 import unsigned.toULong
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit

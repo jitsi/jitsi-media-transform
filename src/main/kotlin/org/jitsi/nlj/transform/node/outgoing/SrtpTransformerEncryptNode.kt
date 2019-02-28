@@ -19,7 +19,7 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.AbstractSrtpTransformerNode
 import org.jitsi.nlj.util.cerror
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 
 class SrtpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTP Encrypt wrapper") {

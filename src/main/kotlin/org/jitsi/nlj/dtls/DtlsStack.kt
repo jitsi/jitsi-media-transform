@@ -22,9 +22,9 @@ import org.bouncycastle.crypto.tls.TlsContext
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
+import org.jitsi.rtp.DtlsProtocolPacket
+import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.extensions.clone
-import org.jitsi.rtp.new_scheme3.DtlsProtocolPacket
-import org.jitsi.rtp.new_scheme3.UnparsedPacket
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.LinkedBlockingQueue

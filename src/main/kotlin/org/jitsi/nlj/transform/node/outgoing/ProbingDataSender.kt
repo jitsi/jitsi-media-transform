@@ -31,7 +31,7 @@ import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.PacketCache
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.rtp.new_scheme3.rtp.RtpHeader
+import org.jitsi.rtp.rtp.RtpHeader
 import org.jitsi.service.neomedia.MediaType
 import unsigned.toUInt
 import java.util.Random

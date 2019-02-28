@@ -17,7 +17,7 @@ package org.jitsi.nlj.transform.node.outgoing
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.AbstractSrtpTransformerNode
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 import java.nio.ByteBuffer
 
@@ -41,20 +41,6 @@ class SrtcpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTCP Encrypt w
             } ?: run {
                 logger.error("Error encrypting RTCP")
             }
-
-
-//            val rp = RawPacket(bufCopy.array(), bufCopy.arrayOffset(), bufCopy.limit())
-//            transformer.transform(rp)?.let { encryptedRawPacket ->
-//                val srtcpPacket = SrtcpPacket(
-//                    ByteBufferUtils.wrapSubArray(
-//                        encryptedRawPacket.buffer,
-//                        encryptedRawPacket.offset,
-//                        encryptedRawPacket.length
-//                    )
-//                )
-//                it.packet = srtcpPacket
-//                encryptedPackets.add(it)
-//            }
         }
         return encryptedPackets
     }

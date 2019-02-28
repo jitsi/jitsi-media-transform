@@ -19,8 +19,8 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.forEachAs
 import org.jitsi.nlj.rtcp.RetransmissionRequester
 import org.jitsi.nlj.transform.node.Node
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import java.util.concurrent.ScheduledExecutorService
 
 class RetransmissionRequesterNode(

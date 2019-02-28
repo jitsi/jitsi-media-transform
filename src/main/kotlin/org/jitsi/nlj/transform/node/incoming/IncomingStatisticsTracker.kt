@@ -31,7 +31,7 @@ import org.jitsi.nlj.util.isNewerThan
 import org.jitsi.nlj.util.isNextAfter
 import org.jitsi.nlj.util.numPacketsTo
 import org.jitsi.nlj.util.rolledOverTo
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import toUInt
 import unsigned.toUShort
 import java.time.Duration

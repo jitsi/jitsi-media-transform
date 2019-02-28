@@ -28,8 +28,8 @@ import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
-import org.jitsi.rtp.new_scheme3.rtp.RtxPacket
+import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtxPacket
 import org.jitsi.util.Logger
 import unsigned.toUInt
 import java.util.concurrent.ConcurrentHashMap

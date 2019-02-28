@@ -16,7 +16,7 @@
 package org.jitsi.nlj.transform.node
 
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.rtp.new_scheme3.Packet
+import org.jitsi.rtp.Packet
 
 class PacketParser(name: String, private val action: (Packet) -> Packet) : Node(name) {
     override fun doProcessPackets(p: List<PacketInfo>) {

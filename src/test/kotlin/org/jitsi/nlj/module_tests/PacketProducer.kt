@@ -15,7 +15,7 @@
  */
 package org.jitsi.nlj.module_tests
 
-import org.jitsi.rtp.new_scheme3.Packet
+import org.jitsi.rtp.Packet
 
 typealias PacketReceiver = (Packet) -> Unit
 

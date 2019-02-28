@@ -15,7 +15,7 @@
  */
 package org.jitsi.nlj
 
-import org.jitsi.rtp.new_scheme3.Packet
+import org.jitsi.rtp.Packet
 import java.time.Duration
 
 class EventTimeline(

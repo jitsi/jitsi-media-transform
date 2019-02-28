@@ -26,7 +26,7 @@ import org.jitsi.nlj.format.VideoPayloadType
 import org.jitsi.nlj.format.Vp8PayloadType
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.transform.node.Node
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 import unsigned.toUByte
 import java.util.ArrayList
 import java.util.concurrent.ConcurrentHashMap

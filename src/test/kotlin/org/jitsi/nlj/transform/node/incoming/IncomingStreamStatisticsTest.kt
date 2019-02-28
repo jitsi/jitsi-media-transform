@@ -21,8 +21,8 @@ import io.kotlintest.matchers.plusOrMinus
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.rtp.new_scheme3.rtp.RtpHeader
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpHeader
+import org.jitsi.rtp.rtp.RtpPacket
 
 private data class StatPacketInfo(
     val packetInfo: PacketInfo,

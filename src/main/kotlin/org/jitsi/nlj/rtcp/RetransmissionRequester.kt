@@ -24,8 +24,8 @@ import org.jitsi.nlj.util.getLogger
 import org.jitsi.nlj.util.isNextAfter
 import org.jitsi.nlj.util.isOlderThan
 import org.jitsi.nlj.util.numPacketsTo
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
-import org.jitsi.rtp.new_scheme3.rtcp.rtcpfb.RtcpFbNackPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbNackPacket
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -65,11 +65,11 @@ class RetransmissionRequester(
      * Manages retransmission requests for all packets for a specific SSRC
      */
     class StreamPacketRequester(
-            val ssrc: Long,
-            private val scheduler: ScheduledExecutorService,
-            private val clock: Clock,
-            private val rtcpSender: (RtcpPacket) -> Unit,
-            private val maxMissingSeqNums: Int = 100
+        val ssrc: Long,
+        private val scheduler: ScheduledExecutorService,
+        private val clock: Clock,
+        private val rtcpSender: (RtcpPacket) -> Unit,
+        private val maxMissingSeqNums: Int = 100
     ) {
         companion object {
             val NO_REQUEST_DUE: Instant = Instant.MAX

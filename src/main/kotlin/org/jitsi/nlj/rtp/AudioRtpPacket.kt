@@ -15,8 +15,8 @@
  */
 package org.jitsi.nlj.rtp
 
-import org.jitsi.rtp.new_scheme3.rtp.RtpHeader
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.rtp.RtpHeader
+import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.util.ByteBufferUtils
 import java.nio.ByteBuffer
 

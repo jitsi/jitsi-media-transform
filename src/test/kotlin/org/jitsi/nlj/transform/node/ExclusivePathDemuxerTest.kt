@@ -21,10 +21,10 @@ import io.kotlintest.Spec
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.rtp.new_scheme3.Packet
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpHeader
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
-import org.jitsi.rtp.new_scheme3.rtp.RtpPacket
+import org.jitsi.rtp.Packet
+import org.jitsi.rtp.rtcp.RtcpHeader
+import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtp.RtpPacket
 
 internal class ExclusivePathDemuxerTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf

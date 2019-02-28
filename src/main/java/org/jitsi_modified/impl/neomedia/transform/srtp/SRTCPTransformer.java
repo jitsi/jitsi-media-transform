@@ -15,15 +15,11 @@
  */
 package org.jitsi_modified.impl.neomedia.transform.srtp;
 
-import org.jitsi.impl.neomedia.transform.srtp.*;
-import org.jitsi.nlj.util.*;
-import org.jitsi.rtp.new_scheme3.*;
-import org.jitsi.rtp.new_scheme3.rtcp.*;
-import org.jitsi.rtp.new_scheme3.srtcp.*;
-import org.jitsi.service.neomedia.*;
+import org.jitsi.rtp.*;
+import org.jitsi.rtp.rtcp.*;
+import org.jitsi.rtp.srtcp.*;
 import org.jitsi_modified.impl.neomedia.transform.*;
 
-import java.nio.*;
 import java.util.*;
 
 /**

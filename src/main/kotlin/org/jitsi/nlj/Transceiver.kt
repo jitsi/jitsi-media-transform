@@ -30,7 +30,7 @@ import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.extensions.toHex
-import org.jitsi.rtp.new_scheme3.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.service.neomedia.MediaType
 import org.jitsi.service.neomedia.RTPExtension
 import org.jitsi.util.DiagnosticContext
