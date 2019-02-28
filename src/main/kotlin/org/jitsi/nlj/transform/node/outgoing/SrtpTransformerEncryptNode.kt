@@ -28,13 +28,6 @@ class SrtpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTP Encrypt wra
         val outPackets = mutableListOf<PacketInfo>()
         pkts.forEach {
             transformer.transform(it.packet)?.let { encryptedPacket ->
-//                val srtpPacket = SrtpPacket(
-//                    ByteBufferUtils.wrapSubArray(
-//                        encryptedRawPacket.buffer,
-//                        encryptedRawPacket.offset,
-//                        encryptedRawPacket.length
-//                    )
-//                )
                 // Change the PacketInfo to contain the new packet
                 it.packet = encryptedPacket
                 outPackets.add(it)

@@ -27,7 +27,6 @@ import org.jitsi.nlj.transform.node.MediaTypeParser
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketParser
 import org.jitsi.nlj.transform.node.PayloadTypeFilterNode
-import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.transform.node.incoming.IncomingStreamStatistics
@@ -160,7 +159,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
         rtcpEventNotifier.addRtcpEventListener(rtcpRrGenerator)
 
         inputTreeRoot = pipeline {
-            node(PcapWriter("/tmp/$id-incoming.pcap"))
             node(PacketParser("SRTP protocol parser") { SrtpProtocolPacket(it.getBuffer()) })
             demux("SRTP/SRTCP") {
                 packetPath {

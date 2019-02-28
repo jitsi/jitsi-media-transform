@@ -80,9 +80,7 @@ class TccGeneratorNode(
     }
 
     private fun addPacket(tccSeqNum: Int, timestamp: Long) {
-        currTcc.modifyFci {
-            addPacket(tccSeqNum, timestamp)
-        }
+        currTcc.addPacket(tccSeqNum, timestamp)
 
         if (isTccReadyToSend()) {
             val mediaSsrc = if (mediaSsrcs.isNotEmpty()) mediaSsrcs.iterator().next() else -1L
