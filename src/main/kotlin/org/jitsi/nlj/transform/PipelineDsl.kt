@@ -69,7 +69,7 @@ class PipelineBuilder {
     }
 
     fun demux(name: String, vararg paths: ConditionalPacketPath) {
-        val demuxer = DemuxerNode(name)
+        val demuxer = ExclusivePathDemuxer(name)
         for (path in paths)
             demuxer.addPacketPath(path)
     }
