@@ -29,6 +29,7 @@ import org.jitsi.rtp.PacketPredicate
 import java.time.Duration
 import java.util.function.Predicate
 import kotlin.properties.Delegates
+import kotlin.streams.toList
 
 /**
  * An abstract base class for all [Node] subclasses.  This class
@@ -113,7 +114,7 @@ abstract class Node(var name: String)
  * packet to any children. The intention is for this class to not be subclassed directly, except from classes defined
  * in this file (but making it 'private' doesn't seem possible).
  */
-abstract class StatsKeepingNode(name: String): Node(name) {
+sealed class StatsKeepingNode(name: String): Node(name) {
     /**
      * The time at which processing of the currently processed packet started (in nanos).
      */
@@ -299,3 +300,58 @@ class ConditionalPacketPath() {
     }
 }
 
+abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
+    protected var transformPaths: MutableSet<ConditionalPacketPath> = mutableSetOf()
+
+    fun addPacketPath(packetPath: ConditionalPacketPath): DemuxerNode {
+        transformPaths.add(packetPath)
+        // DemuxerNode never uses the plain 'next' call since it doesn't have a single 'next'
+        // node (it has multiple downstream paths), but we want to make sure the paths correctly
+        // see this Demuxer in their 'inputNodes' so that we can traverse the reverse tree
+        // correctly, so we call attach here to get the inputNodes wired correctly.
+        super.attach(packetPath.path)
+
+        return this
+    }
+
+    fun addPacketPath(name: String, predicate: PacketPredicate, root: Node): DemuxerNode {
+        val path = ConditionalPacketPath(name)
+        path.predicate = predicate
+        path.path = root
+
+        return addPacketPath(path)
+    }
+
+    fun removePacketPaths() {
+        //TODO: concurrency issues here
+        transformPaths.forEach { it.path.removeParent(this) }
+        transformPaths.clear()
+    }
+
+    override fun attach(node: Node) = throw Exception()
+    override fun detach() = throw Exception()
+
+    override fun visit(visitor: NodeVisitor) {
+        visitor.visit(this)
+        transformPaths.forEach { conditionalPath ->
+            conditionalPath.path.visit(visitor)
+        }
+    }
+
+    override fun getChildren(): Collection<Node> = transformPaths.stream().map(ConditionalPacketPath::path).toList()
+}
+
+/**
+ * Packets are passed only to the first path which accepts them
+ */
+class ExclusivePathDemuxer(name: String) : DemuxerNode(name) {
+    override fun doProcessPacket(packetInfo: PacketInfo) {
+        transformPaths.forEach { conditionalPath ->
+            if (conditionalPath.predicate.test(packetInfo.packet)) {
+                doneProcessing(packetInfo)
+                conditionalPath.path.processPacket(packetInfo)
+                return
+            }
+        }
+    }
+}
