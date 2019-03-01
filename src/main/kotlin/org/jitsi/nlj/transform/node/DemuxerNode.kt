@@ -16,18 +16,29 @@
 package org.jitsi.nlj.transform.node
 
 import org.jitsi.nlj.transform.NodeVisitor
+import org.jitsi.rtp.PacketPredicate
 import kotlin.streams.toList
 
 abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
     protected var transformPaths: MutableSet<ConditionalPacketPath> = mutableSetOf()
 
-    fun addPacketPath(packetPath: ConditionalPacketPath) {
+    fun addPacketPath(packetPath: ConditionalPacketPath): DemuxerNode {
         transformPaths.add(packetPath)
         // DemuxerNode never uses the plain 'next' call since it doesn't have a single 'next'
         // node (it has multiple downstream paths), but we want to make sure the paths correctly
         // see this Demuxer in their 'inputNodes' so that we can traverse the reverse tree
         // correctly, so we call attach here to get the inputNodes wired correctly.
         super.attach(packetPath.path)
+
+        return this
+    }
+
+    fun addPacketPath(name: String, predicate: PacketPredicate, root: Node): DemuxerNode {
+        val path = ConditionalPacketPath(name)
+        path.predicate = predicate
+        path.path = root
+
+        return addPacketPath(path)
     }
 
     fun removePacketPaths() {
@@ -36,7 +47,8 @@ abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
         transformPaths.clear()
     }
 
-    override fun attach(node: Node?) = throw Exception()
+    override fun attach(node: Node) = throw Exception()
+    override fun detach() = throw Exception()
 
     override fun visit(visitor: NodeVisitor) {
         visitor.visit(this)

@@ -57,12 +57,20 @@ abstract class Node(var name: String)
      * Marking this as open since [DemuxerNode] wants to throw an exception
      * if attach is called.
      */
-    open fun attach(node: Node?) {
+    open fun attach(node: Node): Node {
         // Remove ourselves as an input from the node we're currently connected to
         nextNode?.removeParent(this)
         nextNode = node
-        node?.addParent(this)
+        node.addParent(this)
+
+        return node
     }
+
+    open fun detach() {
+        nextNode?.removeParent(this)
+        nextNode = null
+    }
+
 
     fun addParent(newParent: Node) {
         inputNodes.add(newParent)
