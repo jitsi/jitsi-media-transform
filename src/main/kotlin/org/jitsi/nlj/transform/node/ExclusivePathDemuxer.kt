@@ -22,13 +22,12 @@ import org.jitsi.nlj.PacketInfo
  * Packets are passed only to the first path which accepts them
  */
 class ExclusivePathDemuxer(name: String) : DemuxerNode(name) {
-    override fun doProcessPackets(p: List<PacketInfo>) {
-        p.forEach packets@ { packetInfo ->
-            transformPaths.forEach { conditionalPath ->
-                if (conditionalPath.predicate.test(packetInfo.packet)) {
-                    next(conditionalPath.path, listOf(packetInfo))
-                    return@packets
-                }
+    override fun doProcessPacket(packetInfo: PacketInfo) {
+        transformPaths.forEach { conditionalPath ->
+            if (conditionalPath.predicate.test(packetInfo.packet)) {
+                doneProcessing(packetInfo)
+                conditionalPath.path.processPacket(packetInfo)
+                return
             }
         }
     }

@@ -17,25 +17,22 @@
 package org.jitsi.nlj.transform.node.outgoing
 
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.forEachAs
 import org.jitsi.nlj.stats.NodeStatsBlock
-import org.jitsi.nlj.transform.node.Node
+import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPliPacket
 
-class SentRtcpStats : Node("Sent RTCP stats") {
+class SentRtcpStats : ObserverNode("Sent RTCP stats") {
     private var numPlisSent = 0
     private var numFirsSent = 0
 
-    override fun doProcessPackets(p: List<PacketInfo>) {
-        p.forEachAs<RtcpPacket> { _, expectedPacketType ->
-            when (expectedPacketType) {
-                is RtcpFbPliPacket -> numPlisSent++
-                is RtcpFbFirPacket -> numFirsSent++
-            }
+    override fun observe(packetInfo: PacketInfo) {
+        val rtcpPacket: RtcpPacket = packetInfo.packet as RtcpPacket
+        when (rtcpPacket) {
+            is RtcpFbPliPacket -> numPlisSent++
+            is RtcpFbFirPacket -> numFirsSent++
         }
-        next(p)
     }
 
     override fun getNodeStats(): NodeStatsBlock {
