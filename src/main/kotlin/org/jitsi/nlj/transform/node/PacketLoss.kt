@@ -22,17 +22,17 @@ import java.util.*
 /**
  * Randomly drops packets at a rate of [lossRate].
  */
-class PacketLoss(private val lossRate: Double) : TransformerNode("Packet loss") {
+class PacketLoss(private val lossRate: Double) : FilterNode("Packet loss") {
     private val random = Random()
     private var packetsSeen = 0
     private var packetsDropped = 0
-    override fun transform(packetInfo: PacketInfo): PacketInfo? {
+    override fun accept(packetInfo: PacketInfo): Boolean {
         packetsSeen ++
         if (random.nextDouble() > lossRate) {
             packetsDropped++
-            return null
+            return false
         } else {
-            return packetInfo
+            return true
         }
     }
 
@@ -49,14 +49,14 @@ class PacketLoss(private val lossRate: Double) : TransformerNode("Packet loss") 
 class BurstPacketLoss(
     private val burstSize: Int = 30,
     private val burstInterval: Int = 3000
-) : TransformerNode("Burst packet loss") {
+) : FilterNode("Burst packet loss") {
     private var packetsSeen = 0
     private var totalPacketsDropped = 0
     private var inBurst = false
     private var currentBurstPacketsDropped = 0
 
 
-    override fun transform(packetInfo: PacketInfo): PacketInfo? {
+    override fun accept(packetInfo: PacketInfo): Boolean {
         packetsSeen++
         if (packetsSeen % burstInterval == 0) {
             inBurst = true
@@ -68,9 +68,9 @@ class BurstPacketLoss(
             if (currentBurstPacketsDropped == burstSize) {
                 inBurst = false
             }
-            null
+            false
         } else {
-            packetInfo
+            true
         }
     }
 
