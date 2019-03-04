@@ -67,7 +67,7 @@ abstract class Node(var name: String)
         return node
     }
 
-    open fun detach() {
+    open fun detachNext() {
         nextNode?.removeParent(this)
         nextNode = null
     }
@@ -329,7 +329,7 @@ abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
     }
 
     override fun attach(node: Node) = throw Exception()
-    override fun detach() = throw Exception()
+    override fun detachNext() = throw Exception()
 
     override fun visit(visitor: NodeVisitor) {
         visitor.visit(this)
