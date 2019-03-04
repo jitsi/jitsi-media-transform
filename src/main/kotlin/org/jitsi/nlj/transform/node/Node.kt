@@ -39,8 +39,8 @@ import kotlin.streams.toList
  * 3) Propagating [visit] calls
  *
  */
-abstract class Node(var name: String)
-    : PacketHandler, EventHandler, NodeStatsProducer, Stoppable {
+abstract class Node(var name: String
+) : PacketHandler, EventHandler, NodeStatsProducer, Stoppable {
 
     private var nextNode: Node? = null
     private val inputNodes: MutableList<Node> by lazy { mutableListOf<Node>() }
@@ -237,7 +237,8 @@ abstract class FilterNode(
 typealias PacketInfoPredicate = Predicate<PacketInfo>
 abstract class PredicateFilterNode(
     name: String,
-    val predicate: PacketInfoPredicate): FilterNode(name) {
+    val predicate: PacketInfoPredicate
+): FilterNode(name) {
     override fun accept(packetInfo: PacketInfo): Boolean {
         return predicate.test(packetInfo)
     }
