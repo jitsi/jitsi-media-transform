@@ -157,10 +157,10 @@ sealed class StatsKeepingNode(name: String): Node(name) {
             addStat("numInputPackets: $numInputPackets")
             addStat("numOutputPackets: $numOutputPackets")
             addStat("total time spent: ${Duration.ofNanos(totalProcessingDuration).toMillis()} ms")
-            addStat("average time spent per packet: ${Duration.ofNanos(totalProcessingDuration / Math.max(numInputPackets, 1)).toMillis()} ms")
+            addStat("average time spent per packet: ${Duration.ofNanos(totalProcessingDuration / Math.max(numInputPackets, 1)).toNanos()} ns")
             addStat("$numInputBytes bytes over ${Duration.ofNanos(lastPacketTime - firstPacketTime).toMillis()} ms")
             addStat("throughput: ${getMbps(numInputBytes, Duration.ofNanos(lastPacketTime - firstPacketTime))} mbps")
-            addStat("individual module throughput: ${getMbps(numInputBytes, Duration.ofNanos(totalProcessingDuration))} mbps")
+            addStat("processing throughput: ${getMbps(numInputBytes, Duration.ofNanos(totalProcessingDuration))} mbps")
         }
     }
 
@@ -299,6 +299,7 @@ class ConditionalPacketPath() {
     var name: String by Delegates.notNull()
     var predicate: PacketPredicate by Delegates.notNull()
     var path: Node by Delegates.notNull()
+    var packetsAccepted: Int = 0
 
     constructor(name: String): this() {
         this.name = name
@@ -307,6 +308,7 @@ class ConditionalPacketPath() {
 
 abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
     protected var transformPaths: MutableSet<ConditionalPacketPath> = mutableSetOf()
+    protected var packetsDropped: Int = 0
 
     fun addPacketPath(packetPath: ConditionalPacketPath): DemuxerNode {
         transformPaths.add(packetPath)
@@ -344,6 +346,19 @@ abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
     }
 
     override fun getChildren(): Collection<Node> = transformPaths.stream().map(ConditionalPacketPath::path).toList()
+
+    override fun getNodeStats(): NodeStatsBlock {
+        val superStats = super.getNodeStats()
+
+        val demuxerBlock = NodeStatsBlock("Path packet counts:")
+        transformPaths.forEach { path ->
+            demuxerBlock.addStat("${path.name}: ${path.packetsAccepted}")
+        }
+        demuxerBlock.addStat("Dropped: $packetsDropped")
+        superStats.addStat(demuxerBlock.name, demuxerBlock)
+
+        return superStats
+    }
 }
 
 /**
@@ -354,9 +369,11 @@ class ExclusivePathDemuxer(name: String) : DemuxerNode(name) {
         transformPaths.forEach { conditionalPath ->
             if (conditionalPath.predicate.test(packetInfo.packet)) {
                 doneProcessing(packetInfo)
+                conditionalPath.packetsAccepted++
                 conditionalPath.path.processPacket(packetInfo)
                 return
             }
         }
+        packetsDropped++
     }
 }
