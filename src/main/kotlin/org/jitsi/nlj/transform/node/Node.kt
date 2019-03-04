@@ -185,8 +185,10 @@ sealed class StatsKeepingNode(name: String): Node(name) {
         val processingDuration = System.nanoTime() - startTime
         totalProcessingDuration += processingDuration
 
-        packetInfo?: numOutputPackets++
-        packetInfo?.addEvent(nodeExitString)
+        packetInfo?.let {
+            numOutputPackets++
+            it.addEvent(nodeExitString)
+        }
     }
 
     /**
