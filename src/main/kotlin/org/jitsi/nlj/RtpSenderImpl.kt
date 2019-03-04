@@ -156,7 +156,7 @@ class RtpSenderImpl(
             // responsible for setting it themselves
             simpleNode("RTCP sender ssrc setter") { packetInfo ->
                 val senderSsrc = localVideoSsrc ?: return@simpleNode null
-                val rtcpPacket: RtcpPacket = packetInfo.packet as RtcpPacket
+                val rtcpPacket = packetInfo.packetAs<RtcpPacket>()
                 if (rtcpPacket.header.senderSsrc == 0L) {
                     rtcpPacket.header.senderSsrc = senderSsrc
                 }

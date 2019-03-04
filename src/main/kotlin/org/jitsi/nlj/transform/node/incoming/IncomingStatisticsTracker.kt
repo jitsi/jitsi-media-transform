@@ -44,7 +44,7 @@ class IncomingStatisticsTracker : ObserverNode("Incoming statistics tracker") {
     private val streamStats: MutableMap<Long, IncomingStreamStatistics> = ConcurrentHashMap()
     private val payloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
     override fun observe(packetInfo: PacketInfo) {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val stats = streamStats.computeIfAbsent(rtpPacket.header.ssrc) {
             IncomingStreamStatistics(rtpPacket.header.ssrc, rtpPacket.header.sequenceNumber)
         }
@@ -414,7 +414,7 @@ class Receiver : ConsumerNode("RTP receiver"){
     val sources = mutableMapOf<Long, Source>()
 
     override fun consume(packetInfo: PacketInfo) {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val source = sources.computeIfAbsent(rtpPacket.header.ssrc) {
             val newSource = Source()
             StreamStatistics2.init_seq(newSource, rtpPacket.header.sequenceNumber.toShort())

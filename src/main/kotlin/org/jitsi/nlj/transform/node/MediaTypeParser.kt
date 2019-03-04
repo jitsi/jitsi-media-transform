@@ -35,7 +35,7 @@ class MediaTypeParser : TransformerNode("Media type parser") {
     private val payloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val mediaType = payloadTypes[rtpPacket.header.payloadType.toUByte()]?.mediaType ?: run {
             logger.cdebug { "Unable to find format for payload type ${rtpPacket.header.payloadType}" }
             return packetInfo

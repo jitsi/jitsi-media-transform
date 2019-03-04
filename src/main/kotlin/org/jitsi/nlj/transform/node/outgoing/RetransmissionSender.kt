@@ -51,7 +51,7 @@ class RetransmissionSender : TransformerNode("Retransmission sender") {
     private var numRetransmittedPackets = 0
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         logger.cdebug { "Retransmission sender ${hashCode()} retransmitting packet with original ssrc " +
                 "${rtpPacket.header.ssrc}, original sequence number ${rtpPacket.header.sequenceNumber} and original " +
                 "payload type: ${rtpPacket.header.payloadType}" }

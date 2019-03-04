@@ -42,7 +42,7 @@ class VideoParser : TransformerNode("Video parser") {
     // does this packet represent the start of a frame?
     // does this packet represent the end of a frame?
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val pt = rtpPacket.header.payloadType.toUByte()
         payloadTypes[pt]?.let { payloadType ->
             val videoRtpPacket = when (payloadType) {

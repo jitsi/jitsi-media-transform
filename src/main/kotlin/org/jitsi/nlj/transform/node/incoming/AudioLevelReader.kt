@@ -39,7 +39,7 @@ class AudioLevelReader : ObserverNode("Audio level reader") {
 
     override fun observe(packetInfo: PacketInfo) {
         audioLevelExtId?.let { audioLevelId ->
-            val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+            val rtpPacket = packetInfo.packetAs<RtpPacket>()
             val levelExt = rtpPacket.header.getExtension(audioLevelId) ?: return
             val level = (levelExt.data.get() and 0x7F).toLong()
             if (level != MUTED_LEVEL) {

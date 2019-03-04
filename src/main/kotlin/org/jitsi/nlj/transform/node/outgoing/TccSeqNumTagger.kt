@@ -37,7 +37,7 @@ class TccSeqNumTagger(
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         tccExtensionId?.let { tccExtId ->
             val ext = TccHeaderExtension(tccExtId, currTccSeqNum++)
-            val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+            val rtpPacket = packetInfo.packetAs<RtpPacket>()
             rtpPacket.header.addExtension(tccExtId, ext)
         }
 

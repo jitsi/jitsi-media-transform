@@ -29,7 +29,7 @@ class RetransmissionRequesterNode(
     private val retransmissionRequester = RetransmissionRequester(rtcpSender, scheduler)
 
     override fun observe(packetInfo: PacketInfo) {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         retransmissionRequester.packetReceived(rtpPacket.header.ssrc, rtpPacket.header.sequenceNumber)
     }
 

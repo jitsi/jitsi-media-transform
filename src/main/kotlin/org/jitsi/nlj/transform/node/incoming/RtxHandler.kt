@@ -55,7 +55,7 @@ class RtxHandler : TransformerNode("RTX handler") {
     }
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         if (associatedPayloadTypes.containsKey(rtpPacket.header.payloadType)) {
             val rtxPacket = RtxPacket.parseAsRtx(rtpPacket)
 //          logger.cdebug {

@@ -28,7 +28,7 @@ class SentRtcpStats : ObserverNode("Sent RTCP stats") {
     private var numFirsSent = 0
 
     override fun observe(packetInfo: PacketInfo) {
-        val rtcpPacket: RtcpPacket = packetInfo.packet as RtcpPacket
+        val rtcpPacket = packetInfo.packetAs<RtcpPacket>()
         when (rtcpPacket) {
             is RtcpFbPliPacket -> numPlisSent++
             is RtcpFbFirPacket -> numFirsSent++

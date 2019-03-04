@@ -52,7 +52,7 @@ class TccGeneratorNode(
 
     override fun observe(packetInfo: PacketInfo) {
         tccExtensionId?.let { tccExtId ->
-            val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+            val rtpPacket = packetInfo.packetAs<RtpPacket>()
             rtpPacket.header.getExtension(tccExtId).let { tccExt ->
                 //TODO: check if it's a one byte or two byte ext?
                 // TODO: add a tcc ext type that handles the seq num parsing?

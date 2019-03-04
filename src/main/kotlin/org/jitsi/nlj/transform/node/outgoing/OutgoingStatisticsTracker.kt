@@ -24,7 +24,7 @@ class OutgoingStatisticsTracker : ObserverNode("Outgoing statistics tracker") {
     private val streamStats: MutableMap<Long, OutgoingStreamStatistics> = ConcurrentHashMap()
 
     override fun observe(packetInfo: PacketInfo) {
-        val rtpPacket: RtpPacket = packetInfo.packet as RtpPacket
+        val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val stats = streamStats.computeIfAbsent(rtpPacket.header.ssrc) {
             OutgoingStreamStatistics(rtpPacket.header.ssrc)
         }
