@@ -18,7 +18,7 @@ package org.jitsi.nlj.transform.node.incoming
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.stats.NodeStatsBlock
-import org.jitsi.nlj.transform.node.TransformerNode
+import org.jitsi.nlj.transform.node.FilterNode
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.rtp.extensions.toHex
@@ -35,7 +35,7 @@ import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 class RtcpTermination(
     private val rtcpEventNotifier: RtcpEventNotifier,
     private val transportCcEngine: TransportCCEngine? = null
-) : TransformerNode("RTCP termination") {
+) : FilterNode("RTCP termination") {
     private var numNacksReceived = 0
     private var numFirsReceived = 0
     private var numPlisReceived = 0
@@ -43,8 +43,8 @@ class RtcpTermination(
     private var numSrsReceived = 0
     private var numSdesReceived = 0
 
-    override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        var consumePacket = true
+    override fun accept(packetInfo: PacketInfo): Boolean {
+        var accept = false
 
         val pkt = packetInfo.packet
         when (pkt) {
@@ -74,7 +74,7 @@ class RtcpTermination(
                 // We'll let these pass through and be forwarded to the sender who will be
                 // responsible for translating/aggregating them
                 logger.cdebug { "BRIAN: passing through ${pkt::class} rtcp packet: ${pkt.getBuffer().toHex()}" }
-                consumePacket = false
+                accept = true
             }
             else -> {
                 logger.cinfo { "TODO: not yet handling RTCP packet of type ${pkt.javaClass}"}
@@ -83,7 +83,7 @@ class RtcpTermination(
         //TODO: keep an eye on if anything in here takes a while it could slow the packet pipeline down
         rtcpEventNotifier.notifyRtcpReceived(packetInfo)
 
-        return if (consumePacket) null else packetInfo
+        return accept
     }
 
     private fun handleTccPacket(tccPacket: RtcpFbTccPacket) {
