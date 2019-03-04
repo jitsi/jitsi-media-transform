@@ -20,27 +20,23 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.rtp.rtcp.RtcpPacket
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbFirPacket
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPliPacket
+import kotlin.reflect.KClass
 
 class SentRtcpStats : ObserverNode("Sent RTCP stats") {
-    private var numPlisSent = 0
-    private var numFirsSent = 0
+    private var sentRtcpCounts = mutableMapOf<KClass<out RtcpPacket>, Int>().withDefault { 0 }
 
     override fun observe(packetInfo: PacketInfo) {
-        val rtcpPacket = packetInfo.packetAs<RtcpPacket>()
-        when (rtcpPacket) {
-            is RtcpFbPliPacket -> numPlisSent++
-            is RtcpFbFirPacket -> numFirsSent++
-        }
+        val rtcpPacket: RtcpPacket = packetInfo.packetAs()
+        sentRtcpCounts[rtcpPacket::class] = (sentRtcpCounts[rtcpPacket::class] ?: 0 ) + 1
     }
 
     override fun getNodeStats(): NodeStatsBlock {
         val parentStats = super.getNodeStats()
         return NodeStatsBlock(name).apply {
             addAll(parentStats)
-            addStat("num PLI packets tx: $numPlisSent")
-            addStat("num FIR packets tx: $numFirsSent")
+            sentRtcpCounts.forEach {(rtcpType, count) ->
+                addStat("num $rtcpType packets tx: $count")
+            }
         }
     }
 }

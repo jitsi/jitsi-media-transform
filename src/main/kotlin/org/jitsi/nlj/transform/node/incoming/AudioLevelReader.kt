@@ -22,10 +22,11 @@ import org.jitsi.nlj.RtpExtensionAddedEvent
 import org.jitsi.nlj.RtpExtensionClearEvent
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.cinfo
+import org.jitsi.rtp.extensions.unsigned.toPositiveLong
 import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.rtp.rtp.header_extensions.AudioLevelHeaderExtension
 import org.jitsi.service.neomedia.RTPExtension
 import unsigned.toUInt
-import kotlin.experimental.and
 
 /**
  * https://tools.ietf.org/html/rfc6464#section-3
@@ -34,16 +35,17 @@ class AudioLevelReader : ObserverNode("Audio level reader") {
     private var audioLevelExtId: Int? = null
     var audioLevelListener: AudioLevelListener? = null
     companion object {
-        const val MUTED_LEVEL = 127L
+        const val MUTED_LEVEL = 127
     }
 
     override fun observe(packetInfo: PacketInfo) {
         audioLevelExtId?.let { audioLevelId ->
-            val rtpPacket = packetInfo.packetAs<RtpPacket>()
-            val levelExt = rtpPacket.header.getExtension(audioLevelId) ?: return
-            val level = (levelExt.data.get() and 0x7F).toLong()
-            if (level != MUTED_LEVEL) {
-                audioLevelListener?.onLevelReceived(rtpPacket.header.ssrc, 127 - level)
+            val rtpPacket: RtpPacket = packetInfo.packetAs()
+            rtpPacket.header.getExtensionAs(audioLevelId, AudioLevelHeaderExtension.Companion::fromUnparsed)?.let {
+                val level = it.audioLevel
+                if (level != MUTED_LEVEL) {
+                    audioLevelListener?.onLevelReceived(rtpPacket.header.ssrc, (127 - level).toPositiveLong())
+                }
             }
         }
     }
