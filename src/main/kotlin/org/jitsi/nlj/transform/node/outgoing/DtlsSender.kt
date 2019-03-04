@@ -17,7 +17,7 @@ package org.jitsi.nlj.transform.node.outgoing
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.dtls.DtlsStack
-import org.jitsi.nlj.transform.node.ConsumerNode
+import org.jitsi.nlj.transform.node.TransformerNode
 
 /**
  * A Node to handle the output of the sctp stack to bridge it back
@@ -26,14 +26,16 @@ import org.jitsi.nlj.transform.node.ConsumerNode
  */
 class DtlsSender(
     private val dtlsStack: DtlsStack
-) : ConsumerNode("DTLS sender") {
+) : TransformerNode("DTLS sender") {
     init {
         dtlsStack.onOutgoingProtocolData =  ::next
     }
 
-    override fun consume(packetInfo: PacketInfo) {
+    override fun transform(packetInfo: PacketInfo): PacketInfo? {
         // Pass the packet into the stack.  When the stack is done processing it and packets are
         // ready to be sent, it will invoke the onOutgoingProtocolData handler above
         dtlsStack.sendDtlsAppData(packetInfo)
+
+        return null
     }
 }
