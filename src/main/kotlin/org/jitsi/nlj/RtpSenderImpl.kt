@@ -109,7 +109,7 @@ class RtpSenderImpl(
     )
     private val nackHandler: NackHandler
 
-    private val outputPipelineTerminationNode = object : ConsumerNode("Output pipeline termination node") {
+    private val outputPipelineTerminationNode = object : ConsumerNode("Output termination") {
         override fun consume(packetInfo: PacketInfo) {
             if (packetInfo.timeline.totalDelay() > Duration.ofMillis(100)) {
                 logger.cerror { "Packet took >100ms to get through bridge:\n${packetInfo.timeline}"}

@@ -19,7 +19,7 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.PacketCache
 import org.jitsi.rtp.rtp.RtpPacket
 
-class PacketCacher : ObserverNode("Packet cache") {
+class PacketCacher : ObserverNode("Cache") {
     private val packetCache = PacketCache()
 
     override fun observe(packetInfo: PacketInfo) {

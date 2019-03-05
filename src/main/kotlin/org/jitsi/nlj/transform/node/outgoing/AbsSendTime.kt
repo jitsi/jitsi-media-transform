@@ -28,7 +28,7 @@ import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.service.neomedia.RTPExtension
 import unsigned.toUInt
 
-class AbsSendTime : TransformerNode("Absolute send time") {
+class AbsSendTime : TransformerNode("AbsSendTime") {
     private val absSendTimeEngine = AbsSendTimeEngine()
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {

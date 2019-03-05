@@ -20,7 +20,7 @@ import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.rtp.rtp.RtpPacket
 import java.util.concurrent.ConcurrentHashMap
 
-class OutgoingStatisticsTracker : ObserverNode("Outgoing statistics tracker") {
+class OutgoingStatisticsTracker : ObserverNode("Outgoing Stats") {
     private val streamStats: MutableMap<Long, OutgoingStreamStatistics> = ConcurrentHashMap()
 
     override fun observe(packetInfo: PacketInfo) {

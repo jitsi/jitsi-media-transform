@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Parse video packets at a codec level and set appropriate meta-information
  */
-class VideoParser : TransformerNode("Video parser") {
+class VideoParser : TransformerNode("VideoParser") {
     private val payloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
     private var rtpEncodings: List<RTPEncodingDesc> = ArrayList()
 

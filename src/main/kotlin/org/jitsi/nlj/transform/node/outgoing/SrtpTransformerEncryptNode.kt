@@ -22,7 +22,7 @@ import org.jitsi.nlj.util.cerror
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi_modified.impl.neomedia.transform.SinglePacketTransformer
 
-class SrtpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTP Encrypt wrapper") {
+class SrtpTransformerEncryptNode : AbstractSrtpTransformerNode("SRTP Encrypt") {
     private var numEncryptFailures = 0
     override fun doTransform(pkts: List<PacketInfo>, transformer: SinglePacketTransformer): List<PacketInfo> {
         val outPackets = mutableListOf<PacketInfo>()

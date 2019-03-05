@@ -30,7 +30,7 @@ import unsigned.toUInt
 
 class TccSeqNumTagger(
     private val transportCcEngine: TransportCCEngine? = null
-) : TransformerNode("TCC sequence number tagger") {
+) : TransformerNode("TCC tagger") {
     private var currTccSeqNum: Int = 1
     private var tccExtensionId: Int? = null
 

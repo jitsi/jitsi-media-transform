@@ -30,7 +30,7 @@ import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
  * individual encoding (that is, each forwardable stream taking into account spatial and temporal scalability) and
  * tags the [VideoRtpPacket] with a snapshot of the current estimated bitrate for the encoding to which it belongs
  */
-class VideoBitrateCalculator : ObserverNode("Video bitrate calculator") {
+class VideoBitrateCalculator : ObserverNode("Bitrate calculator") {
     private var mediaStreamTrackDescs: Array<MediaStreamTrackDesc> = arrayOf()
 
     override fun observe(packetInfo: PacketInfo) {

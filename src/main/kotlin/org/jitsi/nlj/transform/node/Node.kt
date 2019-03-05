@@ -105,6 +105,22 @@ abstract class Node(var name: String
             nextNode?.processPacket(packetInfo)
         }
     }
+
+    open fun printTree(): MutableList<String> {
+        val childTree = nextNode?.printTree() ?: return mutableListOf("[$name]")
+
+        val ourTree = mutableListOf<String>()
+        val ourName = "[$name] -> "
+        val padding = "".padStart(ourName.length)
+
+        var first = true
+        childTree.forEach {
+            ourTree.add((if (first) ourName else padding) + it)
+            first = false
+        }
+
+        return ourTree
+    }
 }
 
 /**
@@ -360,6 +376,35 @@ abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
         superStats.addStat(demuxerBlock.name, demuxerBlock)
 
         return superStats
+    }
+
+    override fun printTree(): MutableList<String> {
+        val ourTree = mutableListOf<String>()
+        val ourName = "[$name] "
+        val paddingPre = "".padStart(ourName.length)
+
+        var firstChild = true
+        transformPaths.forEach {path ->
+            var firstString = true
+            val pathName = "-(${path.name})-> "
+            val paddingPost = "".padStart(pathName.length)
+
+            path.path.printTree().forEach {
+                val line: String
+                if (firstChild && firstString) {
+                    line = "$ourName-$pathName"
+                } else if (firstString) {
+                    line = "$paddingPre-$pathName"
+                } else {
+                    line = "$paddingPre|$paddingPost"
+                }
+
+                ourTree.add(line + it)
+                firstString = false
+            }
+            firstChild = false
+        }
+        return ourTree
     }
 }
 

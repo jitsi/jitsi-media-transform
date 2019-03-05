@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap
  * look like their original packets.
  * https://tools.ietf.org/html/rfc4588
  */
-class RtxHandler : TransformerNode("RTX handler") {
+class RtxHandler : TransformerNode("RTX") {
     private var numPaddingPacketsReceived = 0
     private var numRtxPacketsReceived = 0
     /**

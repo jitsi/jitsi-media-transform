@@ -119,7 +119,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * its place in the receive pipeline.  To support both keeping it in the same
      * place and allowing it to be re-assigned, we wrap it with this.
      */
-    private val rtpPacketHandlerWrapper = object : ConsumerNode("RTP packet handler wrapper") {
+    private val rtpPacketHandlerWrapper = object : ConsumerNode("Input termination (RTP)") {
         override fun consume(packetInfo: PacketInfo) {
             rtpPacketHandler?.processPacket(packetInfo)
         }
@@ -130,7 +130,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * its place in the receive pipeline.  To support both keeping it in the same
      * place and allowing it to be re-assigned, we wrap it with this.
      */
-    private val rtcpPacketHandlerWrapper = object : ConsumerNode("RTCP packet handler wrapper") {
+    private val rtcpPacketHandlerWrapper = object : ConsumerNode("Input termination (RTCP)") {
         override fun consume(packetInfo: PacketInfo) {
             rtcpPacketHandler?.processPacket(packetInfo)
         }
@@ -160,7 +160,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
             node(PacketParser("SRTP protocol parser") { SrtpProtocolPacket(it.getBuffer()) })
             demux("SRTP/SRTCP") {
                 packetPath {
-                    name = "SRTP path"
+                    name = "SRTP"
                     predicate = PacketPredicate { RtpProtocol.isRtp(it.getBuffer()) }
                     path = pipeline {
                         node(PacketParser("SRTP Parser") { SrtpPacket.create(it.getBuffer()) })
@@ -171,7 +171,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         node(statTracker)
                         demux("Media type") {
                             packetPath {
-                                name = "Audio path"
+                                name = "Audio"
                                 predicate = PacketPredicate { it is AudioRtpPacket }
                                 path = pipeline {
                                     node(audioLevelReader)
@@ -179,7 +179,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 }
                             }
                             packetPath {
-                                name = "Video path"
+                                name = "Video"
                                 predicate = PacketPredicate { it is VideoRtpPacket }
                                 path = pipeline {
                                     node(RtxHandler())
@@ -195,7 +195,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                     }
                 }
                 packetPath {
-                    name = "SRTCP path"
+                    name = "SRTCP"
                     predicate = PacketPredicate { RtpProtocol.isRtcp(it.getBuffer()) }
                     path = pipeline {
                         var prevRtcpPacket: Packet? = null
