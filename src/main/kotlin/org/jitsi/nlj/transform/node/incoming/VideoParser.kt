@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import org.jitsi.impl.neomedia.rtp.RTPEncodingDesc
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
@@ -27,7 +26,6 @@ import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.rtp.rtp.RtpPacket
 import unsigned.toUByte
-import java.util.ArrayList
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -35,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class VideoParser : TransformerNode("Video parser") {
     private val payloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
-    private var rtpEncodings: List<RTPEncodingDesc> = ArrayList()
 
     //TODO: things we want to detect here:
     // does this packet belong to a keyframe?

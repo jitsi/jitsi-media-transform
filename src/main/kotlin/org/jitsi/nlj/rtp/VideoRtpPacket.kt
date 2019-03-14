@@ -15,12 +15,11 @@
  */
 package org.jitsi.nlj.rtp
 
-import org.jitsi.impl.neomedia.rtp.RTPEncodingDesc
+import org.jitsi_modified.impl.neomedia.rtp.RTPEncodingDesc
 import org.jitsi.rtp.extensions.put
 import org.jitsi.rtp.rtp.RtpHeader
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.util.BufferPool
-import org.jitsi.rtp.util.ByteBufferUtils
 import java.nio.ByteBuffer
 
 open class VideoRtpPacket(
