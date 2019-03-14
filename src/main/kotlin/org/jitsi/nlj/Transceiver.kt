@@ -27,9 +27,9 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.stats.PacketIOActivity
 import org.jitsi.nlj.stats.TransceiverStats
 import org.jitsi.nlj.transform.NodeStatsProducer
+import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.rtp.extensions.toHex
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.service.neomedia.MediaType
 import org.jitsi.service.neomedia.RTPExtension
@@ -39,7 +39,6 @@ import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.BandwidthEstimatorImpl
 import org.jitsi_modified.service.neomedia.rtp.BandwidthEstimator
-import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -223,7 +222,7 @@ class Transceiver(
 
     fun addPayloadType(payloadType: PayloadType) {
         payloadTypes[payloadType.pt] = payloadType
-        logger.cinfo { "Payload type added: $payloadType" }
+        logger.cdebug { "Payload type added: $payloadType" }
         val rtpPayloadTypeAddedEvent = RtpPayloadTypeAddedEvent(payloadType)
         rtpReceiver.handleEvent(rtpPayloadTypeAddedEvent)
         rtpSender.handleEvent(rtpPayloadTypeAddedEvent)
@@ -238,7 +237,7 @@ class Transceiver(
     }
 
     fun addRtpExtension(extensionId: Byte, rtpExtension: RTPExtension) {
-        logger.cinfo { "Adding RTP extension: $extensionId -> $rtpExtension" }
+        logger.cdebug { "Adding RTP extension: $extensionId -> $rtpExtension" }
         rtpExtensions[extensionId] = rtpExtension
         val rtpExtensionAddedEvent = RtpExtensionAddedEvent(extensionId, rtpExtension)
         rtpReceiver.handleEvent(rtpExtensionAddedEvent)
@@ -255,14 +254,14 @@ class Transceiver(
     }
 
     fun setAudioLevelListener(audioLevelListener: AudioLevelListener) {
-        logger.cinfo { "BRIAN: transceiver setting csrc audio level listener on receiver" }
+        logger.cdebug { "Setting audio level listener $audioLevelListener" }
         rtpReceiver.setAudioLevelListener(audioLevelListener)
     }
 
     // TODO(brian): we may want to handle local and remote ssrc associations differently, as different parts of the
     // code care about one or the other, but currently there is no issue treating them the same.
     fun addSsrcAssociation(primarySsrc: Long, secondarySsrc: Long, type: SsrcAssociationType) {
-        logger.cinfo { "Transceiver $id adding ssrc association: $primarySsrc <-> $secondarySsrc ($type)"}
+        logger.cinfo { "Adding ssrc association: $primarySsrc <-> $secondarySsrc ($type)"}
         val ssrcAssociationEvent = SsrcAssociationEvent(primarySsrc, secondarySsrc, type)
         rtpReceiver.handleEvent(ssrcAssociationEvent)
         rtpSender.handleEvent(ssrcAssociationEvent)
@@ -272,10 +271,7 @@ class Transceiver(
         val srtpProfileInfo =
             SrtpUtil.getSrtpProfileInformationFromSrtpProtectionProfile(chosenSrtpProtectionProfile)
         val keyingMaterial = SrtpUtil.getKeyingMaterial(tlsContext, srtpProfileInfo)
-        logger.cinfo { "Transceiver $id creating transformers with:\n" +
-                "profile info:\n$srtpProfileInfo\n" +
-                "keyingMaterial:\n${ByteBuffer.wrap(keyingMaterial).toHex()}\n" +
-                "tls role: ${TlsRole.fromTlsContext(tlsContext)}" }
+        logger.cdebug { "Setting SRTP info" }
         val srtpTransformer = SrtpUtil.initializeTransformer(
             srtpProfileInfo,
             keyingMaterial,
