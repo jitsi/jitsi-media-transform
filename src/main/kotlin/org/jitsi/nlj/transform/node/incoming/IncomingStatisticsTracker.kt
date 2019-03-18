@@ -15,7 +15,7 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import org.ice4j.util.RateStatistics
+import org.jitsi.javautils.RateStatistics
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent

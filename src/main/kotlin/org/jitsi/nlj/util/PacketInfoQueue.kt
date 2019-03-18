@@ -16,7 +16,7 @@
 
 package org.jitsi.nlj.util
 
-import org.ice4j.util.PacketQueue
+import org.jitsi.javautils.PacketQueue
 import org.jitsi.nlj.PacketInfo
 import java.util.concurrent.ExecutorService
 
