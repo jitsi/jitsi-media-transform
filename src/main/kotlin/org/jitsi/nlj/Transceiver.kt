@@ -184,7 +184,7 @@ class Transceiver(
     }
 
     fun addReceiveSsrc(ssrc: Long) {
-        logger.cinfo { "Transceiver ${hashCode()} adding receive ssrc $ssrc" }
+        logger.cdebug { "${hashCode()} adding receive ssrc $ssrc" }
         receiveSsrcs.add(ssrc)
         rtpReceiver.handleEvent(ReceiveSsrcAddedEvent(ssrc))
         //TODO: fire events to rtp sender as well
@@ -208,7 +208,7 @@ class Transceiver(
     fun receivesSsrc(ssrc: Long): Boolean = receiveSsrcs.contains(ssrc)
 
     fun setMediaStreamTracks(mediaStreamTracks: Array<MediaStreamTrackDesc>): Boolean {
-        logger.cinfo { "$id setting media stream tracks: ${mediaStreamTracks.joinToString()}" }
+        logger.cdebug { "$id setting media stream tracks: ${mediaStreamTracks.joinToString()}" }
         val ret = this.mediaStreamTracks.setMediaStreamTracks(mediaStreamTracks)
         rtpReceiver.handleEvent(SetMediaStreamTracksEvent(this.mediaStreamTracks.tracks))
         return ret
@@ -261,7 +261,7 @@ class Transceiver(
     // TODO(brian): we may want to handle local and remote ssrc associations differently, as different parts of the
     // code care about one or the other, but currently there is no issue treating them the same.
     fun addSsrcAssociation(primarySsrc: Long, secondarySsrc: Long, type: SsrcAssociationType) {
-        logger.cinfo { "Adding ssrc association: $primarySsrc <-> $secondarySsrc ($type)"}
+        logger.cdebug { "Adding SSRC association: $primarySsrc <-> $secondarySsrc ($type)"}
         val ssrcAssociationEvent = SsrcAssociationEvent(primarySsrc, secondarySsrc, type)
         rtpReceiver.handleEvent(ssrcAssociationEvent)
         rtpSender.handleEvent(ssrcAssociationEvent)
