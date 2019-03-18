@@ -210,13 +210,13 @@ class Transceiver(
     fun setMediaStreamTracks(mediaStreamTracks: Array<MediaStreamTrackDesc>): Boolean {
         logger.cdebug { "$id setting media stream tracks: ${mediaStreamTracks.joinToString()}" }
         val ret = this.mediaStreamTracks.setMediaStreamTracks(mediaStreamTracks)
-        rtpReceiver.handleEvent(SetMediaStreamTracksEvent(this.mediaStreamTracks.tracks))
+        rtpReceiver.handleEvent(SetMediaStreamTracksEvent(this.mediaStreamTracks.getMediaStreamTracks()))
         return ret
     }
 
     //TODO(brian): we should only expose an immutable version of this, but Array doesn't have that.  Go in
     // and change all the storage of the media stream tracks to use a list
-    fun getMediaStreamTracks(): Array<MediaStreamTrackDesc> = mediaStreamTracks.tracks
+    fun getMediaStreamTracks(): Array<MediaStreamTrackDesc> = mediaStreamTracks.getMediaStreamTracks()
 
     fun requestKeyFrame(mediaSsrc: Long) = rtpSender.requestKeyframe(mediaSsrc)
 
