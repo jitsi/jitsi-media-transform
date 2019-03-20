@@ -18,6 +18,7 @@ package org.jitsi.nlj.module_tests
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpSender
 import org.jitsi.nlj.util.safeShutdown
+import org.jitsi.rtp.extensions.looksLikeRtp
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.test_utils.Pcaps
