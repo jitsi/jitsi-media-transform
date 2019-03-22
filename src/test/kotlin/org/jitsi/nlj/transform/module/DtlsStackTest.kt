@@ -27,8 +27,11 @@ import org.bouncycastle.crypto.tls.DTLSServerProtocol
 import org.bouncycastle.crypto.tls.DatagramTransport
 import org.bouncycastle.crypto.tls.DefaultTlsServer
 import org.bouncycastle.crypto.tls.DefaultTlsSignerCredentials
+import org.bouncycastle.crypto.tls.HashAlgorithm
 import org.bouncycastle.crypto.tls.ProtocolVersion
 import org.bouncycastle.crypto.tls.SRTPProtectionProfile
+import org.bouncycastle.crypto.tls.SignatureAlgorithm
+import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm
 import org.bouncycastle.crypto.tls.TlsSRTPUtils
 import org.bouncycastle.crypto.tls.TlsSignerCredentials
 import org.bouncycastle.crypto.tls.TlsUtils
@@ -115,10 +118,15 @@ class TlsServerImpl : DefaultTlsServer() {
         keyPair = keypairGen.generateKeyPair()
         certificate = generateCert(keyPair)
     }
-    override fun getMinimumVersion(): ProtocolVersion = ProtocolVersion.DTLSv10
-    override fun getMaximumVersion(): ProtocolVersion = ProtocolVersion.DTLSv10
+    override fun getMinimumVersion(): ProtocolVersion = ProtocolVersion.DTLSv12
+    override fun getMaximumVersion(): ProtocolVersion = ProtocolVersion.DTLSv12
     override fun getRSASignerCredentials(): TlsSignerCredentials {
-        return DefaultTlsSignerCredentials(context, certificate, PrivateKeyFactory.createKey(keyPair.private.encoded))
+        return DefaultTlsSignerCredentials(
+            context,
+            certificate,
+            PrivateKeyFactory.createKey(keyPair.private.encoded),
+            SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.rsa)
+        )
     }
 
     override fun getServerExtensions(): Hashtable<*, *> {

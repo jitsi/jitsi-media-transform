@@ -38,7 +38,6 @@ import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.nlj.util.getStackTrace
 import org.jitsi.rtp.extensions.toHex
 import java.nio.ByteBuffer
 import java.security.SecureRandom
@@ -126,10 +125,11 @@ class TlsClientImpl(
         //TODO: a few cases we should be throwing alerts for in here.  see old TlsClientImpl
         val useSRTPData = TlsSRTPUtils.getUseSRTPExtension(serverExtensions)
         val protectionProfiles = useSRTPData.protectionProfiles
-        chosenSrtpProtectionProfile = when (protectionProfiles.size) {
-            1 -> DtlsUtils.chooseSrtpProtectionProfile(srtpProtectionProfiles, protectionProfiles)
-            else -> 0
-        }
+        chosenSrtpProtectionProfile = DtlsUtils.chooseSrtpProtectionProfile(srtpProtectionProfiles, protectionProfiles)
+//        chosenSrtpProtectionProfile = when (protectionProfiles.size) {
+//            1 -> DtlsUtils.chooseSrtpProtectionProfile(srtpProtectionProfiles, protectionProfiles)
+//            else -> 0
+//        }
         if (chosenSrtpProtectionProfile == 0) {
             // throw alert
         }

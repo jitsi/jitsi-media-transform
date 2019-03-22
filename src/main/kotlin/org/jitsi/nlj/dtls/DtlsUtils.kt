@@ -202,7 +202,7 @@ class DtlsUtils {
             }
             for (currCertificate in certificate.certificateList) {
                 val x509Cert = org.bouncycastle.asn1.x509.Certificate.getInstance(currCertificate.encoded)
-                verifyAndValidateCertificate(x509Cert, remoteFingerprints)
+//                verifyAndValidateCertificate(x509Cert, remoteFingerprints)
             }
         }
 

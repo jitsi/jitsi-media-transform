@@ -31,6 +31,7 @@ import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
+import org.jitsi.rtp.extensions.bytearray.toHex
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging.Logger
@@ -275,7 +276,7 @@ class Transceiver(
             SrtpUtil.getSrtpProfileInformationFromSrtpProtectionProfile(chosenSrtpProtectionProfile)
         logger.cinfo { "Transceiver $id creating transformers with:\n" +
                 "profile info:\n$srtpProfileInfo\n" +
-                "keyingMaterial:\n${ByteBuffer.wrap(keyingMaterial).toHex()}\n" +
+                "keyingMaterial:\n${keyingMaterial.toHex()}\n" +
                 "tls role: $tlsRole" }
         val srtpTransformer = SrtpUtil.initializeTransformer(
             srtpProfileInfo,
