@@ -37,12 +37,12 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bctls-jdk15on</artifactId>
-            <version>161b25</version>
+            <version>1.61</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>161b25</version>
+            <version>1.61</version>
         </dependency>
         <!--<dependency>-->
             <!--<groupId>org.bouncycastle</groupId>-->
