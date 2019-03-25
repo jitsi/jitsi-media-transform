@@ -401,14 +401,14 @@ public class SRTPCryptoContext
                 mac.init(new KeyParameter(authKey));
                 break;
 
-            case SRTPPolicy.SKEIN_AUTHENTICATION:
-                // Skein MAC uses number of bits as MAC size, not just bytes
-                mac.init(
-                        new ParametersForSkein(
-                                new KeyParameter(authKey),
-                                ParametersForSkein.Skein512,
-                                tagStore.length * 8));
-                break;
+//            case SRTPPolicy.SKEIN_AUTHENTICATION:
+//                // Skein MAC uses number of bits as MAC size, not just bytes
+//                mac.init(
+//                        new ParametersForSkein(
+//                                new KeyParameter(authKey),
+//                                ParametersForSkein.Skein512,
+//                                tagStore.length * 8));
+//                break;
             }
 
             Arrays.fill(authKey, (byte) 0);
