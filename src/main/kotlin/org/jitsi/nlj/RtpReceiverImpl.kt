@@ -87,7 +87,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val incomingPacketQueue = PacketInfoQueue(id, executor, this::handleIncomingPacket)
     private val srtpDecryptWrapper = SrtpTransformerDecryptNode()
     private val srtcpDecryptWrapper = SrtcpTransformerDecryptNode()
-    private val tccGenerator = TccGeneratorNode(rtcpSender)
+    private val tccGenerator = TccGeneratorNode(rtcpSender, backgroundExecutor)
     private val payloadTypeFilter = PayloadTypeFilterNode()
     private val audioLevelReader = AudioLevelReader()
     private val statsTracker = IncomingStatisticsTracker()
