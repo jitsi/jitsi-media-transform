@@ -119,8 +119,8 @@ class TlsServerImpl(
                 //TODO: save and store this value?
                 BcDefaultTlsCredentialedDecryptor(
                     crypto,
-                    DtlsStack.getCertificateInfo().certificate,
-                    DtlsStack.getCertificateInfo().keyPair.private
+                    DtlsStack2.getCertificateInfo().certificate,
+                    DtlsStack2.getCertificateInfo().keyPair.private
                 )
             }
             else -> {
@@ -131,7 +131,7 @@ class TlsServerImpl(
 
     override fun getRSASignerCredentials(): TlsCredentialedSigner {
         val crypto = context.crypto
-        val certificateInfo = DtlsStack.getCertificateInfo()
+        val certificateInfo = DtlsStack2.getCertificateInfo()
         return when (crypto) {
             is BcTlsCrypto -> {
                 //TODO: save and store this value?

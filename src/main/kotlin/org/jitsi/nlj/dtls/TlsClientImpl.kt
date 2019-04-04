@@ -81,7 +81,7 @@ class TlsClientImpl(
                 val cryptoParams = TlsCryptoParameters(context)
                 // NOTE: can't just assign this outright because 'context' won't be set yet
                 if (clientCredentials == null) {
-                    val certificateInfo = DtlsStack.getCertificateInfo()
+                    val certificateInfo = DtlsStack2.getCertificateInfo()
                     when (crypto) {
                         is BcTlsCrypto -> {
                             clientCredentials = BcDefaultTlsCredentialedSigner(

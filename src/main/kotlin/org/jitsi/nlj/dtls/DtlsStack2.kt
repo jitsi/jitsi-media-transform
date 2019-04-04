@@ -63,10 +63,10 @@ class DtlsStack2 : ProtocolStack, DatagramTransport {
     private val logger = getLogger(this.javaClass)
 
     val localFingerprint: String
-        get() = DtlsStack.getCertificateInfo().localFingerprint
+        get() = DtlsStack2.getCertificateInfo().localFingerprint
 
     val localFingerprintHashFunction: String
-        get() = DtlsStack.getCertificateInfo().localFingerprintHashFunction
+        get() = DtlsStack2.getCertificateInfo().localFingerprintHashFunction
 
     /**
      * The remote fingerprints sent to us over the signaling path.
