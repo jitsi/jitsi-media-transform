@@ -17,8 +17,18 @@
 package org.jitsi.nlj.dtls
 
 import io.kotlintest.IsolationMode
+import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
-import org.jitsi.nlj.transform.node.outgoing.DtlsSender
+import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.transform.node.ConsumerNode
+import org.jitsi.nlj.transform.node.incoming.ProtocolReceiver
+import org.jitsi.nlj.transform.node.outgoing.ProtocolSender
+import org.jitsi.rtp.UnparsedPacket
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 class DtlsTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -34,6 +44,65 @@ class DtlsTest : ShouldSpec() {
         val dtlsServer = DtlsStack2().apply { actAsServer() }
         val dtlsClient = DtlsStack2().apply { actAsClient() }
 
-        val serverSender = DtlsSender(dtlsServer)
+        val serverSender = ProtocolSender(dtlsServer)
+        val serverReceiver = ProtocolReceiver(dtlsServer)
+
+        val clientSender = ProtocolSender(dtlsClient)
+        val clientReceiver = ProtocolReceiver(dtlsClient)
+
+        // The server and client senders are connected directly to their
+        // peer's receiver
+        serverSender.attach(object : ConsumerNode("server network") {
+            override fun consume(packetInfo: PacketInfo) {
+                clientReceiver.processPacket(packetInfo)
+            }
+        })
+        clientSender.attach(object : ConsumerNode("client network") {
+            override fun consume(packetInfo: PacketInfo) {
+                serverReceiver.processPacket(packetInfo)
+            }
+        })
+
+        // We attach a consumer to each peer's receiver to consume the DTLS app packet
+        // messages
+        val serverReceivedData = CompletableFuture<String>()
+        val serverToClientMessage = "Goodbye, world"
+        serverReceiver.attach(object : ConsumerNode("server incoming app packets") {
+            override fun consume(packetInfo: PacketInfo) {
+                val packetData = ByteBuffer.wrap(packetInfo.packet.buffer, packetInfo.packet.offset, packetInfo.packet.length)
+                val receivedStr = StandardCharsets.UTF_8.decode(packetData).toString()
+                debug("Server received message: '$receivedStr'")
+                serverReceivedData.complete(receivedStr)
+                serverSender.processPacket(PacketInfo(UnparsedPacket(serverToClientMessage.toByteArray())))
+            }
+        })
+
+        val clientReceivedData = CompletableFuture<String>()
+        clientReceiver.attach(object : ConsumerNode("client incoming app packets") {
+            override fun consume(packetInfo: PacketInfo) {
+                val packetData = ByteBuffer.wrap(packetInfo.packet.buffer, packetInfo.packet.offset, packetInfo.packet.length)
+                val receivedStr = StandardCharsets.UTF_8.decode(packetData).toString()
+                debug("Client received message: '$receivedStr'")
+                clientReceivedData.complete(receivedStr)
+            }
+        })
+
+        val serverThread = thread {
+            debug("Server accepting")
+            dtlsServer.start()
+            debug("Server accepted connection")
+        }
+
+
+        debug("Client connecting")
+        dtlsClient.start()
+        debug("Client connected, sending message")
+        val clientToServerMessage = "Hello, world"
+        dtlsClient.sendApplicationData(PacketInfo(UnparsedPacket(clientToServerMessage.toByteArray())))
+
+        serverReceivedData.get(5, TimeUnit.SECONDS) shouldBe clientToServerMessage
+        clientReceivedData.get(5, TimeUnit.SECONDS) shouldBe serverToClientMessage
+
+        serverThread.join()
     }
 }

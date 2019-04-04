@@ -20,6 +20,7 @@ import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
 import org.bouncycastle.tls.TlsServerCertificate
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.protocol.ProtocolStack
 import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.util.cdebug
@@ -57,7 +58,7 @@ import java.util.concurrent.TimeUnit
  *  dtlsStack.sendDtlsAppData(dtlsAppPacket)
  *
  */
-class DtlsStack2 : DatagramTransport {
+class DtlsStack2 : ProtocolStack, DatagramTransport {
 
     private val logger = getLogger(this.javaClass)
 
@@ -89,7 +90,11 @@ class DtlsStack2 : DatagramTransport {
      */
     private val incomingProtocolData = LinkedBlockingQueue<PacketInfo>()
     // TODO convert to single packet?
-    var onOutgoingProtocolData: (List<PacketInfo>) -> Unit = {}
+    private var onOutgoingProtocolData: (List<PacketInfo>) -> Unit = {}
+
+    override fun onOutgoingProtocolData(handler: (List<PacketInfo>) -> Unit) {
+        onOutgoingProtocolData = handler
+    }
 
     /**
      * The negotiated DTLS transport.  This is used to read and write DTLS app data.
@@ -117,7 +122,7 @@ class DtlsStack2 : DatagramTransport {
     }
 
     fun actAsClient() {
-        TODO()
+        role = DtlsClient(this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
     }
 
     /**
@@ -126,12 +131,7 @@ class DtlsStack2 : DatagramTransport {
      */
     protected var handshakeCompleteHandler: (Int, TlsRole, ByteArray) -> Unit = { _, _, _ -> }
 
-    /**
-     * Process incoming DTLS packets from the network by passing them into the stack.  All received DTLS packets should
-     * be sent to the stack via this method.  Returns any DTLS app packets which were processed by the stack as part
-     * of this call.
-     */
-    fun processIncomingDtlsPackets(packetInfo: PacketInfo): List<PacketInfo> {
+    override fun processIncomingProtocolData(packetInfo: PacketInfo): List<PacketInfo> {
         incomingProtocolData.add(packetInfo)
         var bytesReceived: Int
         val outPackets = mutableListOf<PacketInfo>()
@@ -146,7 +146,7 @@ class DtlsStack2 : DatagramTransport {
         return outPackets
     }
 
-    fun sendDtlsAppData(packetInfo: PacketInfo) {
+    override fun sendApplicationData(packetInfo: PacketInfo) {
         dtlsTransport?.send(packetInfo.packet.buffer, packetInfo.packet.offset, packetInfo.packet.length)
     }
 
@@ -154,7 +154,9 @@ class DtlsStack2 : DatagramTransport {
      * 'start' this stack, in whatever role it has been told to operate (client or server).  A call to either
      * [actAsServer] or [actAsClient] MUST be made before calling start.
      */
-    fun start() = role.start()
+    fun start() {
+        dtlsTransport = role.start()
+    }
 
     override fun close() {}
 
