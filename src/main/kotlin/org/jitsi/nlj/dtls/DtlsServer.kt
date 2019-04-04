@@ -17,18 +17,25 @@
 package org.jitsi.nlj.dtls
 
 import org.bouncycastle.tls.DTLSServerProtocol
+import org.bouncycastle.tls.DTLSTransport
+import org.jitsi.nlj.srtp.TlsRole
+import org.jitsi.nlj.util.cerror
+import org.jitsi.nlj.util.cinfo
 
 class DtlsServer(
     private val dtlsServerProtocol: DTLSServerProtocol = DTLSServerProtocol()
 ) : DtlsStack() {
 
-    private val tlsServer: TlsServerImpl = TlsServerImpl()
+    private val tlsServer: TlsServerImpl = TlsServerImpl(this::verifyAndValidateRemoteCertificate)
 
     fun accept() {
-        dtlsServerProtocol.accept(tlsServer, )
+        try {
+            dtlsTransport = dtlsServerProtocol.accept(tlsServer, this)
+            logger.cinfo { "DTLS handshake finished" }
+            handshakeCompleteHandler(tlsServer.chosenSrtpProtectionProfile, TlsRole.SERVER, tlsServer.srtpKeyingMaterial)
+        } catch (t: Throwable) {
+            logger.cerror { "Error during DTLS connection: $t" }
+            throw t
+        }
     }
-
-
-
-
 }

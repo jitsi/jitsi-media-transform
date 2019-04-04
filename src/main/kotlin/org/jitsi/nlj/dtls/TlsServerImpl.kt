@@ -16,22 +16,24 @@
 
 package org.jitsi.nlj.dtls
 
-import org.bouncycastle.crypto.tls.DefaultTlsEncryptionCredentials
-import org.bouncycastle.crypto.tls.TlsContext
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.CertificateRequest
 import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.tls.ClientCertificateType
 import org.bouncycastle.tls.DefaultTlsServer
 import org.bouncycastle.tls.ExporterLabel
+import org.bouncycastle.tls.HashAlgorithm
 import org.bouncycastle.tls.ProtocolVersion
 import org.bouncycastle.tls.SRTPProtectionProfile
+import org.bouncycastle.tls.SignatureAlgorithm
+import org.bouncycastle.tls.SignatureAndHashAlgorithm
 import org.bouncycastle.tls.TlsCredentialedDecryptor
 import org.bouncycastle.tls.TlsCredentialedSigner
 import org.bouncycastle.tls.TlsSRTPUtils
 import org.bouncycastle.tls.TlsSession
 import org.bouncycastle.tls.TlsUtils
 import org.bouncycastle.tls.UseSRTPData
+import org.bouncycastle.tls.crypto.TlsCryptoParameters
 import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedDecryptor
 import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedSigner
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
@@ -43,8 +45,14 @@ import org.jitsi.rtp.extensions.toHex
 import java.nio.ByteBuffer
 import java.security.SecureRandom
 import java.util.Hashtable
+import java.util.Vector
 
-class TlsServerImpl : DefaultTlsServer(BcTlsCrypto(SecureRandom())) {
+class TlsServerImpl(
+    /**
+     * The function to call when the client certificate is available.
+     */
+    private val notifyClientCertificateReceived: (Certificate?) -> Unit
+) : DefaultTlsServer(BcTlsCrypto(SecureRandom())) {
 
     private val logger = getLogger(this.javaClass)
 
@@ -106,10 +114,10 @@ class TlsServerImpl : DefaultTlsServer(BcTlsCrypto(SecureRandom())) {
 
     override fun getRSAEncryptionCredentials(): TlsCredentialedDecryptor {
         val crypto = context.crypto
-        when (crypto) {
+        return when (crypto) {
             is BcTlsCrypto -> {
                 //TODO: save and store this value?
-                return BcDefaultTlsCredentialedDecryptor(
+                BcDefaultTlsCredentialedDecryptor(
                     crypto,
                     DtlsStack.getCertificateInfo().certificate,
                     DtlsStack.getCertificateInfo().keyPair.private
@@ -122,13 +130,33 @@ class TlsServerImpl : DefaultTlsServer(BcTlsCrypto(SecureRandom())) {
     }
 
     override fun getRSASignerCredentials(): TlsCredentialedSigner {
-        return BcDefaultTlsCredentialedSigner(
-
-        )
+        val crypto = context.crypto
+        val certificateInfo = DtlsStack.getCertificateInfo()
+        return when (crypto) {
+            is BcTlsCrypto -> {
+                //TODO: save and store this value?
+                BcDefaultTlsCredentialedSigner(
+                    TlsCryptoParameters(context),
+                    crypto,
+                    certificateInfo.keyPair.private,
+                    certificateInfo.certificate,
+                    SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.rsa)
+                )
+            }
+            else -> {
+                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
+            }
+        }
     }
 
-    override fun getCertificateRequest(): CertificateRequest =
-        CertificateRequest(shortArrayOf(ClientCertificateType.rsa_sign), null, null)
+    override fun getCertificateRequest(): CertificateRequest {
+        val signatureAlgorithms = Vector<SignatureAndHashAlgorithm>(1)
+        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.rsa))
+        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa))
+        return CertificateRequest(shortArrayOf(ClientCertificateType.rsa_sign),
+            signatureAlgorithms,
+            null)
+    }
 
     override fun notifyHandshakeComplete() {
         super.notifyHandshakeComplete()
@@ -151,6 +179,11 @@ class TlsServerImpl : DefaultTlsServer(BcTlsCrypto(SecureRandom())) {
             null,
             2 * (srtpProfileInformation.cipherKeyLength + srtpProfileInformation.cipherSaltLength)
         )
+    }
+
+    override fun notifyClientCertificate(clientCertificate: Certificate?) {
+        notifyClientCertificateReceived(clientCertificate)
+
     }
 
     override fun notifyClientVersion(clientVersion: ProtocolVersion?) {

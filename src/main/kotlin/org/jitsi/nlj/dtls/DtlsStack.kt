@@ -95,9 +95,9 @@ abstract class DtlsStack : ProtocolStack, DatagramTransport {
     /**
      * Checks that a specific [Certificate] matches the remote fingerprints sent to us over the signaling path.
      */
-    protected fun verifyAndValidateRemoteCertificate(tlsServerCertificate: TlsServerCertificate?) {
-        tlsServerCertificate?.let {
-            DtlsUtils.verifyAndValidateCertificate(it.certificate, remoteFingerprints)
+    protected fun verifyAndValidateRemoteCertificate(remoteCertificate: Certificate?) {
+        remoteCertificate?.let {
+            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
             // The above throws an exception if the checks fail.
             logger.cdebug { "Fingerprints verified." }
         }

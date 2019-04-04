@@ -15,6 +15,7 @@
  */
 package org.jitsi.nlj.dtls
 
+import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.CertificateRequest
 import org.bouncycastle.tls.DefaultTlsClient
 import org.bouncycastle.tls.ExporterLabel
@@ -50,7 +51,7 @@ class TlsClientImpl(
     /**
      * The function to call when the server certificate is available.
      */
-    private val notifyServerCertificate: (TlsServerCertificate?) -> Unit
+    private val notifyServerCertificate: (Certificate?) -> Unit
 ) : DefaultTlsClient(BcTlsCrypto(SecureRandom())) {
 
     private val logger = getLogger(this.javaClass)
@@ -100,7 +101,7 @@ class TlsClientImpl(
             }
 
             override fun notifyServerCertificate(serverCertificate: TlsServerCertificate?) {
-                this@TlsClientImpl.notifyServerCertificate(serverCertificate)
+                this@TlsClientImpl.notifyServerCertificate(serverCertificate?.certificate)
             }
         }
     }

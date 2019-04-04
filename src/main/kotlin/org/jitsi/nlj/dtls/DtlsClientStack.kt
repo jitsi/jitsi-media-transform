@@ -21,10 +21,10 @@ import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
 
 class DtlsClientStack(
-        private val dtlsClientProtocol: DTLSClientProtocol = DTLSClientProtocol()
+    private val dtlsClientProtocol: DTLSClientProtocol = DTLSClientProtocol()
 ) : DtlsStack() {
     private val tlsClient: TlsClientImpl
-            = TlsClientImpl(::verifyAndValidateRemoteCertificate)
+        = TlsClientImpl(::verifyAndValidateRemoteCertificate)
 
     fun connect() {
         try {

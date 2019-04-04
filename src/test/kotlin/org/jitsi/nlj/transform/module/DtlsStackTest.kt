@@ -59,6 +59,7 @@ import javax.security.auth.x500.X500Principal
 import kotlin.concurrent.thread
 
 
+//TODO: use FakeDatagramTransport
 data class PacketData(val buf: ByteArray, val off: Int, val length: Int)
 
 class FakeTransport : DatagramTransport {
