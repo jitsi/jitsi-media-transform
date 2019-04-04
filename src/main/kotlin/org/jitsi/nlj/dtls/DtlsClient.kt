@@ -17,7 +17,7 @@
 package org.jitsi.nlj.dtls
 
 import org.bouncycastle.tls.Certificate
-import org.bouncycastle.tls.DTLSServerProtocol
+import org.bouncycastle.tls.DTLSClientProtocol
 import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
 import org.jitsi.nlj.srtp.TlsRole
@@ -25,27 +25,28 @@ import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
 
-class DtlsServer(
+class DtlsClient(
     private val datagramTransport: DatagramTransport,
     private val handshakeCompleteHandler: (Int, TlsRole, ByteArray) -> Unit = { _, _, _ -> },
     verifyAndValidateRemoteCertificate: (Certificate?) -> Unit = {},
-    private val dtlsServerProtocol: DTLSServerProtocol = DTLSServerProtocol()
+    private val dtlsClientProtocol: DTLSClientProtocol = DTLSClientProtocol()
 ) : DtlsRole {
     private val logger = getLogger(this.javaClass)
 
-    private val tlsServer: TlsServerImpl = TlsServerImpl(verifyAndValidateRemoteCertificate)
+    private val tlsClient: TlsClientImpl
+            = TlsClientImpl(verifyAndValidateRemoteCertificate)
 
-    override fun start(): DTLSTransport = accept()
+    override fun start(): DTLSTransport = connect()
 
-    fun accept(): DTLSTransport {
+    fun connect(): DTLSTransport {
         try {
-            return dtlsServerProtocol.accept(tlsServer, datagramTransport).also {
+            return dtlsClientProtocol.connect(this.tlsClient, datagramTransport).also {
                 logger.cinfo { "DTLS handshake finished" }
-                handshakeCompleteHandler(tlsServer.chosenSrtpProtectionProfile, TlsRole.SERVER, tlsServer.srtpKeyingMaterial)
+                handshakeCompleteHandler(tlsClient.chosenSrtpProtectionProfile, TlsRole.CLIENT, tlsClient.srtpKeyingMaterial)
             }
-        } catch (t: Throwable) {
-            logger.cerror { "Error during DTLS connection: $t" }
-            throw t
+        } catch (e: Exception) {
+            logger.cerror{ "Error during DTLS connection: $e" }
+            throw e
         }
     }
 }

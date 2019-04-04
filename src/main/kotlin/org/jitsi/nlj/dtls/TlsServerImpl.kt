@@ -183,7 +183,6 @@ class TlsServerImpl(
 
     override fun notifyClientCertificate(clientCertificate: Certificate?) {
         notifyClientCertificateReceived(clientCertificate)
-
     }
 
     override fun notifyClientVersion(clientVersion: ProtocolVersion?) {
