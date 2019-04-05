@@ -41,8 +41,8 @@ class DtlsTest : ShouldSpec() {
     }
 
     init {
-        val dtlsServer = DtlsStack2().apply { actAsServer() }
-        val dtlsClient = DtlsStack2().apply { actAsClient() }
+        val dtlsServer = DtlsStack("server").apply { actAsServer() }
+        val dtlsClient = DtlsStack("client").apply { actAsClient() }
 
         val serverSender = ProtocolSender(dtlsServer)
         val serverReceiver = ProtocolReceiver(dtlsServer)

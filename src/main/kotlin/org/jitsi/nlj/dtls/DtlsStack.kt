@@ -18,7 +18,6 @@ package org.jitsi.nlj.dtls
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
-import org.bouncycastle.tls.TlsServerCertificate
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.protocol.ProtocolStack
 import org.jitsi.nlj.util.BufferPool
@@ -29,6 +28,7 @@ import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.extensions.clone
 import java.nio.ByteBuffer
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 
@@ -58,15 +58,18 @@ import java.util.concurrent.TimeUnit
  *  dtlsStack.sendDtlsAppData(dtlsAppPacket)
  *
  */
-class DtlsStack2 : ProtocolStack, DatagramTransport {
-
+class DtlsStack(
+    val id: String
+) : ProtocolStack, DatagramTransport {
     private val logger = getLogger(this.javaClass)
+    private val logPrefix = "[$id]"
+    private val roleSet = CompletableFuture<Unit>()
 
     val localFingerprint: String
-        get() = DtlsStack2.getCertificateInfo().localFingerprint
+        get() = DtlsStack.getCertificateInfo().localFingerprint
 
     val localFingerprintHashFunction: String
-        get() = DtlsStack2.getCertificateInfo().localFingerprintHashFunction
+        get() = DtlsStack.getCertificateInfo().localFingerprintHashFunction
 
     /**
      * The remote fingerprints sent to us over the signaling path.
@@ -80,7 +83,7 @@ class DtlsStack2 : ProtocolStack, DatagramTransport {
         remoteCertificate?.let {
             DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
             // The above throws an exception if the checks fail.
-            logger.cdebug { "Fingerprints verified." }
+            logger.cdebug { "$logPrefix Fingerprints verified." }
         }
     }
 
@@ -99,37 +102,46 @@ class DtlsStack2 : ProtocolStack, DatagramTransport {
     /**
      * The negotiated DTLS transport.  This is used to read and write DTLS app data.
      */
-    protected var dtlsTransport: DTLSTransport? = null
+    private var dtlsTransport: DTLSTransport? = null
 
     /**
      * The [DtlsRole] 'plugin' that will determine how this stack operates (as a client
      * or a server).  A call to [actAsClient] or [actAsServer] must be made to fill out
      * this role and successfully call [start]
      */
-    private lateinit var role: DtlsRole
+    var role: DtlsRole? = null
+        private set
 
     /**
      * A buffer we'll use to receive data from [dtlsTransport].
      */
     private val dtlsAppDataBuf = ByteBuffer.allocate(1500)
 
+    /**
+     * Install a handler to be invoked when the DTLS handshake is finished.
+     *
+     * NOTE this MUST be called before calling either [actAsServer] or
+     * [actAsClient]!
+     */
     fun onHandshakeComplete(handler: (Int, TlsRole, ByteArray) -> Unit) {
         handshakeCompleteHandler = handler
     }
 
     fun actAsServer() {
-        role = DtlsServer(this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        role = DtlsServer(id, this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        roleSet.complete(Unit)
     }
 
     fun actAsClient() {
-        role = DtlsClient(this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        role = DtlsClient(id, this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        roleSet.complete(Unit)
     }
 
     /**
      * The handler to be invoked when the DTLS handshake is complete.  A [ByteArray]
      * containing the SRTP keying material is passed
      */
-    protected var handshakeCompleteHandler: (Int, TlsRole, ByteArray) -> Unit = { _, _, _ -> }
+    private var handshakeCompleteHandler: (Int, TlsRole, ByteArray) -> Unit = { _, _, _ -> }
 
     override fun processIncomingProtocolData(packetInfo: PacketInfo): List<PacketInfo> {
         incomingProtocolData.add(packetInfo)
@@ -155,7 +167,9 @@ class DtlsStack2 : ProtocolStack, DatagramTransport {
      * [actAsServer] or [actAsClient] MUST be made before calling start.
      */
     fun start() {
-        dtlsTransport = role.start()
+        roleSet.thenRun {
+            dtlsTransport = role?.start()
+        }
     }
 
     override fun close() {}
@@ -203,12 +217,12 @@ class DtlsStack2 : ProtocolStack, DatagramTransport {
         private var certificateInfo: CertificateInfo = DtlsUtils.generateCertificateInfo()
         private val syncRoot: Any = Any()
         fun getCertificateInfo(): CertificateInfo {
-            synchronized(DtlsStack2.syncRoot) {
+            synchronized(DtlsStack.syncRoot) {
                 val expirationPeriodMs = Duration.ofDays(1).toMillis()
-                if (DtlsStack2.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
-                    DtlsStack2.certificateInfo = DtlsUtils.generateCertificateInfo()
+                if (DtlsStack.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
+                    DtlsStack.certificateInfo = DtlsUtils.generateCertificateInfo()
                 }
-                return DtlsStack2.certificateInfo
+                return DtlsStack.certificateInfo
             }
         }
     }

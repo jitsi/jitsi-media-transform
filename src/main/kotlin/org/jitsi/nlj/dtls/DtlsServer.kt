@@ -26,12 +26,14 @@ import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
 
 class DtlsServer(
+    id: String,
     private val datagramTransport: DatagramTransport,
     private val handshakeCompleteHandler: (Int, TlsRole, ByteArray) -> Unit = { _, _, _ -> },
     verifyAndValidateRemoteCertificate: (Certificate?) -> Unit = {},
     private val dtlsServerProtocol: DTLSServerProtocol = DTLSServerProtocol()
 ) : DtlsRole {
     private val logger = getLogger(this.javaClass)
+    private val logPrefix = "[$id]"
 
     private val tlsServer: TlsServerImpl = TlsServerImpl(verifyAndValidateRemoteCertificate)
 
@@ -40,11 +42,11 @@ class DtlsServer(
     fun accept(): DTLSTransport {
         try {
             return dtlsServerProtocol.accept(tlsServer, datagramTransport).also {
-                logger.cinfo { "DTLS handshake finished" }
+                logger.cinfo { "$logPrefix DTLS handshake finished" }
                 handshakeCompleteHandler(tlsServer.chosenSrtpProtectionProfile, TlsRole.SERVER, tlsServer.srtpKeyingMaterial)
             }
         } catch (t: Throwable) {
-            logger.cerror { "Error during DTLS connection: $t" }
+            logger.cerror { "$logPrefix Error during DTLS connection: $t" }
             throw t
         }
     }
