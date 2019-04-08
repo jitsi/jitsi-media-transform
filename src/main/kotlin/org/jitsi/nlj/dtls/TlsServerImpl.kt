@@ -42,7 +42,6 @@ import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.extensions.toHex
 import java.nio.ByteBuffer
-import java.security.SecureRandom
 import java.util.Hashtable
 import java.util.Vector
 
@@ -51,7 +50,7 @@ class TlsServerImpl(
      * The function to call when the client certificateInfo is available.
      */
     private val notifyClientCertificateReceived: (Certificate?) -> Unit
-) : DefaultTlsServer(BcTlsCrypto(SecureRandom())) {
+) : DefaultTlsServer(BC_TLS_CRYPTO) {
 
     private val logger = getLogger(this.javaClass)
 

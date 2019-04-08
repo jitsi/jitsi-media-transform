@@ -163,8 +163,9 @@ class DtlsStack(
     }
 
     /**
-     * 'start' this stack, in whatever role it has been told to operate (client or server).  A call to either
-     * [actAsServer] or [actAsClient] MUST be made before calling start.
+     * 'start' this stack, in whatever role it has been told to operate (client or server).  If a role
+     * has not yet been yet (via [actAsServer] or [actAsClient]), then it will block until the role
+     * has been set.
      */
     fun start() {
         roleSet.thenRun {

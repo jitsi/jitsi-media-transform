@@ -43,7 +43,8 @@ class DtlsServer(
         try {
             return dtlsServerProtocol.accept(tlsServer, datagramTransport).also {
                 logger.cinfo { "$logPrefix DTLS handshake finished" }
-                handshakeCompleteHandler(tlsServer.chosenSrtpProtectionProfile, TlsRole.SERVER, tlsServer.srtpKeyingMaterial)
+                handshakeCompleteHandler(
+                    tlsServer.chosenSrtpProtectionProfile, TlsRole.SERVER, tlsServer.srtpKeyingMaterial)
             }
         } catch (t: Throwable) {
             logger.cerror { "$logPrefix Error during DTLS connection: $t" }

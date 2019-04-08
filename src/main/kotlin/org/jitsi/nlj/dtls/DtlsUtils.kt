@@ -40,7 +40,6 @@ import java.util.NoSuchElementException
 val SECURE_RANDOM = SecureRandom()
 val BC_TLS_CRYPTO = BcTlsCrypto(SECURE_RANDOM)
 
-
 class DtlsUtils {
     companion object {
         init {
@@ -51,8 +50,8 @@ class DtlsUtils {
             val cn = generateCN("TODO-APP-NAME", "TODO-APP-VERSION")
             val keyPair = generateEcKeyPair()
             val x509certificate = generateCertificate(cn, keyPair)
-            val localFingerprintHashFunction = x509certificate.getHash()
-            val localFingerprint = computeFingerprint(x509certificate, localFingerprintHashFunction)
+            val localFingerprintHashFunction = x509certificate.getHashFunction()
+            val localFingerprint = x509certificate.getFingerprint(localFingerprintHashFunction)
 
             val certificate =  org.bouncycastle.tls.Certificate(
                 arrayOf(BcTlsCertificate(BC_TLS_CRYPTO, x509certificate))
@@ -139,14 +138,14 @@ class DtlsUtils {
          * Verifies and validates a specific certificateInfo against the fingerprints
          * presented by the remote endpoint via the signaling path.
          *
-         * @param certificateInfo the certificateInfo to be verified and validated against
+         * @param certificate the certificateInfo to be verified and validated against
          * the fingerprints presented by the remote endpoint via the signaling path.
-         * @throws DtlsException if the specified [certificateInfo] failed to verify
+         * @throws DtlsException if the specified [certificate] failed to verify
          * and validate against the fingerprints presented by the remote endpoint
          * via the signaling path.
          */
         private fun verifyAndValidateCertificate(
-            certificateInfo: org.bouncycastle.asn1.x509.Certificate,
+            certificate: org.bouncycastle.asn1.x509.Certificate,
             remoteFingerprints: Map<String, String>) {
             // RFC 4572 "Connection-Oriented Media Transport over the Transport
             // Layer Security (TLS) Protocol in the Session Description Protocol
@@ -154,7 +153,7 @@ class DtlsUtils {
             // using the same one-way hash function as is used in the certificateInfo's
             // signature algorithm."
 
-            val hashFunction = certificateInfo.getHash()
+            val hashFunction = certificate.getHashFunction()
 
             // As RFC 5763 "Framework for Establishing a Secure Real-time Transport
             // Protocol (SRTP) Security Context Using Datagram Transport Layer
@@ -186,7 +185,7 @@ class DtlsUtils {
             }
             */
 
-            val certificateFingerprint = computeFingerprint(certificateInfo, hashFunction)
+            val certificateFingerprint = certificate.getFingerprint(hashFunction)
 
             if (remoteFingerprint != certificateFingerprint) {
                 throw DtlsException("Fingerprint $remoteFingerprint does not match the $hashFunction-hashed " +
@@ -197,7 +196,7 @@ class DtlsUtils {
         /**
          * Determine and return the hash function (as a [String]) used by this certificateInfo
          */
-        private fun org.bouncycastle.asn1.x509.Certificate.getHash(): String {
+        private fun org.bouncycastle.asn1.x509.Certificate.getHashFunction(): String {
             val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(signatureAlgorithm)
 
             return BcDefaultDigestProvider.INSTANCE
@@ -207,13 +206,13 @@ class DtlsUtils {
         }
 
         /**
-         * Computes the fingerprint of a [certificateInfo] using [hashFunction] and return it
+         * Computes the fingerprint of a [org.bouncycastle.asn1.x509.Certificate] using [hashFunction] and returns it
          * as a [String]
          */
-        private fun computeFingerprint(certificateInfo: org.bouncycastle.asn1.x509.Certificate, hashFunction: String): String {
+        private fun org.bouncycastle.asn1.x509.Certificate.getFingerprint(hashFunction: String): String {
             val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(hashFunction.toUpperCase())
             val digest = BcDefaultDigestProvider.INSTANCE.get(digAlgId)
-            val input: ByteArray = certificateInfo.getEncoded(ASN1Encoding.DER)
+            val input: ByteArray = getEncoded(ASN1Encoding.DER)
             val output = ByteArray(digest.digestSize)
 
             digest.update(input, 0, input.size)
