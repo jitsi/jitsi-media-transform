@@ -78,5 +78,6 @@ class PcapWriter(
                 .build()
 
         writer.dump(eth)
+        writer.flush()
     }
 }

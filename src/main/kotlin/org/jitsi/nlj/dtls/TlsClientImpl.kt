@@ -17,15 +17,19 @@ package org.jitsi.nlj.dtls
 
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.CertificateRequest
+import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.tls.DefaultTlsClient
 import org.bouncycastle.tls.ExporterLabel
+import org.bouncycastle.tls.ExtensionType
 import org.bouncycastle.tls.HashAlgorithm
 import org.bouncycastle.tls.ProtocolVersion
+import org.bouncycastle.tls.RenegotiationPolicy
 import org.bouncycastle.tls.SRTPProtectionProfile
 import org.bouncycastle.tls.SignatureAlgorithm
 import org.bouncycastle.tls.SignatureAndHashAlgorithm
 import org.bouncycastle.tls.TlsAuthentication
 import org.bouncycastle.tls.TlsCredentials
+import org.bouncycastle.tls.TlsExtensionsUtils
 import org.bouncycastle.tls.TlsSRTPUtils
 import org.bouncycastle.tls.TlsServerCertificate
 import org.bouncycastle.tls.TlsSession
@@ -77,19 +81,18 @@ class TlsClientImpl(
     override fun getAuthentication(): TlsAuthentication {
         return object : TlsAuthentication {
             override fun getClientCredentials(certificateRequest: CertificateRequest): TlsCredentials {
-                val crypto: TlsCrypto = context.crypto
-                val cryptoParams = TlsCryptoParameters(context)
-                // NOTE: can't just assign this outright because 'context' won't be set yet
+                // NOTE: can't set clientCredentials when it is declared because 'context' won't be set yet
                 if (clientCredentials == null) {
-                    val certificateInfo = DtlsStack2.getCertificateInfo()
+                    val crypto = context.crypto
+                    val certificateInfo = DtlsStack.getCertificateInfo()
                     when (crypto) {
                         is BcTlsCrypto -> {
                             clientCredentials = BcDefaultTlsCredentialedSigner(
-                                cryptoParams,
+                                TlsCryptoParameters(context),
                                 crypto,
                                 certificateInfo.keyPair.private,
                                 certificateInfo.certificate,
-                                SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.rsa)
+                                SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
                             )
                         }
                         else -> {
@@ -118,6 +121,8 @@ class TlsClientImpl(
                 UseSRTPData(srtpProtectionProfiles, TlsUtils.EMPTY_BYTES)
             )
         }
+        clientExtensions.put(ExtensionType.renegotiation_info, byteArrayOf(0))
+
 
         return clientExtensions
     }
@@ -134,6 +139,12 @@ class TlsClientImpl(
         if (chosenSrtpProtectionProfile == 0) {
             // throw alert
         }
+    }
+
+    override fun getCipherSuites(): IntArray {
+        return intArrayOf(
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        )
     }
 
     override fun notifyHandshakeComplete() {

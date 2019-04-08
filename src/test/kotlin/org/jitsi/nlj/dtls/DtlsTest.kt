@@ -21,6 +21,7 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.ConsumerNode
+import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.transform.node.incoming.ProtocolReceiver
 import org.jitsi.nlj.transform.node.outgoing.ProtocolSender
 import org.jitsi.rtp.UnparsedPacket
@@ -50,15 +51,19 @@ class DtlsTest : ShouldSpec() {
         val clientSender = ProtocolSender(dtlsClient)
         val clientReceiver = ProtocolReceiver(dtlsClient)
 
+        val pcapWriter = PcapWriter("/tmp/dtls-test.pcal")
+
         // The server and client senders are connected directly to their
         // peer's receiver
         serverSender.attach(object : ConsumerNode("server network") {
             override fun consume(packetInfo: PacketInfo) {
+                pcapWriter.processPacket(packetInfo)
                 clientReceiver.processPacket(packetInfo)
             }
         })
         clientSender.attach(object : ConsumerNode("client network") {
             override fun consume(packetInfo: PacketInfo) {
+                pcapWriter.processPacket(packetInfo)
                 serverReceiver.processPacket(packetInfo)
             }
         })

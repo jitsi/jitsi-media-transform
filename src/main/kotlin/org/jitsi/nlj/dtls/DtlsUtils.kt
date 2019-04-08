@@ -21,13 +21,16 @@ import org.bouncycastle.asn1.x500.X500NameBuilder
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
-import org.bouncycastle.crypto.generators.RSAKeyPairGenerator
-import org.bouncycastle.crypto.params.RSAKeyGenerationParameters
+import org.bouncycastle.crypto.generators.ECKeyPairGenerator
+import org.bouncycastle.crypto.params.ECDomainParameters
+import org.bouncycastle.crypto.params.ECKeyGenerationParameters
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory
+import org.bouncycastle.jce.ECNamedCurveTable
+import org.bouncycastle.operator.DefaultAlgorithmNameFinder
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcDefaultDigestProvider
-import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
+import org.bouncycastle.operator.bc.BcECContentSignerBuilder
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCertificate
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
@@ -39,6 +42,14 @@ import java.util.NoSuchElementException
 
 class DtlsUtils {
     companion object {
+        /**
+         * https://tools.ietf.org/html/draft-ietf-rtcweb-security-arch-18#section-6.5
+         * rtcweb-security-arch sec. 6.5:
+         * All Implementations MUST implement DTLS 1.2 with the
+         * TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 cipher suite and the P-256
+         * curve
+         */
+        const val SIGNATURE_ALGO: String = "SHA256WITHECDSA"
         /**
          * Finds the first value that appears in both [ours] and [theirs]
          */
@@ -99,20 +110,57 @@ class DtlsUtils {
                 .toLowerCase()
         }
 
-        private val RSA_KEY_PUBLIC_EXPONENT = BigInteger("10001", 16)
-        private const val RSA_KEY_SIZE = 1024
-        private const val RSA_KEY_SIZE_CERTAINTY = 80
-        /**
-         * Return a pair of RSA private and public keys.
-         */
-        private fun generateRsaKeyPair(): AsymmetricCipherKeyPair {
-            val generator = RSAKeyPairGenerator()
+//        private val RSA_KEY_PUBLIC_EXPONENT = BigInteger("10001", 16)
+//        private const val RSA_KEY_SIZE = 1024
+//        private const val RSA_KEY_SIZE_CERTAINTY = 80
+//        /**
+//         * Return a pair of RSA private and public keys.
+//         */
+//        private fun generateRsaKeyPair(): AsymmetricCipherKeyPair {
+//            val generator = RSAKeyPairGenerator()
+//            generator.init(
+//                RSAKeyGenerationParameters(
+//                    RSA_KEY_PUBLIC_EXPONENT,
+//                    SecureRandom(),
+//                    RSA_KEY_SIZE,
+//                    RSA_KEY_SIZE_CERTAINTY
+//                )
+//            )
+//            return generator.generateKeyPair()
+//        }
+
+        private fun generateEcKeyPair(): AsymmetricCipherKeyPair {
+            val generator = ECKeyPairGenerator()
+            // "All Implementations MUST implement DTLS 1.2 with the
+            //   TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 cipher suite and the P-256
+            //   curve"
+//            val curveParams = NISTNamedCurves.getByName("P-256")
+//            val curveParams = SECNamedCurves.getByName("secp256r1")
+//
+//
+//            generator.init(
+//                ECKeyGenerationParameters(
+//                    ECDomainParameters(
+//                        curveParams.curve,
+//                        curveParams.g,
+//                        curveParams.n
+//                    ),
+//                    SecureRandom()
+//                )
+//            )
+
+            val curveSpec = ECNamedCurveTable.getParameterSpec("secp256r1")
             generator.init(
-                RSAKeyGenerationParameters(
-                        RSA_KEY_PUBLIC_EXPONENT,
-                SecureRandom(),
-                RSA_KEY_SIZE,
-                RSA_KEY_SIZE_CERTAINTY)
+                ECKeyGenerationParameters(
+                    ECDomainParameters(
+                        curveSpec.curve,
+                        curveSpec.g,
+                        curveSpec.n,
+                        curveSpec.h,
+                        curveSpec.seed
+                    ),
+                    SecureRandom()
+                )
             )
             return generator.generateKeyPair()
         }
@@ -143,13 +191,14 @@ class DtlsUtils {
          * <tt>subject</tt> and <tt>keyPair</tt>
          */
         private fun generateX509Certificate(
-                subject: X500Name,
-                keyPair: AsymmetricCipherKeyPair,
-                signatureAlgo: String = "SHA1withRSA"
+            subject: X500Name,
+            keyPair: AsymmetricCipherKeyPair,
+            signatureAlgo: String = SIGNATURE_ALGO
         ): org.bouncycastle.asn1.x509.Certificate {
             val now = System.currentTimeMillis()
             val notBefore = Date(now - Duration.ofDays(1).toMillis())
             val notAfter = Date(now + Duration.ofDays(7).toMillis())
+
             val certBuilder = X509v3CertificateBuilder(
                 subject,
                 BigInteger.valueOf(now),
@@ -158,9 +207,15 @@ class DtlsUtils {
                 subject,
                 SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(keyPair.public)
             )
-            val signatureAlgoIdentifier = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgo)
-            val digestAlgoIdentifier = DefaultDigestAlgorithmIdentifierFinder().find(signatureAlgoIdentifier)
-            val signer = BcRSAContentSignerBuilder(signatureAlgoIdentifier, digestAlgoIdentifier).build(keyPair.private)
+            val signatureAlgoIdentifier =
+                DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgo)
+            val digestAlgoIdentifier =
+                DefaultDigestAlgorithmIdentifierFinder().find(signatureAlgoIdentifier)
+            //TODO(brian): we take in the signature algorithm (allowing for other values) but
+            // hard-code the signer here
+            val signer =
+                BcECContentSignerBuilder(signatureAlgoIdentifier, digestAlgoIdentifier).build(keyPair.private)
+
             return certBuilder.build(signer).toASN1Structure()
         }
 
@@ -172,16 +227,23 @@ class DtlsUtils {
          * its hash function, and fingerprint
          */
         fun generateCertificateInfo(): CertificateInfo {
-            val keyPair = generateRsaKeyPair()
+//            val keyPair = generateRsaKeyPair()
+            val keyPair = generateEcKeyPair()
 
-            val x509Certificate = generateX509Certificate(generateCN("TODO-APP-NAME", "TODO-APP-VERSION"), keyPair)
+            val x509Certificate =
+                generateX509Certificate(generateCN("TODO-APP-NAME", "TODO-APP-VERSION"), keyPair)
             val localFingerprintHashFunction = x509Certificate.getHash()
             val localFingerprint = computeFingerprint(x509Certificate, localFingerprintHashFunction)
 
             val now = System.currentTimeMillis()
             //TODO(brian): no idea if this is the right way to convert this or not (or if there's a better way to
             // generate the cert entirely?)
-            val tlsCert = Certificate(arrayOf(BcTlsCertificate(BcTlsCrypto(SecureRandom()), byteArrayOf(*x509Certificate.encoded))))
+//            val tlsCert = Certificate(arrayOf(BcTlsCertificate(BcTlsCrypto(SecureRandom()), byteArrayOf(*x509Certificate.encoded))))
+
+            val tlsCert = Certificate(arrayOf(BcTlsCertificate(BcTlsCrypto(SecureRandom()), x509Certificate)))
+
+            tlsCert.getCertificateAt(0).sigAlgOID
+
             return CertificateInfo(keyPair, tlsCert, localFingerprintHashFunction, localFingerprint, now)
         }
 

@@ -21,14 +21,18 @@ import org.bouncycastle.tls.CertificateRequest
 import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.tls.ClientCertificateType
 import org.bouncycastle.tls.DefaultTlsServer
+import org.bouncycastle.tls.ECPointFormat
 import org.bouncycastle.tls.ExporterLabel
 import org.bouncycastle.tls.HashAlgorithm
+import org.bouncycastle.tls.MaxFragmentLength
 import org.bouncycastle.tls.ProtocolVersion
 import org.bouncycastle.tls.SRTPProtectionProfile
 import org.bouncycastle.tls.SignatureAlgorithm
 import org.bouncycastle.tls.SignatureAndHashAlgorithm
 import org.bouncycastle.tls.TlsCredentialedDecryptor
 import org.bouncycastle.tls.TlsCredentialedSigner
+import org.bouncycastle.tls.TlsECCUtils
+import org.bouncycastle.tls.TlsExtensionsUtils
 import org.bouncycastle.tls.TlsSRTPUtils
 import org.bouncycastle.tls.TlsSession
 import org.bouncycastle.tls.TlsUtils
@@ -63,9 +67,11 @@ class TlsServerImpl(
      */
     lateinit var srtpKeyingMaterial: ByteArray
 
+    //TODO: leave all these...choose which one to respond with
+    // based on the client usesrtp extension
     private val srtpProtectionProfiles = intArrayOf(
-        SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
-        SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32
+        SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80
+//        SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32
     )
 
     var chosenSrtpProtectionProfile: Int = 0
@@ -77,7 +83,7 @@ class TlsServerImpl(
     }
 
     override fun getServerExtensions(): Hashtable<*, *> {
-        val extensions = super.clientExtensions ?:
+        val extensions = super.getServerExtensions() ?:
             Hashtable<Int, ByteArray>()
         return extensions.also {
             if (TlsSRTPUtils.getUseSRTPExtension(it) == null) {
@@ -90,6 +96,7 @@ class TlsServerImpl(
     }
 
     override fun processClientExtensions(clientExtensions: Hashtable<*, *>?) {
+        super.processClientExtensions(clientExtensions)
         val useSRTPData = TlsSRTPUtils.getUseSRTPExtension(clientExtensions)
         val protectionProfiles = useSRTPData.protectionProfiles
         chosenSrtpProtectionProfile = DtlsUtils.chooseSrtpProtectionProfile(srtpProtectionProfiles, protectionProfiles)
@@ -97,41 +104,51 @@ class TlsServerImpl(
 
     override fun getCipherSuites(): IntArray {
         return intArrayOf(
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-            CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
-            CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
-            CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
-            CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-            CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
         )
     }
 
-    override fun getRSAEncryptionCredentials(): TlsCredentialedDecryptor {
-        val crypto = context.crypto
-        return when (crypto) {
-            is BcTlsCrypto -> {
-                //TODO: save and store this value?
-                BcDefaultTlsCredentialedDecryptor(
-                    crypto,
-                    DtlsStack2.getCertificateInfo().certificate,
-                    DtlsStack2.getCertificateInfo().keyPair.private
-                )
-            }
-            else -> {
-                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
-            }
-        }
-    }
+//    override fun getRSAEncryptionCredentials(): TlsCredentialedDecryptor {
+//        val crypto = context.crypto
+//        return when (crypto) {
+//            is BcTlsCrypto -> {
+//                //TODO: save and store this value?
+//                BcDefaultTlsCredentialedDecryptor(
+//                    crypto,
+//                    DtlsStack.getCertificateInfo().certificate,
+//                    DtlsStack.getCertificateInfo().keyPair.private
+//                )
+//            }
+//            else -> {
+//                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
+//            }
+//        }
+//    }
 
-    override fun getRSASignerCredentials(): TlsCredentialedSigner {
+//    override fun getRSASignerCredentials(): TlsCredentialedSigner {
+//        val crypto = context.crypto
+//        val certificateInfo = DtlsStack.getCertificateInfo()
+//        return when (crypto) {
+//            is BcTlsCrypto -> {
+//                //TODO: save and store this value?
+//                BcDefaultTlsCredentialedSigner(
+//                    TlsCryptoParameters(context),
+//                    crypto,
+//                    certificateInfo.keyPair.private,
+//                    certificateInfo.certificate,
+//                    SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa)
+//                )
+//            }
+//            else -> {
+//                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
+//            }
+//        }
+//    }
+
+    override fun getECDSASignerCredentials(): TlsCredentialedSigner {
         val crypto = context.crypto
-        val certificateInfo = DtlsStack2.getCertificateInfo()
+
+        val certificateInfo = DtlsStack.getCertificateInfo()
         return when (crypto) {
             is BcTlsCrypto -> {
                 //TODO: save and store this value?
@@ -140,7 +157,7 @@ class TlsServerImpl(
                     crypto,
                     certificateInfo.keyPair.private,
                     certificateInfo.certificate,
-                    SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.rsa)
+                    SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
                 )
             }
             else -> {
@@ -149,13 +166,19 @@ class TlsServerImpl(
         }
     }
 
+    override fun getDSASignerCredentials(): TlsCredentialedSigner {
+        println("dsa!")
+        return super.getDSASignerCredentials()
+    }
+
     override fun getCertificateRequest(): CertificateRequest {
         val signatureAlgorithms = Vector<SignatureAndHashAlgorithm>(1)
-        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.rsa))
-        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa))
-        return CertificateRequest(shortArrayOf(ClientCertificateType.rsa_sign),
+        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa))
+        return CertificateRequest(
+            shortArrayOf(ClientCertificateType.ecdsa_sign),
             signatureAlgorithms,
-            null)
+            null
+        )
     }
 
     override fun notifyHandshakeComplete() {
