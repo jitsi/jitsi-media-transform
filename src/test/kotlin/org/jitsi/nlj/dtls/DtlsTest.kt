@@ -45,6 +45,9 @@ class DtlsTest : ShouldSpec() {
         val dtlsServer = DtlsStack("server").apply { actAsServer() }
         val dtlsClient = DtlsStack("client").apply { actAsClient() }
 
+        dtlsClient.remoteFingerprints = mapOf(dtlsServer.localFingerprintHashFunction to dtlsServer.localFingerprint)
+        dtlsServer.remoteFingerprints = mapOf(dtlsClient.localFingerprintHashFunction to dtlsClient.localFingerprint)
+
         val serverSender = ProtocolSender(dtlsServer)
         val serverReceiver = ProtocolReceiver(dtlsServer)
 

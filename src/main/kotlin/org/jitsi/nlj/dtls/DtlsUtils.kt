@@ -26,7 +26,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcDefaultDigestProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.bouncycastle.tls.TlsCredentialedSigner
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCertificate
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
 import java.math.BigInteger
@@ -35,18 +34,12 @@ import java.security.KeyPairGenerator
 import java.security.SecureRandom
 import java.security.Security
 import java.time.Duration
-import java.util.*
+import java.util.Date
+import java.util.NoSuchElementException
 
 val SECURE_RANDOM = SecureRandom()
 val BC_TLS_CRYPTO = BcTlsCrypto(SECURE_RANDOM)
 
-data class CertificateInfo(
-    val keyPair: KeyPair,
-    val certificate: org.bouncycastle.tls.Certificate,
-    val localFingerprintHashFunction: String,
-    val localFingerprint: String,
-    val creationTimestampMs: Long
-)
 
 class DtlsUtils {
     companion object {
