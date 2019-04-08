@@ -214,16 +214,16 @@ class DtlsStack(
          * one to be used everywhere which expires in 24 hours (when we'll generate
          * another one).
          */
-//        private var certificateInfo: CertificateInfo = DtlsUtils.generateCertificateInfo()
-//        private val syncRoot: Any = Any()
-//        fun getCertificateInfo(): CertificateInfo {
-//            synchronized(DtlsStack.syncRoot) {
-//                val expirationPeriodMs = Duration.ofDays(1).toMillis()
-//                if (DtlsStack.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
-//                    DtlsStack.certificateInfo = DtlsUtils.generateCertificateInfo()
-//                }
-//                return DtlsStack.certificateInfo
-//            }
-//        }
+        private var certificateInfo: CertificateInfo = DtlsUtils.generateCertificateInfo()
+        private val syncRoot: Any = Any()
+        fun getCertificateInfo(): CertificateInfo {
+            synchronized(DtlsStack.syncRoot) {
+                val expirationPeriodMs = Duration.ofDays(1).toMillis()
+                if (DtlsStack.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
+                    DtlsStack.certificateInfo = DtlsUtils.generateCertificateInfo()
+                }
+                return DtlsStack.certificateInfo
+            }
+        }
     }
 }

@@ -59,7 +59,7 @@ class TlsClientImpl(
 
     private val logger = getLogger(this.javaClass)
 
-    val certificateInfo = DtlsUtils.generateCertificate()
+    val certificateInfo = DtlsStack.getCertificateInfo()
 
     private var session: TlsSession? = null
 

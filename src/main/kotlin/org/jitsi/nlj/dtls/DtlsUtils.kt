@@ -15,6 +15,7 @@
  */
 package org.jitsi.nlj.dtls
 
+import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.X500NameBuilder
 import org.bouncycastle.asn1.x500.style.BCStyle
@@ -22,6 +23,8 @@ import org.bouncycastle.asn1.x509.Certificate
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
+import org.bouncycastle.operator.bc.BcDefaultDigestProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.tls.TlsCredentialedSigner
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCertificate
@@ -39,7 +42,10 @@ val BC_TLS_CRYPTO = BcTlsCrypto(SECURE_RANDOM)
 
 data class CertificateInfo(
     val keyPair: KeyPair,
-    val certificate: org.bouncycastle.tls.Certificate
+    val certificate: org.bouncycastle.tls.Certificate,
+    val localFingerprintHashFunction: String,
+    val localFingerprint: String,
+    val creationTimestampMs: Long
 )
 
 class DtlsUtils {
@@ -77,13 +83,17 @@ class DtlsUtils {
             return certBuilder.build(signer).toASN1Structure()
         }
 
-        fun generateCertificate(): CertificateInfo {
+        fun generateCertificateInfo(): CertificateInfo {
             val cn = generateCN("TODO-APP-NAME", "TODO-APP-VERSION")
             val keyPair = generateEcKeyPair()
-            val x509cert = generateCertificate(cn, keyPair)
+            val x509certificate = generateCertificate(cn, keyPair)
+            val localFingerprintHashFunction = x509certificate.getHash()
+            val localFingerprint = computeFingerprint(x509certificate, localFingerprintHashFunction)
 
-            val cert =  org.bouncycastle.tls.Certificate(arrayOf(BcTlsCertificate(BC_TLS_CRYPTO, x509cert)))
-            return CertificateInfo(keyPair, cert)
+            val certificate =  org.bouncycastle.tls.Certificate(
+                arrayOf(BcTlsCertificate(BC_TLS_CRYPTO, x509certificate))
+            )
+            return CertificateInfo(keyPair, certificate, localFingerprintHashFunction, localFingerprint, System.currentTimeMillis())
         }
 
 
@@ -111,6 +121,53 @@ class DtlsUtils {
                 //TODO: define a value mapped to 0 which is something like "INVALID_SRTP_PROTECTION_PROFILE"
                 0
             }
+        }
+
+        /**
+         * Determine and return the hash function (as a [String]) used by this certificateInfo
+         */
+        private fun org.bouncycastle.asn1.x509.Certificate.getHash(): String {
+            val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(signatureAlgorithm)
+
+            return BcDefaultDigestProvider.INSTANCE
+                .get(digAlgId)
+                .algorithmName
+                .toLowerCase()
+        }
+
+        /**
+         * Computes the fingerprint of a [certificateInfo] using [hashFunction] and return it
+         * as a [String]
+         */
+        private fun computeFingerprint(certificateInfo: org.bouncycastle.asn1.x509.Certificate, hashFunction: String): String {
+            val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(hashFunction.toUpperCase())
+            val digest = BcDefaultDigestProvider.INSTANCE.get(digAlgId)
+            val input: ByteArray = certificateInfo.getEncoded(ASN1Encoding.DER)
+            val output = ByteArray(digest.digestSize)
+
+            digest.update(input, 0, input.size)
+            digest.doFinal(output, 0)
+
+            return output.toFingerprint()
+        }
+
+        private val HEX_CHARS = "0123456789ABCDEF".toCharArray()
+        /**
+         * Helper function to convert a [ByteArray] to a colon-delimited hex string
+         */
+        private fun ByteArray.toFingerprint(): String {
+            val buf = StringBuffer()
+            for (i in 0 until size) {
+                val octet = get(i).toInt()
+                val firstIndex = (octet and 0xF0).ushr(4)
+                val secondIndex = octet and 0x0F
+                buf.append(HEX_CHARS[firstIndex])
+                buf.append(HEX_CHARS[secondIndex])
+                if (i < size - 1) {
+                    buf.append(":")
+                }
+            }
+            return buf.toString()
         }
     }
 

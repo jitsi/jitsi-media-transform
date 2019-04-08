@@ -64,7 +64,7 @@ class TlsServerImpl(
 
     private var session: TlsSession? = null
 
-    val certificateInfo = DtlsUtils.generateCertificate()
+    val certificateInfo = DtlsStack.getCertificateInfo()
 
     /**
      * Only set after a handshake has completed
