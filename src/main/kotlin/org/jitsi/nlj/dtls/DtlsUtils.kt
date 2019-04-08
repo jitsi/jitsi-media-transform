@@ -63,20 +63,6 @@ class DtlsUtils {
             val expiryDate = Date(now + Duration.ofDays(7).toMillis())
             val serialNumber = BigInteger.valueOf(now)
 
-//    val certBuilder = X509v3CertificateBuilder(
-//        subject,
-//        serialNumber,
-//        startDate,
-//        expiryDate,
-//        subject,
-//        SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
-//    )
-
-//    val signer = BcECContentSignerBuilder(
-//        AlgorithmIdentifier(X9ObjectIdentifiers.ecdsa_with_SHA256),
-//        AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256)
-//    ).build(PrivateKeyFactory.createKey(keyPair.private.encoded))
-
             val certBuilder = JcaX509v3CertificateBuilder(subject, serialNumber, startDate, expiryDate, subject, keyPair.public)
             val signer = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
 
@@ -98,7 +84,6 @@ class DtlsUtils {
 
 
         fun generateEcKeyPair(): KeyPair {
-
             val keyGen = KeyPairGenerator.getInstance("EC", "BC")
             val ecCurveSpec = ECNamedCurveTable.getParameterSpec("secp256r1")
 
@@ -120,6 +105,86 @@ class DtlsUtils {
             } catch (e: NoSuchElementException) {
                 //TODO: define a value mapped to 0 which is something like "INVALID_SRTP_PROTECTION_PROFILE"
                 0
+            }
+        }
+
+        /**
+         * Verifies and validates a specific certificateInfo against the fingerprints
+         * presented by the remote endpoint via the signaling path.
+         *
+         * @param certificateInfo the certificateInfo to be verified and validated against
+         * the fingerprints presented by the remote endpoint via the signaling path
+         * @throws [DtlsException] if [certificateInfo] fails validation
+         */
+        fun verifyAndValidateCertificate(
+                certificateInfo: org.bouncycastle.tls.Certificate,
+                remoteFingerprints: Map<String, String>) {
+
+            if (certificateInfo.certificateList.isEmpty()) {
+                throw DtlsException("No remote fingerprints.")
+            }
+            for (currCertificate in certificateInfo.certificateList) {
+                val x509Cert = org.bouncycastle.asn1.x509.Certificate.getInstance(currCertificate.encoded)
+                verifyAndValidateCertificate(x509Cert, remoteFingerprints)
+            }
+        }
+
+        /**
+         * Verifies and validates a specific certificateInfo against the fingerprints
+         * presented by the remote endpoint via the signaling path.
+         *
+         * @param certificateInfo the certificateInfo to be verified and validated against
+         * the fingerprints presented by the remote endpoint via the signaling path.
+         * @throws DtlsException if the specified [certificateInfo] failed to verify
+         * and validate against the fingerprints presented by the remote endpoint
+         * via the signaling path.
+         */
+        private fun verifyAndValidateCertificate(
+            certificateInfo: org.bouncycastle.asn1.x509.Certificate,
+            remoteFingerprints: Map<String, String>) {
+            // RFC 4572 "Connection-Oriented Media Transport over the Transport
+            // Layer Security (TLS) Protocol in the Session Description Protocol
+            // (SDP)" defines that "[a] certificateInfo fingerprint MUST be computed
+            // using the same one-way hash function as is used in the certificateInfo's
+            // signature algorithm."
+
+            val hashFunction = certificateInfo.getHash()
+
+            // As RFC 5763 "Framework for Establishing a Secure Real-time Transport
+            // Protocol (SRTP) Security Context Using Datagram Transport Layer
+            // Security (DTLS)" states, "the certificateInfo presented during the DTLS
+            // handshake MUST match the fingerprint exchanged via the signaling path
+            // in the SDP."
+            val remoteFingerprint = remoteFingerprints[hashFunction] ?: throw DtlsException("No fingerprint " +
+                    "declared over the signaling path with hash function: $hashFunction")
+
+            // TODO(boris) check if the below is still true, and re-introduce the hack if it is.
+            // Unfortunately, Firefox does not comply with RFC 5763 at the time
+            // of this writing. Its certificateInfo uses SHA-1 and it sends a
+            // fingerprint computed with SHA-256. We could, of course, wait for
+            // Mozilla to make Firefox compliant. However, we would like to
+            // support Firefox in the meantime. That is why we will allow the
+            // fingerprint to "upgrade" the hash function of the certificateInfo
+            // much like SHA-256 is an "upgrade" of SHA-1.
+            /*
+            if (remoteFingerprint == null)
+            {
+                val hashFunctionUpgrade = findHashFunctionUpgrade(hashFunction, remoteFingerprints)
+
+                if (hashFunctionUpgrade != null
+                        && !hashFunctionUpgrade.equalsIgnoreCase(hashFunction)) {
+                    fingerprint = fingerprints[hashFunctionUpgrade]
+                    if (fingerprint != null)
+                        hashFunction = hashFunctionUpgrade
+                }
+            }
+            */
+
+            val certificateFingerprint = computeFingerprint(certificateInfo, hashFunction)
+
+            if (remoteFingerprint != certificateFingerprint) {
+                throw DtlsException("Fingerprint $remoteFingerprint does not match the $hashFunction-hashed " +
+                        "certificateInfo $certificateFingerprint")
             }
         }
 

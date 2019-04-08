@@ -112,43 +112,6 @@ class TlsServerImpl(
         )
     }
 
-//    override fun getRSAEncryptionCredentials(): TlsCredentialedDecryptor {
-//        val crypto = context.crypto
-//        return when (crypto) {
-//            is BcTlsCrypto -> {
-//                //TODO: save and store this value?
-//                BcDefaultTlsCredentialedDecryptor(
-//                    crypto,
-//                    DtlsStack.getCertificateInfo().certificateInfo,
-//                    DtlsStack.getCertificateInfo().keyPair.private
-//                )
-//            }
-//            else -> {
-//                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
-//            }
-//        }
-//    }
-
-//    override fun getRSASignerCredentials(): TlsCredentialedSigner {
-//        val crypto = context.crypto
-//        val certificateInfo = DtlsStack.getCertificateInfo()
-//        return when (crypto) {
-//            is BcTlsCrypto -> {
-//                //TODO: save and store this value?
-//                BcDefaultTlsCredentialedSigner(
-//                    TlsCryptoParameters(context),
-//                    crypto,
-//                    certificateInfo.keyPair.private,
-//                    certificateInfo.certificateInfo,
-//                    SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa)
-//                )
-//            }
-//            else -> {
-//                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
-//            }
-//        }
-//    }
-
     override fun getECDSASignerCredentials(): TlsCredentialedSigner {
         return BcDefaultTlsCredentialedSigner(
             TlsCryptoParameters(context),
@@ -157,22 +120,6 @@ class TlsServerImpl(
             certificateInfo.certificate,
             SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
         )
-
-//        return when (crypto) {
-//            is BcTlsCrypto -> {
-//                //TODO: save and store this value?
-//                BcDefaultTlsCredentialedSigner(
-//                    TlsCryptoParameters(context),
-//                    crypto,
-//                    certificateInfo.keyPair.private,
-//                    certificateInfo.certificateInfo,
-//                    SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
-//                )
-//            }
-//            else -> {
-//                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
-//            }
-//        }
     }
 
     override fun getCertificateRequest(): CertificateRequest {
@@ -235,11 +182,4 @@ class TlsServerImpl(
 
     override fun getSupportedVersions(): Array<ProtocolVersion> =
         ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv10)
-
-//    private val credentialsSigner = object : TlsCredentialedSigner {
-//        override fun getCertificateInfo(): Certificate = this@TlsServerImpl.certificateInfo
-//        override fun getSignatureAndHashAlgorithm(): SignatureAndHashAlgorithm {
-//            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-//        }
-//    }
 }

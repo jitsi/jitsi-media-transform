@@ -81,7 +81,7 @@ class DtlsStack(
      */
     protected fun verifyAndValidateRemoteCertificate(remoteCertificate: Certificate?) {
         remoteCertificate?.let {
-//            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
+            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
             // The above throws an exception if the checks fail.
             logger.cdebug { "$logPrefix Fingerprints verified." }
         }
