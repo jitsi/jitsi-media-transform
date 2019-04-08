@@ -15,27 +15,26 @@
  */
 package org.jitsi.nlj.dtls
 
+import org.bouncycastle.crypto.util.PrivateKeyFactory
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.CertificateRequest
 import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.tls.DefaultTlsClient
+import org.bouncycastle.tls.DefaultTlsCredentialedSigner
 import org.bouncycastle.tls.ExporterLabel
 import org.bouncycastle.tls.ExtensionType
 import org.bouncycastle.tls.HashAlgorithm
 import org.bouncycastle.tls.ProtocolVersion
-import org.bouncycastle.tls.RenegotiationPolicy
 import org.bouncycastle.tls.SRTPProtectionProfile
 import org.bouncycastle.tls.SignatureAlgorithm
 import org.bouncycastle.tls.SignatureAndHashAlgorithm
 import org.bouncycastle.tls.TlsAuthentication
 import org.bouncycastle.tls.TlsCredentials
-import org.bouncycastle.tls.TlsExtensionsUtils
 import org.bouncycastle.tls.TlsSRTPUtils
 import org.bouncycastle.tls.TlsServerCertificate
 import org.bouncycastle.tls.TlsSession
 import org.bouncycastle.tls.TlsUtils
 import org.bouncycastle.tls.UseSRTPData
-import org.bouncycastle.tls.crypto.TlsCrypto
 import org.bouncycastle.tls.crypto.TlsCryptoParameters
 import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedSigner
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
@@ -53,12 +52,14 @@ import java.util.Hashtable
  */
 class TlsClientImpl(
     /**
-     * The function to call when the server certificate is available.
+     * The function to call when the server certificateInfo is available.
      */
     private val notifyServerCertificate: (Certificate?) -> Unit
 ) : DefaultTlsClient(BcTlsCrypto(SecureRandom())) {
 
     private val logger = getLogger(this.javaClass)
+
+    val certificateInfo = DtlsUtils.generateCertificate()
 
     private var session: TlsSession? = null
 
@@ -84,13 +85,12 @@ class TlsClientImpl(
                 // NOTE: can't set clientCredentials when it is declared because 'context' won't be set yet
                 if (clientCredentials == null) {
                     val crypto = context.crypto
-                    val certificateInfo = DtlsStack.getCertificateInfo()
                     when (crypto) {
                         is BcTlsCrypto -> {
                             clientCredentials = BcDefaultTlsCredentialedSigner(
                                 TlsCryptoParameters(context),
                                 crypto,
-                                certificateInfo.keyPair.private,
+                                PrivateKeyFactory.createKey(certificateInfo.keyPair.private.encoded),
                                 certificateInfo.certificate,
                                 SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
                             )
@@ -103,11 +103,13 @@ class TlsClientImpl(
                 return clientCredentials!!
             }
 
-            override fun notifyServerCertificate(serverCertificate: TlsServerCertificate?) {
-                this@TlsClientImpl.notifyServerCertificate(serverCertificate?.certificate)
+            override fun notifyServerCertificate(serverCertificate: TlsServerCertificate) {
+                this@TlsClientImpl.notifyServerCertificate(serverCertificate.certificate)
             }
         }
     }
+
+//    override fun getAuthentication(): TlsAuthentication = tlsAuth
 
     override fun getClientExtensions(): Hashtable<*, *> {
         var clientExtensions = super.getClientExtensions()
@@ -193,4 +195,18 @@ class TlsClientImpl(
     override fun notifyAlertReceived(alertLevel: Short, alertDescription: Short) {
         logger.cerror { "TLS Client alert received: $alertLevel $alertDescription" }
     }
+
+//    private inner class TlsAuthenticationImpl : TlsAuthentication {
+//        override fun getClientCredentials(certificateRequest: CertificateRequest): TlsCredentials {
+//            return clientCredentials
+//        }
+//        override fun notifyServerCertificate(serverCertificate: TlsServerCertificate) { /* No op */ }
+//    }
+//
+//    private val tlsAuth = TlsAuthenticationImpl()
+//
+//    private val clientCredentials = object : DefaultTlsCredentialedSigner() {
+//        override fun getCertificate(): Certificate = this@TlsClientImpl.certificateInfo.certificate
+//
+//    }
 }

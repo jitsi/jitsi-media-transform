@@ -16,10 +16,12 @@
 
 package org.jitsi.nlj.dtls
 
+import org.bouncycastle.crypto.util.PrivateKeyFactory
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.CertificateRequest
 import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.tls.ClientCertificateType
+import org.bouncycastle.tls.DefaultTlsCredentialedSigner
 import org.bouncycastle.tls.DefaultTlsServer
 import org.bouncycastle.tls.ECPointFormat
 import org.bouncycastle.tls.ExporterLabel
@@ -53,7 +55,7 @@ import java.util.Vector
 
 class TlsServerImpl(
     /**
-     * The function to call when the client certificate is available.
+     * The function to call when the client certificateInfo is available.
      */
     private val notifyClientCertificateReceived: (Certificate?) -> Unit
 ) : DefaultTlsServer(BcTlsCrypto(SecureRandom())) {
@@ -61,6 +63,8 @@ class TlsServerImpl(
     private val logger = getLogger(this.javaClass)
 
     private var session: TlsSession? = null
+
+    val certificateInfo = DtlsUtils.generateCertificate()
 
     /**
      * Only set after a handshake has completed
@@ -115,7 +119,7 @@ class TlsServerImpl(
 //                //TODO: save and store this value?
 //                BcDefaultTlsCredentialedDecryptor(
 //                    crypto,
-//                    DtlsStack.getCertificateInfo().certificate,
+//                    DtlsStack.getCertificateInfo().certificateInfo,
 //                    DtlsStack.getCertificateInfo().keyPair.private
 //                )
 //            }
@@ -135,7 +139,7 @@ class TlsServerImpl(
 //                    TlsCryptoParameters(context),
 //                    crypto,
 //                    certificateInfo.keyPair.private,
-//                    certificateInfo.certificate,
+//                    certificateInfo.certificateInfo,
 //                    SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa)
 //                )
 //            }
@@ -146,29 +150,29 @@ class TlsServerImpl(
 //    }
 
     override fun getECDSASignerCredentials(): TlsCredentialedSigner {
-        val crypto = context.crypto
+        return BcDefaultTlsCredentialedSigner(
+            TlsCryptoParameters(context),
+            (context.crypto as BcTlsCrypto),
+            PrivateKeyFactory.createKey(certificateInfo.keyPair.private.encoded),
+            certificateInfo.certificate,
+            SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
+        )
 
-        val certificateInfo = DtlsStack.getCertificateInfo()
-        return when (crypto) {
-            is BcTlsCrypto -> {
-                //TODO: save and store this value?
-                BcDefaultTlsCredentialedSigner(
-                    TlsCryptoParameters(context),
-                    crypto,
-                    certificateInfo.keyPair.private,
-                    certificateInfo.certificate,
-                    SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
-                )
-            }
-            else -> {
-                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
-            }
-        }
-    }
-
-    override fun getDSASignerCredentials(): TlsCredentialedSigner {
-        println("dsa!")
-        return super.getDSASignerCredentials()
+//        return when (crypto) {
+//            is BcTlsCrypto -> {
+//                //TODO: save and store this value?
+//                BcDefaultTlsCredentialedSigner(
+//                    TlsCryptoParameters(context),
+//                    crypto,
+//                    certificateInfo.keyPair.private,
+//                    certificateInfo.certificateInfo,
+//                    SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
+//                )
+//            }
+//            else -> {
+//                throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
+//            }
+//        }
     }
 
     override fun getCertificateRequest(): CertificateRequest {
@@ -229,7 +233,13 @@ class TlsServerImpl(
         logger.cerror { "TLS Server alert received: $alertLevel $alertDescription" }
     }
 
-
     override fun getSupportedVersions(): Array<ProtocolVersion> =
         ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv10)
+
+//    private val credentialsSigner = object : TlsCredentialedSigner {
+//        override fun getCertificateInfo(): Certificate = this@TlsServerImpl.certificateInfo
+//        override fun getSignatureAndHashAlgorithm(): SignatureAndHashAlgorithm {
+//            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+//        }
+//    }
 }

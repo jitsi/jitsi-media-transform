@@ -18,10 +18,10 @@ package org.jitsi.nlj.dtls
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.tls.Certificate
 
-data class CertificateInfo(
-    val keyPair: AsymmetricCipherKeyPair,
-    val certificate: Certificate,
-    val localFingerprintHashFunction: String,
-    val localFingerprint: String,
-    val creationTimestampMs: Long
-)
+//data class CertificateInfo(
+//    val keyPair: AsymmetricCipherKeyPair,
+//    val certificateInfo: Certificate,
+//    val localFingerprintHashFunction: String,
+//    val localFingerprint: String,
+//    val creationTimestampMs: Long
+//)

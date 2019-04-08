@@ -81,7 +81,7 @@ class DtlsStack(
      */
     protected fun verifyAndValidateRemoteCertificate(remoteCertificate: Certificate?) {
         remoteCertificate?.let {
-            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
+//            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
             // The above throws an exception if the checks fail.
             logger.cdebug { "$logPrefix Fingerprints verified." }
         }
@@ -210,20 +210,20 @@ class DtlsStack(
 
     companion object {
         /**
-         * Because generating the certificate can be expensive, we generate a single
+         * Because generating the certificateInfo can be expensive, we generate a single
          * one to be used everywhere which expires in 24 hours (when we'll generate
          * another one).
          */
-        private var certificateInfo: CertificateInfo = DtlsUtils.generateCertificateInfo()
-        private val syncRoot: Any = Any()
-        fun getCertificateInfo(): CertificateInfo {
-            synchronized(DtlsStack.syncRoot) {
-                val expirationPeriodMs = Duration.ofDays(1).toMillis()
-                if (DtlsStack.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
-                    DtlsStack.certificateInfo = DtlsUtils.generateCertificateInfo()
-                }
-                return DtlsStack.certificateInfo
-            }
-        }
+//        private var certificateInfo: CertificateInfo = DtlsUtils.generateCertificateInfo()
+//        private val syncRoot: Any = Any()
+//        fun getCertificateInfo(): CertificateInfo {
+//            synchronized(DtlsStack.syncRoot) {
+//                val expirationPeriodMs = Duration.ofDays(1).toMillis()
+//                if (DtlsStack.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
+//                    DtlsStack.certificateInfo = DtlsUtils.generateCertificateInfo()
+//                }
+//                return DtlsStack.certificateInfo
+//            }
+//        }
     }
 }
