@@ -20,7 +20,6 @@ import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.CertificateRequest
 import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.tls.DefaultTlsClient
-import org.bouncycastle.tls.DefaultTlsCredentialedSigner
 import org.bouncycastle.tls.ExporterLabel
 import org.bouncycastle.tls.ExtensionType
 import org.bouncycastle.tls.HashAlgorithm
@@ -59,7 +58,7 @@ class TlsClientImpl(
 
     private val logger = getLogger(this.javaClass)
 
-    val certificateInfo = DtlsStack.getCertificateInfo()
+    private val certificateInfo = DtlsStack.getCertificateInfo()
 
     private var session: TlsSession? = null
 
@@ -109,8 +108,6 @@ class TlsClientImpl(
         }
     }
 
-//    override fun getAuthentication(): TlsAuthentication = tlsAuth
-
     override fun getClientExtensions(): Hashtable<*, *> {
         var clientExtensions = super.getClientExtensions()
         if (TlsSRTPUtils.getUseSRTPExtension(clientExtensions) == null) {
@@ -134,13 +131,6 @@ class TlsClientImpl(
         val useSRTPData = TlsSRTPUtils.getUseSRTPExtension(serverExtensions)
         val protectionProfiles = useSRTPData.protectionProfiles
         chosenSrtpProtectionProfile = DtlsUtils.chooseSrtpProtectionProfile(srtpProtectionProfiles, protectionProfiles)
-//        chosenSrtpProtectionProfile = when (protectionProfiles.size) {
-//            1 -> DtlsUtils.chooseSrtpProtectionProfile(srtpProtectionProfiles, protectionProfiles)
-//            else -> 0
-//        }
-        if (chosenSrtpProtectionProfile == 0) {
-            // throw alert
-        }
     }
 
     override fun getCipherSuites(): IntArray {
@@ -195,18 +185,4 @@ class TlsClientImpl(
     override fun notifyAlertReceived(alertLevel: Short, alertDescription: Short) {
         logger.cerror { "TLS Client alert received: $alertLevel $alertDescription" }
     }
-
-//    private inner class TlsAuthenticationImpl : TlsAuthentication {
-//        override fun getClientCredentials(certificateRequest: CertificateRequest): TlsCredentials {
-//            return clientCredentials
-//        }
-//        override fun notifyServerCertificate(serverCertificate: TlsServerCertificate) { /* No op */ }
-//    }
-//
-//    private val tlsAuth = TlsAuthenticationImpl()
-//
-//    private val clientCredentials = object : DefaultTlsCredentialedSigner() {
-//        override fun getCertificate(): Certificate = this@TlsClientImpl.certificateInfo.certificate
-//
-//    }
 }

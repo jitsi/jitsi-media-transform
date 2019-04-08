@@ -68,8 +68,7 @@ class DtlsUtils {
             return try {
                 theirs.first(ours::contains)
             } catch (e: NoSuchElementException) {
-                //TODO: define a value mapped to 0 which is something like "INVALID_SRTP_PROTECTION_PROFILE"
-                0
+                throw DtlsException("No common SRTP protection profile found.  Ours: $ours Theirs: $theirs")
             }
         }
 

@@ -21,26 +21,19 @@ import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.CertificateRequest
 import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.tls.ClientCertificateType
-import org.bouncycastle.tls.DefaultTlsCredentialedSigner
 import org.bouncycastle.tls.DefaultTlsServer
-import org.bouncycastle.tls.ECPointFormat
 import org.bouncycastle.tls.ExporterLabel
 import org.bouncycastle.tls.HashAlgorithm
-import org.bouncycastle.tls.MaxFragmentLength
 import org.bouncycastle.tls.ProtocolVersion
 import org.bouncycastle.tls.SRTPProtectionProfile
 import org.bouncycastle.tls.SignatureAlgorithm
 import org.bouncycastle.tls.SignatureAndHashAlgorithm
-import org.bouncycastle.tls.TlsCredentialedDecryptor
 import org.bouncycastle.tls.TlsCredentialedSigner
-import org.bouncycastle.tls.TlsECCUtils
-import org.bouncycastle.tls.TlsExtensionsUtils
 import org.bouncycastle.tls.TlsSRTPUtils
 import org.bouncycastle.tls.TlsSession
 import org.bouncycastle.tls.TlsUtils
 import org.bouncycastle.tls.UseSRTPData
 import org.bouncycastle.tls.crypto.TlsCryptoParameters
-import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedDecryptor
 import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedSigner
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
 import org.jitsi.nlj.srtp.SrtpUtil
@@ -64,7 +57,7 @@ class TlsServerImpl(
 
     private var session: TlsSession? = null
 
-    val certificateInfo = DtlsStack.getCertificateInfo()
+    private val certificateInfo = DtlsStack.getCertificateInfo()
 
     /**
      * Only set after a handshake has completed
