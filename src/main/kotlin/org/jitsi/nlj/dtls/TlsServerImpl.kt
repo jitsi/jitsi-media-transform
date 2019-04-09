@@ -173,5 +173,5 @@ class TlsServerImpl(
     }
 
     override fun getSupportedVersions(): Array<ProtocolVersion> =
-        ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv10)
+        ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv12)
 }

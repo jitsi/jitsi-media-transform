@@ -168,7 +168,7 @@ class TlsClientImpl(
     }
 
     override fun getSupportedVersions(): Array<ProtocolVersion> =
-            ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv10)
+            ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv12)
 
     override fun notifyAlertRaised(alertLevel: Short, alertDescription: Short, message: String?, cause: Throwable?) {
         val stack = with(StringBuffer()) {
