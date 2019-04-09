@@ -82,21 +82,13 @@ class TlsClientImpl(
             override fun getClientCredentials(certificateRequest: CertificateRequest): TlsCredentials {
                 // NOTE: can't set clientCredentials when it is declared because 'context' won't be set yet
                 if (clientCredentials == null) {
-                    val crypto = context.crypto
-                    when (crypto) {
-                        is BcTlsCrypto -> {
-                            clientCredentials = BcDefaultTlsCredentialedSigner(
-                                TlsCryptoParameters(context),
-                                crypto,
-                                PrivateKeyFactory.createKey(certificateInfo.keyPair.private.encoded),
-                                certificateInfo.certificate,
-                                SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
-                            )
-                        }
-                        else -> {
-                            throw DtlsUtils.DtlsException("Unsupported crypto type: ${crypto.javaClass}")
-                        }
-                    }
+                    clientCredentials = BcDefaultTlsCredentialedSigner(
+                        TlsCryptoParameters(context),
+                        (context.crypto as BcTlsCrypto),
+                        PrivateKeyFactory.createKey(certificateInfo.keyPair.private.encoded),
+                        certificateInfo.certificate,
+                        SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
+                    )
                 }
                 return clientCredentials!!
             }
