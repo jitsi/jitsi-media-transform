@@ -40,6 +40,11 @@ import java.util.NoSuchElementException
 val SECURE_RANDOM = SecureRandom()
 val BC_TLS_CRYPTO = BcTlsCrypto(SECURE_RANDOM)
 
+/**
+ * Various helper utilities for DTLS
+ *
+ * https://tools.ietf.org/html/draft-ietf-rtcweb-security-arch-18
+ */
 class DtlsUtils {
     companion object {
         init {
@@ -92,7 +97,14 @@ class DtlsUtils {
         }
 
         /**
-         * Generate an eliptic-curve keypair using the secp256r1 named curve
+         * Generate an eliptic-curve keypair using the secp256r1 named curve:
+         * "All Implementations MUST implement DTLS 1.2 with the
+         * TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 cipher suite and the P-256
+         * curve"
+         *
+         * --https://tools.ietf.org/html/draft-ietf-rtcweb-security-arch-18#section-6.5
+         *
+         * NOTE(brian): I used 'secp256r1' specifically because it's what I saw in wireshark traces from chrome
          */
         private fun generateEcKeyPair(): KeyPair {
             val keyGen = KeyPairGenerator.getInstance("EC", "BC")
