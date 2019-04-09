@@ -12,6 +12,7 @@
         <kotlin.version>1.3.21</kotlin.version>
         <kotlintest.version>3.2.1</kotlintest.version>
         <junit.version>5.2.0</junit.version>
+        <bouncycastle.version>1.61</bouncycastle.version>
     </properties>
     <dependencies>
         <dependency>
@@ -37,17 +38,17 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bctls-jdk15on</artifactId>
-            <version>1.61</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.61</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.61</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.pcap4j</groupId>
