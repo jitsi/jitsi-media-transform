@@ -28,12 +28,14 @@ import org.bouncycastle.tls.ProtocolVersion
 import org.bouncycastle.tls.SRTPProtectionProfile
 import org.bouncycastle.tls.SignatureAlgorithm
 import org.bouncycastle.tls.SignatureAndHashAlgorithm
+import org.bouncycastle.tls.TlsCredentialedDecryptor
 import org.bouncycastle.tls.TlsCredentialedSigner
 import org.bouncycastle.tls.TlsSRTPUtils
 import org.bouncycastle.tls.TlsSession
 import org.bouncycastle.tls.TlsUtils
 import org.bouncycastle.tls.UseSRTPData
 import org.bouncycastle.tls.crypto.TlsCryptoParameters
+import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedDecryptor
 import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedSigner
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
 import org.jitsi.nlj.srtp.SrtpUtil
@@ -42,6 +44,7 @@ import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.extensions.toHex
 import java.nio.ByteBuffer
+import java.security.PrivateKey
 import java.util.Hashtable
 import java.util.Vector
 
@@ -100,11 +103,22 @@ class TlsServerImpl(
 
     override fun getCipherSuites(): IntArray {
         return intArrayOf(
-            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA
+//            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+        )
+    }
+
+    override fun getRSAEncryptionCredentials(): TlsCredentialedDecryptor {
+        return BcDefaultTlsCredentialedDecryptor(
+            (context.crypto as BcTlsCrypto),
+            certificateInfo.certificate,
+            PrivateKeyFactory.createKey(certificateInfo.keyPair.private.encoded)
         )
     }
 
     override fun getECDSASignerCredentials(): TlsCredentialedSigner {
+        println(certificateRequest.supportedSignatureAlgorithms)
         return BcDefaultTlsCredentialedSigner(
             TlsCryptoParameters(context),
             (context.crypto as BcTlsCrypto),
@@ -117,6 +131,7 @@ class TlsServerImpl(
     override fun getCertificateRequest(): CertificateRequest {
         val signatureAlgorithms = Vector<SignatureAndHashAlgorithm>(1)
         signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa))
+        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.ecdsa))
         return CertificateRequest(
             shortArrayOf(ClientCertificateType.ecdsa_sign),
             signatureAlgorithms,
@@ -173,5 +188,5 @@ class TlsServerImpl(
     }
 
     override fun getSupportedVersions(): Array<ProtocolVersion> =
-        ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv12)
+        ProtocolVersion.DTLSv10.downTo(ProtocolVersion.DTLSv10)
 }

@@ -126,7 +126,9 @@ class TlsClientImpl(
 
     override fun getCipherSuites(): IntArray {
         return intArrayOf(
-            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA
+//            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
         )
     }
 
@@ -160,7 +162,7 @@ class TlsClientImpl(
     }
 
     override fun getSupportedVersions(): Array<ProtocolVersion> =
-            ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv12)
+        ProtocolVersion.DTLSv10.downTo(ProtocolVersion.DTLSv10)
 
     override fun notifyAlertRaised(alertLevel: Short, alertDescription: Short, message: String?, cause: Throwable?) {
         val stack = with(StringBuffer()) {
