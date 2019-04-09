@@ -126,10 +126,10 @@ class DtlsUtils {
         }
 
         /**
-         * Verifies and validates a specific certificateInfo against the fingerprints
+         * Verifies and validates a specific certificate against the fingerprints
          * presented by the remote endpoint via the signaling path.
          *
-         * @param certificateInfo the certificateInfo to be verified and validated against
+         * @param certificateInfo the certificate to be verified and validated against
          * the fingerprints presented by the remote endpoint via the signaling path
          * @throws [DtlsException] if [certificateInfo] fails validation
          */
@@ -147,10 +147,10 @@ class DtlsUtils {
         }
 
         /**
-         * Verifies and validates a specific certificateInfo against the fingerprints
+         * Verifies and validates a specific certificate against the fingerprints
          * presented by the remote endpoint via the signaling path.
          *
-         * @param certificate the certificateInfo to be verified and validated against
+         * @param certificate the certificate to be verified and validated against
          * the fingerprints presented by the remote endpoint via the signaling path.
          * @throws DtlsException if the specified [certificate] failed to verify
          * and validate against the fingerprints presented by the remote endpoint
@@ -161,15 +161,15 @@ class DtlsUtils {
             remoteFingerprints: Map<String, String>) {
             // RFC 4572 "Connection-Oriented Media Transport over the Transport
             // Layer Security (TLS) Protocol in the Session Description Protocol
-            // (SDP)" defines that "[a] certificateInfo fingerprint MUST be computed
-            // using the same one-way hash function as is used in the certificateInfo's
+            // (SDP)" defines that "[a] certificate fingerprint MUST be computed
+            // using the same one-way hash function as is used in the certificate's
             // signature algorithm."
 
             val hashFunction = certificate.getHashFunction()
 
             // As RFC 5763 "Framework for Establishing a Secure Real-time Transport
             // Protocol (SRTP) Security Context Using Datagram Transport Layer
-            // Security (DTLS)" states, "the certificateInfo presented during the DTLS
+            // Security (DTLS)" states, "the certificate presented during the DTLS
             // handshake MUST match the fingerprint exchanged via the signaling path
             // in the SDP."
             val remoteFingerprint = remoteFingerprints[hashFunction] ?: throw DtlsException("No fingerprint " +
@@ -177,11 +177,11 @@ class DtlsUtils {
 
             // TODO(boris) check if the below is still true, and re-introduce the hack if it is.
             // Unfortunately, Firefox does not comply with RFC 5763 at the time
-            // of this writing. Its certificateInfo uses SHA-1 and it sends a
+            // of this writing. Its certificate uses SHA-1 and it sends a
             // fingerprint computed with SHA-256. We could, of course, wait for
             // Mozilla to make Firefox compliant. However, we would like to
             // support Firefox in the meantime. That is why we will allow the
-            // fingerprint to "upgrade" the hash function of the certificateInfo
+            // fingerprint to "upgrade" the hash function of the certificate
             // much like SHA-256 is an "upgrade" of SHA-1.
             /*
             if (remoteFingerprint == null)
@@ -201,12 +201,12 @@ class DtlsUtils {
 
             if (remoteFingerprint != certificateFingerprint) {
                 throw DtlsException("Fingerprint $remoteFingerprint does not match the $hashFunction-hashed " +
-                        "certificateInfo $certificateFingerprint")
+                        "certificate $certificateFingerprint")
             }
         }
 
         /**
-         * Determine and return the hash function (as a [String]) used by this certificateInfo
+         * Determine and return the hash function (as a [String]) used by this certificate
          */
         private fun org.bouncycastle.asn1.x509.Certificate.getHashFunction(): String {
             val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(signatureAlgorithm)
