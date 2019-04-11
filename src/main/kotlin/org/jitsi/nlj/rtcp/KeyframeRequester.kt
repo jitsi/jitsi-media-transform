@@ -43,37 +43,71 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     }
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val compoundRtcp = packetInfo.packetAs<CompoundRtcpPacket>()
-
-        var drop = false
-        for (pkt in compoundRtcp.packets)
-        {
-            if (pkt !is RtcpFbFirPacket || pkt !is RtcpFbPliPacket) {
-                continue
+        val packet = packetInfo.packet
+        val pliOrFir = when {
+            packet is CompoundRtcpPacket -> {
+                packet.packets.first { it is RtcpFbPliPacket || it is RtcpFbFirPacket }
             }
+            packet is RtcpFbFirPacket -> packet
+            packet is RtcpFbPliPacket -> packet
+            else -> null
+        }
 
-            val firCommandSeqNum = generateFirCommandSequenceNumber(pkt.mediaSourceSsrc, System.currentTimeMillis())
-            if (firCommandSequenceNumber < 0)
-            {
-                // NOTE(george): dropping the packet here should work fine as long as we don't
-                // receive 2 RTCP packets: one we want to drop and one we want to forward in the
-                // same compound packet.
-                drop = true
+        var forward = true
+        when {
+            pliOrFir is RtcpFbPliPacket -> {
+                when {
+                    hasPliSupport -> {
+                        // Forward PLI
+                        forward = forwardPliOrFir(pliOrFir)
+                    }
+                    hasFirSupport -> {
+                        // Translate to FIR
+                        requestKeyframe(pliOrFir.mediaSenderSsrc)
+                        forward = false
+                    }
+                    else -> {
+                        // Can't do anything
+                        forward = false
+                    }
+                }
             }
-            else if ((pkt is RtcpFbPliPacket && !hasPliSupport) || (pkt is RtcpFbFirPacket) && !hasFirSupport)
-            {
-                // NOTE(george): same as above
-                drop = true
-
-                requestKeyframeInternal(pkt.mediaSenderSsrc, firCommandSequenceNumber)
-            }
-            else if (pkt is RtcpFbFirPacket)
-            {
-                RtcpFbFirPacket.setSeqNum(pkt.buffer, pkt.offset, firCommandSeqNum)
+            pliOrFir is RtcpFbFirPacket -> {
+                when {
+                    hasPliSupport -> {
+                        // Translate to PLI
+                        requestKeyframe(pliOrFir.mediaSenderSsrc)
+                        forward = false
+                    }
+                    hasFirSupport -> {
+                        // Forward FIR
+                        forward = forwardPliOrFir(pliOrFir)
+                    }
+                    else -> {
+                        // Can't do anything
+                        forward = false
+                    }
+                }
             }
         }
 
-        return if (drop) null else packetInfo
+        return if (forward) packetInfo else null
+    }
+
+    private fun forwardPliOrFir(pliOrFir: RtcpFbPacket): Boolean {
+        val firCommandSeqNum =
+                generateFirCommandSequenceNumber(pliOrFir.mediaSourceSsrc, System.currentTimeMillis())
+
+        if (firCommandSeqNum < 0)
+        {
+            return false
+        }
+
+        if (pliOrFir is RtcpFbFirPacket) {
+            pliOrFir.seqNum = firCommandSeqNum
+        }
+
+        return true
     }
 
     // Map a SSRC to the timestamp (in ms) of when we last requested a keyframe for it
@@ -110,11 +144,6 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             return
         }
 
-        requestKeyframeInternal(mediaSsrc, firCommandSeqNum)
-    }
-
-    private fun requestKeyframeInternal(mediaSsrc: Long, firCommandSeqNum: Int)
-    {
         val pkt = if (hasPliSupport) RtcpFbPliPacketBuilder(
                 mediaSenderSsrc = mediaSsrc
         ).build() else RtcpFbFirPacketBuilder(
