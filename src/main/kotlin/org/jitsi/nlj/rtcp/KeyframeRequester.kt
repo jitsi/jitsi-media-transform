@@ -48,39 +48,29 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
         var drop = false
         for (pkt in compoundRtcp.packets)
         {
-            if (pkt !is RtcpFbPacket) {
+            if (pkt !is RtcpFbFirPacket || pkt !is RtcpFbPliPacket) {
                 continue
             }
 
-            val firCommandSeqNum
-                    = generateFirCommandSequenceNumber(pkt.mediaSourceSsrc, System.currentTimeMillis())
+            val firCommandSeqNum = generateFirCommandSequenceNumber(pkt.mediaSourceSsrc, System.currentTimeMillis())
+            if (firCommandSequenceNumber < 0)
+            {
+                // NOTE(george): dropping the packet here should work fine as long as we don't
+                // receive 2 RTCP packets: one we want to drop and one we want to forward in the
+                // same compound packet.
+                drop = true
+            }
+            else if ((pkt is RtcpFbPliPacket && !hasPliSupport) || (pkt is RtcpFbFirPacket) && !hasFirSupport)
+            {
+                // NOTE(george): same as above
+                drop = true
 
-            if (firCommandSeqNum > -1)
-                when (pkt) {
-                    is RtcpFbFirPacket -> {
-                        if (!hasFirSupport) {
-                            // NOTE(george): dropping the packet here should work fine as long as we don't
-                            // receive 2 RTCP packets: one we want to drop and one we want to forward in the
-                            // same compound packet.
-                            drop = true
-
-                            requestKeyframe(pkt.mediaSenderSsrc)
-                        } else {
-                            RtcpFbFirPacket.setSeqNum(pkt.buffer, pkt.offset, firCommandSeqNum)
-                        }
-                    }
-
-                    is RtcpFbPliPacket -> {
-                        if (!hasPliSupport) {
-                            // NOTE(george): dropping the packet here should work fine as long as we don't
-                            // receive 2 RTCP packets: one we want to drop and one we want to forward in the
-                            // same compound packet.
-                            drop = true
-
-                            requestKeyframe(pkt.mediaSourceSsrc)
-                        }
-                    }
-                }
+                requestKeyframe(pkt.mediaSenderSsrc)
+            }
+            else if (pkt is RtcpFbFirPacket)
+            {
+                RtcpFbFirPacket.setSeqNum(pkt.buffer, pkt.offset, firCommandSeqNum)
+            }
         }
 
         return if (drop) null else packetInfo
