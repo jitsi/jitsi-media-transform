@@ -38,7 +38,9 @@ import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacketBuilder
  */
 class KeyframeRequester : TransformerNode("Keyframe Requester") {
 
-    private val WAIT_INTERVAL_MS = 100
+    companion object {
+        private const val WAIT_INTERVAL_MS = 100
+    }
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val compoundRtcp = packetInfo.packetAs<CompoundRtcpPacket>()
