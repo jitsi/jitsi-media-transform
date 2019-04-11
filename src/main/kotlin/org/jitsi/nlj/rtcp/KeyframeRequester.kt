@@ -19,9 +19,14 @@ package org.jitsi.nlj.rtcp
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.stats.NodeStatsBlock
-import org.jitsi.nlj.transform.node.ObserverNode
+import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.cdebug
+import org.jitsi.rtp.rtcp.CompoundRtcpPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPacket
+import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacketBuilder
+import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
+import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacketBuilder
 
 /**
  * [KeyframeRequester] handles a few things around keyframes:
@@ -31,35 +36,94 @@ import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacketBuilder
  * on what the client supports
  * 3) Aggregation.  This class will pace outgoing requests such that we don't spam the sender
  */
-class KeyframeRequester : ObserverNode("Keyframe Requester") {
+class KeyframeRequester : TransformerNode("Keyframe Requester") {
+
+    private val WAIT_INTERVAL_MS = 100
+
+    override fun transform(packetInfo: PacketInfo): PacketInfo? {
+        val compoundRtcp = packetInfo.packetAs<CompoundRtcpPacket>()
+
+        var drop = false
+        compoundRtcp.packets.forEach { pkt ->
+            when (pkt) {
+                is RtcpFbPacket -> {
+                    val firCommandSeqNum = generateFirCommandSequenceNumber(pkt.mediaSourceSsrc, System.currentTimeMillis())
+                    if (firCommandSeqNum > -1)
+                        when (pkt) {
+                            is RtcpFbFirPacket -> {
+                                if (!hasFirSupport) {
+                                    // NOTE(george): dropping the packet here should work fine as long as we don't
+                                    // receive 2 RTCP packets: one we want to drop and one we want to forward in the
+                                    // same compound packet.
+                                    drop = true
+
+                                    requestKeyframe(pkt.mediaSenderSsrc)
+                                } else {
+                                    RtcpFbFirPacket.setSeqNum(pkt.buffer, pkt.offset, firCommandSeqNum)
+                                }
+                            }
+
+                            is RtcpFbPliPacket -> {
+                                if (!hasPliSupport) {
+                                    // NOTE(george): dropping the packet here should work fine as long as we don't
+                                    // receive 2 RTCP packets: one we want to drop and one we want to forward in the
+                                    // same compound packet.
+                                    drop = true
+
+                                    requestKeyframe(pkt.mediaSourceSsrc)
+                                }
+                            }
+
+                        }
+                }
+            }
+        }
+
+        return if (drop) null else packetInfo
+    }
+
     // Map a SSRC to the timestamp (in ms) of when we last requested a keyframe for it
     private val keyframeRequests = mutableMapOf<Long, Long>()
     private var firCommandSequenceNumber: Int = 0
+    private val keyframeRequestsSyncRoot = Object()
+
     // Stats
     private var numKeyframesRequestedByBridge: Int = 0
     private var numKeyframeRequestsDropped: Int = 0
 
-    override fun observe(packetInfo: PacketInfo) {
-        //TODO: translation
-        //TODO: aggregation
+    private var hasPliSupport: Boolean = false
+    private var hasFirSupport: Boolean = true
+
+    private fun generateFirCommandSequenceNumber(mediaSsrc: Long, nowMs: Long): Int {
+        synchronized (keyframeRequestsSyncRoot) {
+            return if (nowMs - keyframeRequests.getOrDefault(mediaSsrc, 0) < WAIT_INTERVAL_MS) {
+                logger.cdebug { "Sent a keyframe request less than ${WAIT_INTERVAL_MS}ms ago for $mediaSsrc, " +
+                        "ignoring request" }
+                numKeyframeRequestsDropped++
+                -1
+            } else {
+                keyframeRequests[mediaSsrc] = nowMs
+                logger.cdebug { "Keyframe requester requesting keyframe with FIR for $mediaSsrc" }
+                numKeyframesRequestedByBridge++
+                firCommandSequenceNumber++
+            }
+        }
     }
 
     fun requestKeyframe(mediaSsrc: Long) {
-        //TODO(brian): for now hardcode to send an FIR
-        val now = System.currentTimeMillis()
-        if (now - keyframeRequests.getOrDefault(mediaSsrc, 0) < 100) {
-            logger.cdebug { "Sent a keyframe request less than 100ms ago for $mediaSsrc, ignoring request" }
-            numKeyframeRequestsDropped++
-        } else {
-            keyframeRequests[mediaSsrc] = now
-            val firPacket = RtcpFbFirPacketBuilder(
-                mediaSenderSsrc = mediaSsrc,
-                firCommandSeqNum = firCommandSequenceNumber++
-            ).build()
-            logger.cdebug { "Keyframe requester requesting keyframe with FIR for $mediaSsrc" }
-            numKeyframesRequestedByBridge++
-            processPacket(PacketInfo(firPacket))
+        val firCommandSeqNum = generateFirCommandSequenceNumber(mediaSsrc, System.currentTimeMillis())
+        if (firCommandSeqNum < 0) {
+            return
         }
+
+        val pkt = if (hasPliSupport) RtcpFbPliPacketBuilder(
+                mediaSenderSsrc = mediaSsrc
+        ).build() else RtcpFbFirPacketBuilder(
+                mediaSenderSsrc = mediaSsrc,
+                firCommandSeqNum = firCommandSeqNum
+        ).build()
+
+        processPacket(PacketInfo(pkt))
     }
 
     override fun handleEvent(event: Event) {
