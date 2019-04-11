@@ -58,16 +58,10 @@ class DtlsUtils {
         init {
             Security.addProvider(BouncyCastleProvider())
         }
-        fun generateCertificateInfo(sigHashAlgo: SignatureAndHashAlgorithm): CertificateInfo {
+        fun generateCertificateInfo(): CertificateInfo {
             val cn = generateCN("TODO-APP-NAME", "TODO-APP-VERSION")
-            val keyPair = when (sigHashAlgo.signature) {
-                SignatureAlgorithm.rsa -> generateRsaKeyPair()
-                SignatureAlgorithm.ecdsa -> generateEcKeyPair()
-                else -> throw DtlsException("Unsupported signature algorithm: ${sigHashAlgo.signature}")
-            }
-//            val keyPair = generateEcKeyPair()
-//            val keyPair = generateRsaKeyPair()
-            val x509certificate = generateCertificate(cn, keyPair, sigHashAlgo)
+            val keyPair = generateEcKeyPair()
+            val x509certificate = generateCertificate(cn, keyPair)
             val localFingerprintHashFunction = x509certificate.getHashFunction()
             val localFingerprint = x509certificate.getFingerprint(localFingerprintHashFunction)
 
@@ -76,28 +70,6 @@ class DtlsUtils {
             )
             return CertificateInfo(keyPair, certificate, localFingerprintHashFunction, localFingerprint, System.currentTimeMillis())
         }
-
-        fun generateCertificates(sigHashAlgos: List<SignatureAndHashAlgorithm>): MutableMap<SignatureAlgorithmType, CertificateInfo> {
-            val certificates = mutableMapOf<SignatureAlgorithmType, CertificateInfo>()
-            sigHashAlgos.forEach { sigHashAlgo ->
-                certificates[sigHashAlgo.signature] = generateCertificateInfo(sigHashAlgo)
-            }
-            return certificates
-        }
-
-//        fun generateCertificateInfo(): CertificateInfo {
-//            val cn = generateCN("TODO-APP-NAME", "TODO-APP-VERSION")
-////            val keyPair = generateEcKeyPair()
-//            val keyPair = generateRsaKeyPair()
-//            val x509certificate = generateCertificate(cn, keyPair)
-//            val localFingerprintHashFunction = x509certificate.getHashFunction()
-//            val localFingerprint = x509certificate.getFingerprint(localFingerprintHashFunction)
-//
-//            val certificate =  org.bouncycastle.tls.Certificate(
-//                arrayOf(BcTlsCertificate(BC_TLS_CRYPTO, x509certificate))
-//            )
-//            return CertificateInfo(keyPair, certificate, localFingerprintHashFunction, localFingerprint, System.currentTimeMillis())
-//        }
 
         /**
          * A helper which finds an SRTP protection profile present in both
@@ -118,8 +90,7 @@ class DtlsUtils {
          */
         private fun generateCertificate(
             subject: X500Name,
-            keyPair: KeyPair,
-            algorithm: SignatureAndHashAlgorithm
+            keyPair: KeyPair
         ): Certificate {
             val now = System.currentTimeMillis()
             val startDate = Date(now - Duration.ofDays(1).toMillis())
@@ -127,12 +98,7 @@ class DtlsUtils {
             val serialNumber = BigInteger.valueOf(now)
 
             val certBuilder = JcaX509v3CertificateBuilder(subject, serialNumber, startDate, expiryDate, subject, keyPair.public)
-            val algoString = when (algorithm) {
-                SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa) -> "SHA1withRSA"
-                SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa) -> "SHA256withECDSA"
-                else -> throw DtlsException("Unsupported algo: $algorithm")
-            }
-            val signer = JcaContentSignerBuilder(algoString).build(keyPair.private)
+            val signer = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
 
             return certBuilder.build(signer).toASN1Structure()
         }

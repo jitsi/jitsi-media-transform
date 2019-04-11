@@ -29,7 +29,6 @@ class DtlsServer(
     id: String,
     private val datagramTransport: DatagramTransport,
     private val handshakeCompleteHandler: (Int, TlsRole, ByteArray) -> Unit = { _, _, _ -> },
-    notifyLocalCertificateSelected: (CertificateInfo) -> Unit = {},
     verifyAndValidateRemoteCertificate: (Certificate?) -> Unit = {},
     private val dtlsServerProtocol: DTLSServerProtocol = DTLSServerProtocol()
 ) : DtlsRole {
@@ -37,7 +36,7 @@ class DtlsServer(
     private val logPrefix = "[$id]"
 
     private val tlsServer: TlsServerImpl =
-        TlsServerImpl(notifyLocalCertificateSelected, verifyAndValidateRemoteCertificate)
+        TlsServerImpl(verifyAndValidateRemoteCertificate)
 
     override fun start(): DTLSTransport = accept()
 

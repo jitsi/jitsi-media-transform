@@ -69,10 +69,10 @@ class DtlsStack(
     private val roleSet = CompletableFuture<Unit>()
 
     val localFingerprint: String
-        get() = certificateInfo.localFingerprint
+        get() = DtlsStack.getCertificateInfo().localFingerprint
 
     val localFingerprintHashFunction: String
-        get() = certificateInfo.localFingerprintHashFunction
+        get() = DtlsStack.getCertificateInfo().localFingerprintHashFunction
 
     /**
      * The remote fingerprints sent to us over the signaling path.
@@ -90,7 +90,7 @@ class DtlsStack(
      */
     protected fun verifyAndValidateRemoteCertificate(remoteCertificate: Certificate?) {
         remoteCertificate?.let {
-//            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
+            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
             // The above throws an exception if the checks fail.
             logger.cdebug { "$logPrefix Fingerprints verified." }
         }
@@ -137,12 +137,12 @@ class DtlsStack(
     }
 
     fun actAsServer() {
-        role = DtlsServer(id, this, handshakeCompleteHandler, { certificateInfo = it } , this::verifyAndValidateRemoteCertificate)
+        role = DtlsServer(id, this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
         roleSet.complete(Unit)
     }
 
     fun actAsClient() {
-        role = DtlsClient(id, this, handshakeCompleteHandler, { certificateInfo = it }, this::verifyAndValidateRemoteCertificate)
+        role = DtlsClient(id, this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
         roleSet.complete(Unit)
     }
 
@@ -221,24 +221,18 @@ class DtlsStack(
     companion object {
         /**
          * Because generating the certificateInfo can be expensive, we generate a single
-         * one (per supported hash/signature algo pair) to be used everywhere.  It expires
-         * in 24 hours (when we'll generate another one).
+         * one up front. It expires in 24 hours (when we'll generate another one).
          */
-        private var certificates: MutableMap<SignatureAlgorithmType, CertificateInfo> = DtlsUtils.generateCertificates(
-            listOf(
-                SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa),
-                SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa)
-            )
-        )
+        private var certificateInfo = DtlsUtils.generateCertificateInfo()
+
         private val syncRoot = Any()
-        fun getCertificateInfo(sigHashAlgo: SignatureAndHashAlgorithm): CertificateInfo {
+        fun getCertificateInfo(): CertificateInfo {
             synchronized(DtlsStack.syncRoot) {
                 val expirationPeriodMs = Duration.ofDays(1).toMillis()
-                val cert = certificates[sigHashAlgo.signature] ?: throw DtlsUtils.DtlsException("Unsupported algorithm: $sigHashAlgo")
-                if (cert.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
-                    certificates[sigHashAlgo.signature] = DtlsUtils.generateCertificateInfo(sigHashAlgo)
+                if (DtlsStack.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
+                    DtlsStack.certificateInfo = DtlsUtils.generateCertificateInfo()
                 }
-                return cert
+                return DtlsStack.certificateInfo
             }
         }
     }

@@ -49,7 +49,6 @@ import java.util.Hashtable
 import java.util.Vector
 
 class TlsServerImpl(
-    private val notifyLocalCertificateSelected: (CertificateInfo) -> Unit,
     /**
      * The function to call when the client certificateInfo is available.
      */
@@ -60,10 +59,7 @@ class TlsServerImpl(
 
     private var session: TlsSession? = null
 
-//    private val certificateInfo = DtlsStack.getCertificateInfo()
-    // We won't know which certificate we're using until we find out
-    // what is supported
-    private lateinit var certificateInfo: CertificateInfo
+    private val certificateInfo = DtlsStack.getCertificateInfo()
 
     /**
      * Only set after a handshake has completed
@@ -121,9 +117,6 @@ class TlsServerImpl(
     }
 
     override fun getECDSASignerCredentials(): TlsCredentialedSigner {
-        certificateInfo =
-            DtlsStack.getCertificateInfo(SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa))
-        notifyLocalCertificateSelected(certificateInfo)
         return BcDefaultTlsCredentialedSigner(
             TlsCryptoParameters(context),
             (context.crypto as BcTlsCrypto),
