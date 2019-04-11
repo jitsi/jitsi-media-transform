@@ -46,39 +46,41 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
         val compoundRtcp = packetInfo.packetAs<CompoundRtcpPacket>()
 
         var drop = false
-        compoundRtcp.packets.forEach { pkt ->
-            when (pkt) {
-                is RtcpFbPacket -> {
-                    val firCommandSeqNum = generateFirCommandSequenceNumber(pkt.mediaSourceSsrc, System.currentTimeMillis())
-                    if (firCommandSeqNum > -1)
-                        when (pkt) {
-                            is RtcpFbFirPacket -> {
-                                if (!hasFirSupport) {
-                                    // NOTE(george): dropping the packet here should work fine as long as we don't
-                                    // receive 2 RTCP packets: one we want to drop and one we want to forward in the
-                                    // same compound packet.
-                                    drop = true
-
-                                    requestKeyframe(pkt.mediaSenderSsrc)
-                                } else {
-                                    RtcpFbFirPacket.setSeqNum(pkt.buffer, pkt.offset, firCommandSeqNum)
-                                }
-                            }
-
-                            is RtcpFbPliPacket -> {
-                                if (!hasPliSupport) {
-                                    // NOTE(george): dropping the packet here should work fine as long as we don't
-                                    // receive 2 RTCP packets: one we want to drop and one we want to forward in the
-                                    // same compound packet.
-                                    drop = true
-
-                                    requestKeyframe(pkt.mediaSourceSsrc)
-                                }
-                            }
-
-                        }
-                }
+        for (pkt in compoundRtcp.packets)
+        {
+            if (pkt !is RtcpFbPacket) {
+                continue
             }
+
+            val firCommandSeqNum
+                    = generateFirCommandSequenceNumber(pkt.mediaSourceSsrc, System.currentTimeMillis())
+
+            if (firCommandSeqNum > -1)
+                when (pkt) {
+                    is RtcpFbFirPacket -> {
+                        if (!hasFirSupport) {
+                            // NOTE(george): dropping the packet here should work fine as long as we don't
+                            // receive 2 RTCP packets: one we want to drop and one we want to forward in the
+                            // same compound packet.
+                            drop = true
+
+                            requestKeyframe(pkt.mediaSenderSsrc)
+                        } else {
+                            RtcpFbFirPacket.setSeqNum(pkt.buffer, pkt.offset, firCommandSeqNum)
+                        }
+                    }
+
+                    is RtcpFbPliPacket -> {
+                        if (!hasPliSupport) {
+                            // NOTE(george): dropping the packet here should work fine as long as we don't
+                            // receive 2 RTCP packets: one we want to drop and one we want to forward in the
+                            // same compound packet.
+                            drop = true
+
+                            requestKeyframe(pkt.mediaSourceSsrc)
+                        }
+                    }
+                }
         }
 
         return if (drop) null else packetInfo
