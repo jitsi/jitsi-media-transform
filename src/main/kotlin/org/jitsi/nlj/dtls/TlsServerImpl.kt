@@ -49,6 +49,7 @@ import java.util.Hashtable
 import java.util.Vector
 
 class TlsServerImpl(
+    private val notifyLocalCertificateSelected: (CertificateInfo) -> Unit,
     /**
      * The function to call when the client certificateInfo is available.
      */
@@ -59,7 +60,10 @@ class TlsServerImpl(
 
     private var session: TlsSession? = null
 
-    private val certificateInfo = DtlsStack.getCertificateInfo()
+//    private val certificateInfo = DtlsStack.getCertificateInfo()
+    // We won't know which certificate we're using until we find out
+    // what is supported
+    private lateinit var certificateInfo: CertificateInfo
 
     /**
      * Only set after a handshake has completed
@@ -104,8 +108,7 @@ class TlsServerImpl(
     override fun getCipherSuites(): IntArray {
         return intArrayOf(
             CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA
-//            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
         )
     }
 
@@ -118,7 +121,9 @@ class TlsServerImpl(
     }
 
     override fun getECDSASignerCredentials(): TlsCredentialedSigner {
-        println(certificateRequest.supportedSignatureAlgorithms)
+        certificateInfo =
+            DtlsStack.getCertificateInfo(SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa))
+        notifyLocalCertificateSelected(certificateInfo)
         return BcDefaultTlsCredentialedSigner(
             TlsCryptoParameters(context),
             (context.crypto as BcTlsCrypto),
@@ -131,12 +136,24 @@ class TlsServerImpl(
     override fun getCertificateRequest(): CertificateRequest {
         val signatureAlgorithms = Vector<SignatureAndHashAlgorithm>(1)
         signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa))
-        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.ecdsa))
-        return CertificateRequest(
-            shortArrayOf(ClientCertificateType.ecdsa_sign),
-            signatureAlgorithms,
-            null
-        )
+        signatureAlgorithms.add(SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa))
+        return when (context.clientVersion) {
+            ProtocolVersion.DTLSv10 -> {
+                CertificateRequest(
+                    shortArrayOf(ClientCertificateType.rsa_sign),
+                    null,
+                    null
+                )
+            }
+            ProtocolVersion.DTLSv12 -> {
+                CertificateRequest(
+                    shortArrayOf(ClientCertificateType.ecdsa_sign),
+                    signatureAlgorithms,
+                    null
+                )
+            }
+            else -> throw DtlsUtils.DtlsException("Unsupported version: ${context.clientVersion}")
+        }
     }
 
     override fun notifyHandshakeComplete() {
@@ -188,5 +205,5 @@ class TlsServerImpl(
     }
 
     override fun getSupportedVersions(): Array<ProtocolVersion> =
-        ProtocolVersion.DTLSv10.downTo(ProtocolVersion.DTLSv10)
+        ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv10)
 }

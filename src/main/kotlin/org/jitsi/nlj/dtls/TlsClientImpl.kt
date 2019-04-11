@@ -49,6 +49,7 @@ import java.util.Hashtable
  * Implementation of [DefaultTlsClient].
  */
 class TlsClientImpl(
+    private val notifyLocalCertificateSelected: (CertificateInfo) -> Unit,
     /**
      * The function to call when the server certificateInfo is available.
      */
@@ -57,7 +58,8 @@ class TlsClientImpl(
 
     private val logger = getLogger(this.javaClass)
 
-    private val certificateInfo = DtlsStack.getCertificateInfo()
+//    private val certificateInfo = DtlsStack.getCertificateInfo()
+    private lateinit var certificateInfo: CertificateInfo
 
     private var session: TlsSession? = null
 
@@ -80,6 +82,14 @@ class TlsClientImpl(
     override fun getAuthentication(): TlsAuthentication {
         return object : TlsAuthentication {
             override fun getClientCredentials(certificateRequest: CertificateRequest): TlsCredentials {
+                println(certificateRequest.supportedSignatureAlgorithms)
+                val signatureAndHash = when (context.serverVersion) {
+                    ProtocolVersion.DTLSv10 -> SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa)
+                    ProtocolVersion.DTLSv12 -> SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
+                    else -> throw DtlsUtils.DtlsException("Unsupported version: ${context.serverVersion}")
+                }
+                certificateInfo = DtlsStack.getCertificateInfo(signatureAndHash)
+                notifyLocalCertificateSelected(certificateInfo)
                 // NOTE: can't set clientCredentials when it is declared because 'context' won't be set yet
                 if (clientCredentials == null) {
                     clientCredentials = BcDefaultTlsCredentialedSigner(
@@ -87,7 +97,7 @@ class TlsClientImpl(
                         (context.crypto as BcTlsCrypto),
                         PrivateKeyFactory.createKey(certificateInfo.keyPair.private.encoded),
                         certificateInfo.certificate,
-                        SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa)
+                        signatureAndHash
                     )
                 }
                 return clientCredentials!!
@@ -127,8 +137,7 @@ class TlsClientImpl(
     override fun getCipherSuites(): IntArray {
         return intArrayOf(
             CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA
-//            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
         )
     }
 
@@ -162,7 +171,7 @@ class TlsClientImpl(
     }
 
     override fun getSupportedVersions(): Array<ProtocolVersion> =
-        ProtocolVersion.DTLSv10.downTo(ProtocolVersion.DTLSv10)
+        ProtocolVersion.DTLSv12.downTo(ProtocolVersion.DTLSv10)
 
     override fun notifyAlertRaised(alertLevel: Short, alertDescription: Short, message: String?, cause: Throwable?) {
         val stack = with(StringBuffer()) {

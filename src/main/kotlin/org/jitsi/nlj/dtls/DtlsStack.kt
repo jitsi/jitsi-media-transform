@@ -18,6 +18,9 @@ package org.jitsi.nlj.dtls
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
+import org.bouncycastle.tls.HashAlgorithm
+import org.bouncycastle.tls.SignatureAlgorithm
+import org.bouncycastle.tls.SignatureAndHashAlgorithm
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.protocol.ProtocolStack
 import org.jitsi.nlj.util.BufferPool
@@ -66,10 +69,10 @@ class DtlsStack(
     private val roleSet = CompletableFuture<Unit>()
 
     val localFingerprint: String
-        get() = DtlsStack.getCertificateInfo().localFingerprint
+        get() = certificateInfo.localFingerprint
 
     val localFingerprintHashFunction: String
-        get() = DtlsStack.getCertificateInfo().localFingerprintHashFunction
+        get() = certificateInfo.localFingerprintHashFunction
 
     /**
      * The remote fingerprints sent to us over the signaling path.
@@ -77,11 +80,17 @@ class DtlsStack(
     var remoteFingerprints: Map<String, String> = HashMap()
 
     /**
+     * We won't know which certificate we're using until we've gotten into
+     * the negotiation
+     */
+    private lateinit var certificateInfo: CertificateInfo
+
+    /**
      * Checks that a specific [Certificate] matches the remote fingerprints sent to us over the signaling path.
      */
     protected fun verifyAndValidateRemoteCertificate(remoteCertificate: Certificate?) {
         remoteCertificate?.let {
-            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
+//            DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
             // The above throws an exception if the checks fail.
             logger.cdebug { "$logPrefix Fingerprints verified." }
         }
@@ -128,12 +137,12 @@ class DtlsStack(
     }
 
     fun actAsServer() {
-        role = DtlsServer(id, this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        role = DtlsServer(id, this, handshakeCompleteHandler, { certificateInfo = it } , this::verifyAndValidateRemoteCertificate)
         roleSet.complete(Unit)
     }
 
     fun actAsClient() {
-        role = DtlsClient(id, this, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        role = DtlsClient(id, this, handshakeCompleteHandler, { certificateInfo = it }, this::verifyAndValidateRemoteCertificate)
         roleSet.complete(Unit)
     }
 
@@ -212,18 +221,24 @@ class DtlsStack(
     companion object {
         /**
          * Because generating the certificateInfo can be expensive, we generate a single
-         * one to be used everywhere which expires in 24 hours (when we'll generate
-         * another one).
+         * one (per supported hash/signature algo pair) to be used everywhere.  It expires
+         * in 24 hours (when we'll generate another one).
          */
-        private var certificateInfo: CertificateInfo = DtlsUtils.generateCertificateInfo()
-        private val syncRoot: Any = Any()
-        fun getCertificateInfo(): CertificateInfo {
+        private var certificates: MutableMap<SignatureAlgorithmType, CertificateInfo> = DtlsUtils.generateCertificates(
+            listOf(
+                SignatureAndHashAlgorithm(HashAlgorithm.sha256, SignatureAlgorithm.ecdsa),
+                SignatureAndHashAlgorithm(HashAlgorithm.sha1, SignatureAlgorithm.rsa)
+            )
+        )
+        private val syncRoot = Any()
+        fun getCertificateInfo(sigHashAlgo: SignatureAndHashAlgorithm): CertificateInfo {
             synchronized(DtlsStack.syncRoot) {
                 val expirationPeriodMs = Duration.ofDays(1).toMillis()
-                if (DtlsStack.certificateInfo.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
-                    DtlsStack.certificateInfo = DtlsUtils.generateCertificateInfo()
+                val cert = certificates[sigHashAlgo.signature] ?: throw DtlsUtils.DtlsException("Unsupported algorithm: $sigHashAlgo")
+                if (cert.creationTimestampMs + expirationPeriodMs < System.currentTimeMillis()) {
+                    certificates[sigHashAlgo.signature] = DtlsUtils.generateCertificateInfo(sigHashAlgo)
                 }
-                return DtlsStack.certificateInfo
+                return cert
             }
         }
     }
