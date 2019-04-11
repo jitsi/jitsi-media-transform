@@ -65,7 +65,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                 // NOTE(george): same as above
                 drop = true
 
-                requestKeyframe(pkt.mediaSenderSsrc)
+                requestKeyframeInternal(pkt.mediaSenderSsrc, firCommandSequenceNumber)
             }
             else if (pkt is RtcpFbFirPacket)
             {
@@ -110,6 +110,11 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             return
         }
 
+        requestKeyframeInternal(mediaSsrc, firCommandSeqNum)
+    }
+
+    private fun requestKeyframeInternal(mediaSsrc: Long, firCommandSeqNum: Int)
+    {
         val pkt = if (hasPliSupport) RtcpFbPliPacketBuilder(
                 mediaSenderSsrc = mediaSsrc
         ).build() else RtcpFbFirPacketBuilder(
@@ -117,7 +122,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                 firCommandSeqNum = firCommandSeqNum
         ).build()
 
-        processPacket(PacketInfo(pkt))
+        next(PacketInfo(pkt))
     }
 
     override fun handleEvent(event: Event) {
