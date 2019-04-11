@@ -32,8 +32,13 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.tls.HashAlgorithm
 import org.bouncycastle.tls.SignatureAlgorithm
 import org.bouncycastle.tls.SignatureAndHashAlgorithm
+import org.bouncycastle.tls.TlsContext
+import org.bouncycastle.tls.TlsUtils
+import org.bouncycastle.tls.crypto.TlsSecret
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCertificate
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
+import java.lang.IllegalArgumentException
+import java.lang.IllegalStateException
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -267,6 +272,52 @@ class DtlsUtils {
                 }
             }
             return buf.toString()
+        }
+
+        /*
+         * Copied from TlsContext#exportKeyingMaterial and modified to work with
+         * an externally provided masterSecret value.
+         */
+        fun exportKeyingMaterial(
+            context: TlsContext,
+            asciiLabel: String,
+            context_value: ByteArray?,
+            length: Int,
+            masterSecret: TlsSecret
+        ): ByteArray {
+            if (context_value != null && !TlsUtils.isValidUint16(context_value.size)) {
+                throw IllegalArgumentException("'context_value' must have a length less than 2^16 (or be null)")
+            }
+            val sp = context.securityParameters
+            val cr = sp.clientRandom
+            val sr = sp.serverRandom
+
+            var seedLength = cr.size + sr.size
+            if (context_value != null) {
+                seedLength += (2 * context_value.size)
+            }
+
+            val seed = ByteArray(seedLength)
+            var seedPos = 0
+
+            System.arraycopy(cr, 0, seed, seedPos, cr.size)
+            seedPos += cr.size
+            System.arraycopy(sr, 0, seed, seedPos, sr.size)
+            seedPos += sr.size
+
+            if (context_value != null) {
+                TlsUtils.writeUint16(context_value.size, seed, seedPos)
+                seedPos += 2
+                System.arraycopy(context_value, 0, seed, seedPos, context_value.size)
+                seedPos += context_value.size
+            }
+
+            if (seedPos != seedLength) {
+                throw IllegalStateException("error in calculation of seed for export")
+
+            }
+
+            return TlsUtils.PRF(context, masterSecret, asciiLabel, seed, length).extract()
         }
     }
 

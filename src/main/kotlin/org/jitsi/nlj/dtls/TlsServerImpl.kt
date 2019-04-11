@@ -165,11 +165,24 @@ class TlsServerImpl(
         }
         val srtpProfileInformation =
             SrtpUtil.getSrtpProfileInformationFromSrtpProtectionProfile(chosenSrtpProtectionProfile)
-        srtpKeyingMaterial = context.exportKeyingMaterial(
-            ExporterLabel.dtls_srtp,
-            null,
-            2 * (srtpProfileInformation.cipherKeyLength + srtpProfileInformation.cipherSaltLength)
-        )
+        if (!context.securityParameters.isExtendedMasterSecret) {
+            context.session?.exportSessionParameters()?.masterSecret?.let {
+                srtpKeyingMaterial = DtlsUtils.exportKeyingMaterial(
+                    context,
+                    ExporterLabel.dtls_srtp,
+                    null,
+                    2 * (srtpProfileInformation.cipherKeyLength + srtpProfileInformation.cipherSaltLength),
+                    it
+                )
+            }
+
+        } else {
+            srtpKeyingMaterial = context.exportKeyingMaterial(
+                ExporterLabel.dtls_srtp,
+                null,
+                2 * (srtpProfileInformation.cipherKeyLength + srtpProfileInformation.cipherSaltLength)
+            )
+        }
     }
 
     override fun notifyClientCertificate(clientCertificate: Certificate?) {
