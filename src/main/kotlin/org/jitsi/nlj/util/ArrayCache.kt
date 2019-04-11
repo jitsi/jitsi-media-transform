@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 open class ArrayCache<T>(
     val size: Int,
-    val synchronize: Boolean = false,
+    private val cloneItem: (T) -> T,
+    private val synchronize: Boolean = true,
     /**
      * The function to use to clone items. The cache always saves copies of the items that are inserted.
      */
-    private val cloneItem: (T) -> T,
     private val timeProvider: TimeProvider = TimeProvider()
 ) {
     private val cache: Array<Container> = Array(size) { Container() }
@@ -44,12 +44,13 @@ open class ArrayCache<T>(
     var numInserts = 0
     var numOldInserts = 0
     private val _numHits = AtomicInteger()
-    private var _numMisses = AtomicInteger()
+    private val _numMisses = AtomicInteger()
     val numHits
         get() = _numHits.get()
     val numMisses
         get() = _numMisses.get()
-    val hitRate = _numHits.get() * 1.0 / max(1, _numHits.get() + _numMisses.get())
+    val hitRate
+        get() = _numHits.get() * 1.0 / max(1, _numHits.get() + _numMisses.get())
 
     protected val lastIndex: Int
         get() = if (head == -1) -1 else cache[head].index
@@ -115,17 +116,14 @@ open class ArrayCache<T>(
         return result
     }
 
-    private fun doGet(index: Int): Container?
-    {
-        if (head == -1)
-        {
+    private fun doGet(index: Int): Container? {
+        if (head == -1) {
             // Not initialized (empty), or newer than head.
             return null
         }
 
         val diff = index - cache[head].index
-        if (diff > 0)
-        {
+        if (diff > 0) {
             // The requested index is newer than the last index we have.
             return null
         }
@@ -149,7 +147,6 @@ open class ArrayCache<T>(
             doUpdateTimeAdded(index, timeAdded)
         }
 
-
     private fun doUpdateTimeAdded(index: Int, timeAdded: Long) {
         if (head == -1 || index > cache[head].index) {
             return
@@ -161,6 +158,58 @@ open class ArrayCache<T>(
         }
     }
 
+    /**
+     * Iterates from the last index added to the cache down at most [size] elements. For each item, if it is in the
+     * last 'window', applies [predicate] on a clone of the item. If [predicate] returns [false] for any item, stops the
+     * iteration and returns.
+     */
+    fun forEachDescending(predicate: (T) -> Boolean) =
+        if (synchronize) {
+            synchronized(syncRoot) {
+                doForEachDescending(predicate)
+            }
+        } else {
+            doForEachDescending(predicate)
+        }
+
+    private fun doForEachDescending(predicate: (T) -> Boolean) {
+        if (head == -1) return
+
+        val indexRange = cache[head].index downTo max(cache[head].index - size, 1)
+        for (i in 0 until size) {
+            val position = (head - i) floorMod size
+            if (cache[position].index in indexRange) {
+                // We maintain the invariant [index==-1 iff item==null]
+                if (!predicate(cloneItem(cache[position].item!!))) {
+                    return
+                }
+            }
+        }
+    }
+
+    /**
+     * Removes all items stored in the cache, calling [discardItem] for each one.
+     */
+    fun flush() =
+        if (synchronize) {
+            synchronized(syncRoot) {
+                doFlush()
+            }
+        } else {
+            doFlush()
+        }
+
+    private fun doFlush() {
+        for (container in cache) {
+            with (container) {
+                index = -1
+                item?.let { discardItem(it) }
+                item = null
+                timeAdded = -1
+            }
+        }
+        head = -1
+    }
 
     inner class Container(
         var item: T? = null,

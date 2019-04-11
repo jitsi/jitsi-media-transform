@@ -35,6 +35,7 @@ class PacketCache(
      */
     private val size: Int
     private val packetCaches: MutableMap<Long, RtpPacketCache> = ConcurrentHashMap()
+    private var stopped = false
 
     companion object {
         val SIZE_PACKETS: String = "${PacketCache::class.java}.SIZE_PACKETS"
@@ -57,7 +58,7 @@ class PacketCache(
      * Stores a copy of the given packet in the cache.
      */
     fun insert(packet: RtpPacket) =
-        packetPredicate(packet) && getCache(packet.ssrc).insert(packet)
+        !stopped && packetPredicate(packet) && getCache(packet.ssrc).insert(packet)
 
     /**
      * Gets a copy of the packet in the cache with the given SSRC and sequence number, if the cache contains it.
@@ -75,16 +76,17 @@ class PacketCache(
      * packet in order to update the timestamp without re-adding the packet to the cache (which is expensive).
      */
     fun updateTimestamp(ssrc: Long, seqNum: Int, timeAdded: Long) = getCache(ssrc).updateTimestamp(seqNum, timeAdded)
+
+    fun stop() {
+        stopped = true
+        packetCaches.forEach { _, cache -> cache.flush() }
+    }
 }
 
 /**
  * Implements a cache for RTP packets.
  */
-class RtpPacketCache(
-    size: Int,
-    synchronize: Boolean = true,
-    timeProvider: TimeProvider = TimeProvider()
-) : ArrayCache<RtpPacket>(size, synchronize, { it.clone() }, timeProvider) {
+class RtpPacketCache(size: Int) : ArrayCache<RtpPacket>(size, RtpPacket::clone) {
 
     private val rfc3711IndexTracker = Rfc3711IndexTracker()
 
@@ -107,38 +109,21 @@ class RtpPacketCache(
         return super.insertItem(rtpPacket, index)
     }
 
-    fun getMany(numBytes: Int): Set<RtpPacket> =
-        if (synchronize) {
-            synchronized (syncRoot) {
-                doGetMany(numBytes)
-            }
-        } else {
-            doGetMany(numBytes)
-        }
-
     fun updateTimestamp(seqNum: Int, timeAdded: Long) {
         val index = rfc3711IndexTracker.interpret(seqNum)
         super.updateTimeAdded(index, timeAdded)
     }
 
-    fun doGetMany(numBytes: Int): Set<RtpPacket> {
+    fun getMany(numBytes: Int): Set<RtpPacket> {
         var bytesRemaining = numBytes
         val packets = mutableSetOf<RtpPacket>()
 
-        val lastIndex = lastIndex
-        if (lastIndex == -1) {
-            return packets
+        forEachDescending {
+            packets.add(it)
+            bytesRemaining -= it.length
+            bytesRemaining > 0
         }
 
-        for (i in 0 until size) {
-            if (bytesRemaining <= 0) {
-                break
-            }
-            getContainer(lastIndex - i)?.item?.let {
-                packets.add(it)
-                bytesRemaining -= it.length
-            }
-        }
         return packets
     }
 }

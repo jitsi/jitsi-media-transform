@@ -25,5 +25,10 @@ class PacketCacher : ObserverNode("Packet cache") {
         packetCache.insert(packetInfo.packetAs())
     }
 
+    override fun stop() {
+        packetCache.stop()
+        super.stop()
+    }
+
     fun getPacketCache(): PacketCache = packetCache
 }
