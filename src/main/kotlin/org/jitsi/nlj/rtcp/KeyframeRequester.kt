@@ -113,7 +113,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     // Map a SSRC to the timestamp (in ms) of when we last requested a keyframe for it
     private val keyframeRequests = mutableMapOf<Long, Long>()
     private var firCommandSequenceNumber: Int = 0
-    private val keyframeRequestsSyncRoot = Object()
+    private val keyframeRequestsSyncRoot = Any()
 
     // Stats
     private var numKeyframesRequestedByBridge: Int = 0
