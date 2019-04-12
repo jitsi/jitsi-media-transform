@@ -56,7 +56,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             packet is RtcpFbFirPacket -> packet
             packet is RtcpFbPliPacket -> packet
             else -> null
-        }
+        } ?: return null
 
         var forward = true
         when {
@@ -104,7 +104,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
 
     // Map a SSRC to the timestamp (in ms) of when we last requested a keyframe for it
     private val keyframeRequests = mutableMapOf<Long, Long>()
-    private var firCommandSequenceNumber: AtomicInteger = AtomicInteger(0)
+    private val firCommandSequenceNumber: AtomicInteger = AtomicInteger(0)
     private val keyframeRequestsSyncRoot = Any()
 
     // Stats
@@ -131,8 +131,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     }
 
     fun requestKeyframe(mediaSsrc: Long) {
-        if (!canSendKeyframeRequest(mediaSsrc, System.currentTimeMillis()))
-        {
+        if (!canSendKeyframeRequest(mediaSsrc, System.currentTimeMillis())) {
             return
         }
 
