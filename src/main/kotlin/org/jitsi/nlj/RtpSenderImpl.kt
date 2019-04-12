@@ -176,6 +176,7 @@ class RtpSenderImpl(
 
     override fun onRttUpdate(newRtt: Double) {
         nackHandler.onRttUpdate(newRtt)
+        keyframeRequester.onRttUpdate(newRtt)
     }
 
     override fun sendPacket(packetInfo: PacketInfo) {

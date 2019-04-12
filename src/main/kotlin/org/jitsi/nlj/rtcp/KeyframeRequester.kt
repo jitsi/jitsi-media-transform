@@ -29,6 +29,7 @@ import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacketBuilder
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacketBuilder
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.min
 
 /**
  * [KeyframeRequester] handles a few things around keyframes:
@@ -41,8 +42,10 @@ import java.util.concurrent.atomic.AtomicInteger
 class KeyframeRequester : TransformerNode("Keyframe Requester") {
 
     companion object {
-        private const val WAIT_INTERVAL_MS = 100
+        private const val DEFAULT_WAIT_INTERVAL_MS = 100
     }
+
+    var waitIntervalMs = DEFAULT_WAIT_INTERVAL_MS
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val packet = packetInfo.packet
@@ -113,8 +116,8 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
 
     private fun canSendKeyframeRequest(mediaSsrc: Long, nowMs: Long): Boolean {
         synchronized (keyframeRequestsSyncRoot) {
-            return if (nowMs - keyframeRequests.getOrDefault(mediaSsrc, 0) < WAIT_INTERVAL_MS) {
-                logger.cdebug { "Sent a keyframe request less than ${WAIT_INTERVAL_MS}ms ago for $mediaSsrc, " +
+            return if (nowMs - keyframeRequests.getOrDefault(mediaSsrc, 0) < waitIntervalMs) {
+                logger.cdebug { "Sent a keyframe request less than ${waitIntervalMs}ms ago for $mediaSsrc, " +
                         "ignoring request" }
                 numKeyframeRequestsDropped++
                 false
@@ -167,5 +170,10 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             addStat("num keyframes requested by the bridge: $numKeyframesRequestedByBridge")
             addStat("num keyframes dropped due to throttling: $numKeyframeRequestsDropped")
         }
+    }
+
+    fun onRttUpdate(newRtt: Double) {
+        // avg(rtt) + stddev(rtt) would be more accurate than rtt + 10.
+        waitIntervalMs = min(DEFAULT_WAIT_INTERVAL_MS, newRtt.toInt() + 10)
     }
 }
