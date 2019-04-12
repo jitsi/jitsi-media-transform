@@ -22,11 +22,11 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacketBuilder
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacketBuilder
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * [KeyframeRequester] handles a few things around keyframes:
@@ -59,7 +59,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                 when {
                     hasPliSupport -> {
                         // Forward PLI
-                        forward = forwardPliOrFir(pliOrFir)
+                        forward = canSendKeyframeRequest(pliOrFir.mediaSenderSsrc, System.currentTimeMillis())
                     }
                     hasFirSupport -> {
                         // Translate to FIR
@@ -81,7 +81,10 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                     }
                     hasFirSupport -> {
                         // Forward FIR
-                        forward = forwardPliOrFir(pliOrFir)
+                        forward = canSendKeyframeRequest(pliOrFir.mediaSenderSsrc, System.currentTimeMillis())
+                        if (forward) {
+                            pliOrFir.seqNum = firCommandSequenceNumber.incrementAndGet()
+                        }
                     }
                     else -> {
                         // Can't do anything
@@ -94,25 +97,9 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
         return if (forward) packetInfo else null
     }
 
-    private fun forwardPliOrFir(pliOrFir: RtcpFbPacket): Boolean {
-        val firCommandSeqNum =
-                generateFirCommandSequenceNumber(pliOrFir.mediaSourceSsrc, System.currentTimeMillis())
-
-        if (firCommandSeqNum < 0)
-        {
-            return false
-        }
-
-        if (pliOrFir is RtcpFbFirPacket) {
-            pliOrFir.seqNum = firCommandSeqNum
-        }
-
-        return true
-    }
-
     // Map a SSRC to the timestamp (in ms) of when we last requested a keyframe for it
     private val keyframeRequests = mutableMapOf<Long, Long>()
-    private var firCommandSequenceNumber: Int = 0
+    private var firCommandSequenceNumber: AtomicInteger = AtomicInteger(0)
     private val keyframeRequestsSyncRoot = Any()
 
     // Stats
@@ -122,25 +109,25 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     private var hasPliSupport: Boolean = false
     private var hasFirSupport: Boolean = true
 
-    private fun generateFirCommandSequenceNumber(mediaSsrc: Long, nowMs: Long): Int {
+    private fun canSendKeyframeRequest(mediaSsrc: Long, nowMs: Long): Boolean {
         synchronized (keyframeRequestsSyncRoot) {
             return if (nowMs - keyframeRequests.getOrDefault(mediaSsrc, 0) < WAIT_INTERVAL_MS) {
                 logger.cdebug { "Sent a keyframe request less than ${WAIT_INTERVAL_MS}ms ago for $mediaSsrc, " +
                         "ignoring request" }
                 numKeyframeRequestsDropped++
-                -1
+                false
             } else {
                 keyframeRequests[mediaSsrc] = nowMs
                 logger.cdebug { "Keyframe requester requesting keyframe with FIR for $mediaSsrc" }
                 numKeyframesRequestedByBridge++
-                firCommandSequenceNumber++
+                true
             }
         }
     }
 
     fun requestKeyframe(mediaSsrc: Long) {
-        val firCommandSeqNum = generateFirCommandSequenceNumber(mediaSsrc, System.currentTimeMillis())
-        if (firCommandSeqNum < 0) {
+        if (!canSendKeyframeRequest(mediaSsrc, System.currentTimeMillis()))
+        {
             return
         }
 
@@ -148,7 +135,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                 mediaSenderSsrc = mediaSsrc
         ).build() else RtcpFbFirPacketBuilder(
                 mediaSenderSsrc = mediaSsrc,
-                firCommandSeqNum = firCommandSeqNum
+                firCommandSeqNum = firCommandSequenceNumber.incrementAndGet()
         ).build()
 
         next(PacketInfo(pkt))
