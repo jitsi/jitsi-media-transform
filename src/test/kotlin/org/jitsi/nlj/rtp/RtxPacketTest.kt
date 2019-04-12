@@ -51,7 +51,6 @@ class RtxPacketTest : ShouldSpec() {
     val rtpPacket = RtpPacket(header + payload)
 
     init {
-        LibJitsi.start()
         "Getting the original sequence number" {
             should("work correctly") {
                 RtxPacket.getOriginalSequenceNumber(rtxPacket) shouldBe 57005
