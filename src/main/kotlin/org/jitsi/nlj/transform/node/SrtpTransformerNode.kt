@@ -17,16 +17,14 @@ package org.jitsi.nlj.transform.node
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.srtp.AbstractSrtpTransformer
-import org.jitsi.nlj.srtp.SrtpTransformer
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.rtp.rtp.RtpPacket
-import org.jitsi_modified.impl.neomedia.transform.srtp.BaseSRTPCryptoContext
 
 class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
     /**
      * The function to use to use protect or unprotect a single SRT(C)P packet.
      */
-    var transformer: SrtpTransformer? = null
+    var transformer: AbstractSrtpTransformer<*>? = null
 
     /**
      * We'll cache all packets that come through before [transformer]

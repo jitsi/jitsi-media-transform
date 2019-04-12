@@ -28,25 +28,17 @@ import org.jitsi_modified.impl.neomedia.transform.srtp.SRTPCryptoContext
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * The common interface implemented by SRTP transformers
- */
-abstract class SrtpTransformer {
-    abstract fun close()
-    abstract fun transform(packetInfo: PacketInfo): Boolean
-}
-
-/**
  * Implements the methods common to all 4 transformer implementation (encrypt/decrypt for SRTP/SRTCP)
  */
 abstract class AbstractSrtpTransformer<CryptoContextType : BaseSRTPCryptoContext>(
     protected val contextFactory: SRTPContextFactory
-) : SrtpTransformer() {
+) {
     /**
      * All the known SSRC's corresponding SRTPCryptoContexts
      */
     private val contexts: MutableMap<Long, CryptoContextType> = ConcurrentHashMap()
 
-    override fun close() {
+    fun close() {
         synchronized (contexts) {
             contextFactory.close()
             contexts.values.forEach{ it.close() }
@@ -87,7 +79,7 @@ abstract class AbstractSrtpTransformer<CryptoContextType : BaseSRTPCryptoContext
     /**
      * Transforms a packet, returns [false] on failure.
      */
-    override fun transform(packetInfo: PacketInfo): Boolean {
+    fun transform(packetInfo: PacketInfo): Boolean {
         val context = getContext(packetInfo) ?: return false
 
         return transform(packetInfo, context)
@@ -101,7 +93,7 @@ abstract class AbstractSrtpTransformer<CryptoContextType : BaseSRTPCryptoContext
 /**
  * Implements methods common for the two SRTP transformer implementations.
  */
-abstract class SrtpTransformerImpl(contextFactory: SRTPContextFactory): AbstractSrtpTransformer<SRTPCryptoContext>(contextFactory) {
+abstract class SrtpTransformer(contextFactory: SRTPContextFactory): AbstractSrtpTransformer<SRTPCryptoContext>(contextFactory) {
     override fun deriveContext(ssrc: Long, index: Long): SRTPCryptoContext? {
         val defaultContext = contextFactory.defaultContext ?: return null
         val context = defaultContext.deriveContext(ssrc.toInt(), 0, 0)
@@ -168,7 +160,7 @@ class SrtcpEncryptTransformer(contextFactory: SRTPContextFactory): SrtcpTransfor
  * A transformer which decrypts SRTP packets. Note that it expects the [Packet] to have already been parsed as
  * [RtpPacket].
  */
-class SrtpDecryptTransformer(contextFactory: SRTPContextFactory): SrtpTransformerImpl(contextFactory) {
+class SrtpDecryptTransformer(contextFactory: SRTPContextFactory): SrtpTransformer(contextFactory) {
     override fun transform(packetInfo: PacketInfo, context: SRTPCryptoContext): Boolean {
         // For silence packets we update the ROC (if authentication passes), but don't decrypt
         return context.reverseTransformPacket(packetInfo.packetAs(), packetInfo.shouldDiscard)
@@ -180,7 +172,7 @@ class SrtpDecryptTransformer(contextFactory: SRTPContextFactory): SrtpTransforme
  *
  * TODO: should we do the same as [SrtcpEncryptTransformer] and change the type to [UnparsedPacket]?
  */
-class SrtpEncryptTransformer(contextFactory: SRTPContextFactory): SrtpTransformerImpl(contextFactory) {
+class SrtpEncryptTransformer(contextFactory: SRTPContextFactory): SrtpTransformer(contextFactory) {
     override fun transform(packetInfo: PacketInfo, context: SRTPCryptoContext): Boolean {
         return context.transformPacket(packetInfo.packetAs())
     }
