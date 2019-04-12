@@ -35,8 +35,7 @@ class DtlsServer(
     private val logger = getLogger(this.javaClass)
     private val logPrefix = "[$id]"
 
-    private val tlsServer: TlsServerImpl =
-        TlsServerImpl(verifyAndValidateRemoteCertificate)
+    private val tlsServer: TlsServerImpl = TlsServerImpl(verifyAndValidateRemoteCertificate)
 
     override fun start(): DTLSTransport = accept()
 

@@ -21,24 +21,16 @@ import org.bouncycastle.asn1.x500.X500NameBuilder
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x509.Certificate
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair
-import org.bouncycastle.crypto.generators.RSAKeyPairGenerator
-import org.bouncycastle.crypto.params.RSAKeyGenerationParameters
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcDefaultDigestProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.bouncycastle.tls.HashAlgorithm
-import org.bouncycastle.tls.SignatureAlgorithm
-import org.bouncycastle.tls.SignatureAndHashAlgorithm
 import org.bouncycastle.tls.TlsContext
 import org.bouncycastle.tls.TlsUtils
 import org.bouncycastle.tls.crypto.TlsSecret
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCertificate
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -51,8 +43,6 @@ import java.util.NoSuchElementException
 val SECURE_RANDOM = SecureRandom()
 val BC_TLS_CRYPTO = BcTlsCrypto(SECURE_RANDOM)
 
-typealias SignatureAlgorithmType = Short
-
 /**
  * Various helper utilities for DTLS
  *
@@ -63,6 +53,7 @@ class DtlsUtils {
         init {
             Security.addProvider(BouncyCastleProvider())
         }
+
         fun generateCertificateInfo(): CertificateInfo {
             val cn = generateCN("TODO-APP-NAME", "TODO-APP-VERSION")
             val keyPair = generateEcKeyPair()
@@ -124,16 +115,6 @@ class DtlsUtils {
 
             keyGen.initialize(ecCurveSpec)
 
-            return keyGen.generateKeyPair()
-        }
-
-        /**
-         * Return a pair of RSA private and public keys.
-         */
-        fun generateRsaKeyPair(): KeyPair {
-            val keyGen = KeyPairGenerator.getInstance("RSA", "BC")
-
-            keyGen.initialize(1024)
             return keyGen.generateKeyPair()
         }
 

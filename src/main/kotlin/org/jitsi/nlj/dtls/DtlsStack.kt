@@ -18,13 +18,10 @@ package org.jitsi.nlj.dtls
 import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
-import org.bouncycastle.tls.HashAlgorithm
-import org.bouncycastle.tls.SignatureAlgorithm
-import org.bouncycastle.tls.SignatureAndHashAlgorithm
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.protocol.ProtocolStack
-import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.srtp.TlsRole
+import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.UnparsedPacket
@@ -78,12 +75,6 @@ class DtlsStack(
      * The remote fingerprints sent to us over the signaling path.
      */
     var remoteFingerprints: Map<String, String> = HashMap()
-
-    /**
-     * We won't know which certificate we're using until we've gotten into
-     * the negotiation
-     */
-    private lateinit var certificateInfo: CertificateInfo
 
     /**
      * Checks that a specific [Certificate] matches the remote fingerprints sent to us over the signaling path.
@@ -221,11 +212,11 @@ class DtlsStack(
     companion object {
         /**
          * Because generating the certificateInfo can be expensive, we generate a single
-         * one up front. It expires in 24 hours (when we'll generate another one).
+         * one to be used everywhere which expires in 24 hours (when we'll generate
+         * another one).
          */
-        private var certificateInfo = DtlsUtils.generateCertificateInfo()
-
-        private val syncRoot = Any()
+        private var certificateInfo: CertificateInfo = DtlsUtils.generateCertificateInfo()
+        private val syncRoot: Any = Any()
         fun getCertificateInfo(): CertificateInfo {
             synchronized(DtlsStack.syncRoot) {
                 val expirationPeriodMs = Duration.ofDays(1).toMillis()
