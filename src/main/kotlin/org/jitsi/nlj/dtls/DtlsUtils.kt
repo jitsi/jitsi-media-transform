@@ -275,7 +275,7 @@ class DtlsUtils {
 
             var seedLength = cr.size + sr.size
             if (context_value != null) {
-                seedLength += (2 * context_value.size)
+                seedLength += (2 + context_value.size)
             }
 
             val seed = ByteArray(seedLength)
