@@ -57,7 +57,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             packet is RtcpFbFirPacket -> packet
             packet is RtcpFbPliPacket -> packet
             else -> null
-        } ?: return null
+        } ?: return packetInfo
 
         var forward = true
         when {
