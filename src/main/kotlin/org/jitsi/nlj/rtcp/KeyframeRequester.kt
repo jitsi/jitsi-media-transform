@@ -25,10 +25,12 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
+import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacketBuilder
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacketBuilder
+import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
 
@@ -50,54 +52,31 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val packet = packetInfo.packet
-        val pliOrFir = when {
-            packet is CompoundRtcpPacket -> {
-                packet.packets.first { it is RtcpFbPliPacket || it is RtcpFbFirPacket }
+        val pliOrFir = when (packet) {
+            is CompoundRtcpPacket -> {
+                packet.packets.first { it is RtcpFbPliPacket || it is RtcpFbFirPacket } as? RtcpFbPacket
             }
-            packet is RtcpFbFirPacket -> packet
-            packet is RtcpFbPliPacket -> packet
+            is RtcpFbFirPacket -> packet
+            is RtcpFbPliPacket -> packet
             else -> null
         } ?: return packetInfo
 
-        var forward = true
-        when {
-            pliOrFir is RtcpFbPliPacket -> {
-                when {
-                    hasPliSupport -> {
-                        // Forward PLI
-                        forward = canSendKeyframeRequest(pliOrFir.mediaSenderSsrc, System.currentTimeMillis())
-                    }
-                    hasFirSupport -> {
-                        // Translate to FIR
-                        requestKeyframe(pliOrFir.mediaSenderSsrc)
-                        forward = false
-                    }
-                    else -> {
-                        // Can't do anything
-                        forward = false
-                    }
-                }
-            }
-            pliOrFir is RtcpFbFirPacket -> {
-                when {
-                    hasPliSupport -> {
-                        // Translate to PLI
-                        requestKeyframe(pliOrFir.mediaSenderSsrc)
-                        forward = false
-                    }
-                    hasFirSupport -> {
-                        // Forward FIR
-                        forward = canSendKeyframeRequest(pliOrFir.mediaSenderSsrc, System.currentTimeMillis())
-                        if (forward) {
-                            pliOrFir.seqNum = firCommandSequenceNumber.incrementAndGet()
-                        }
-                    }
-                    else -> {
-                        // Can't do anything
-                        forward = false
-                    }
-                }
-            }
+        val now = System.currentTimeMillis()
+        val canSend = canSendKeyframeRequest(pliOrFir.mediaSourceSsrc, now)
+        var forward = when (pliOrFir) {
+            is RtcpFbPliPacket -> hasPliSupport && canSend
+            // When both are supported, we favor generating a PLI rather than forwarding a FIR
+            is RtcpFbFirPacket -> hasFirSupport && !hasPliSupport && canSend
+            else -> throw IllegalStateException("pliOrFir is neither pli nor fir?")
+        }
+
+        if (forward && pliOrFir is RtcpFbFirPacket) {
+            // When we forward a FIR we need to update the seq num.
+            pliOrFir.seqNum = firCommandSequenceNumber.incrementAndGet()
+        }
+
+        if (!forward && canSend) {
+            requestKeyframe(pliOrFir.mediaSourceSsrc, now)
         }
 
         return if (forward) packetInfo else null
@@ -115,7 +94,13 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     private var hasPliSupport: Boolean = false
     private var hasFirSupport: Boolean = true
 
+    /**
+     * At least one method is supported, AND we haven't sent a request very recently.
+     */
     private fun canSendKeyframeRequest(mediaSsrc: Long, nowMs: Long): Boolean {
+        if (!hasPliSupport && !hasFirSupport) {
+            return false
+        }
         synchronized (keyframeRequestsSyncRoot) {
             return if (nowMs - keyframeRequests.getOrDefault(mediaSsrc, 0) < waitIntervalMs) {
                 logger.cdebug { "Sent a keyframe request less than ${waitIntervalMs}ms ago for $mediaSsrc, " +
@@ -131,8 +116,8 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
         }
     }
 
-    fun requestKeyframe(mediaSsrc: Long) {
-        if (!canSendKeyframeRequest(mediaSsrc, System.currentTimeMillis())) {
+    fun requestKeyframe(mediaSsrc: Long, now: Long = System.currentTimeMillis()) {
+        if (!canSendKeyframeRequest(mediaSsrc, now)) {
             return
         }
 
