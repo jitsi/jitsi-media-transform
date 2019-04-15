@@ -63,10 +63,10 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
 
         val now = System.currentTimeMillis()
         val canSend = canSendKeyframeRequest(pliOrFir.mediaSourceSsrc, now)
-        var forward = when (pliOrFir) {
-            is RtcpFbPliPacket -> hasPliSupport && canSend
+        val forward = when (pliOrFir) {
+            is RtcpFbPliPacket -> canSend && hasPliSupport
             // When both are supported, we favor generating a PLI rather than forwarding a FIR
-            is RtcpFbFirPacket -> hasFirSupport && !hasPliSupport && canSend
+            is RtcpFbFirPacket -> canSend && hasFirSupport && !hasPliSupport
             else -> throw IllegalStateException("pliOrFir is neither pli nor fir?")
         }
 
@@ -95,7 +95,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     private var hasFirSupport: Boolean = true
 
     /**
-     * At least one method is supported, AND we haven't sent a request very recently.
+     * Returns 'true' when at least one method is supported, AND we haven't sent a request very recently.
      */
     private fun canSendKeyframeRequest(mediaSsrc: Long, nowMs: Long): Boolean {
         if (!hasPliSupport && !hasFirSupport) {
