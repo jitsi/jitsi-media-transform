@@ -19,6 +19,7 @@ package org.jitsi.nlj.rtcp
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
+import org.jitsi.nlj.RtpPayloadTypeClearEvent
 import org.jitsi.nlj.format.VideoPayloadType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
@@ -135,12 +136,17 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             return
         }
 
-        val pkt = if (hasPliSupport) RtcpFbPliPacketBuilder(
-                mediaSenderSsrc = mediaSsrc
-        ).build() else RtcpFbFirPacketBuilder(
+        val pkt = when {
+            hasPliSupport -> RtcpFbPliPacketBuilder(mediaSenderSsrc = mediaSsrc).build()
+            hasFirSupport -> RtcpFbFirPacketBuilder(
                 mediaSenderSsrc = mediaSsrc,
                 firCommandSeqNum = firCommandSequenceNumber.incrementAndGet()
-        ).build()
+            ).build()
+            else -> {
+                logger.warn("Can not send neither PLI nor FIR")
+                return
+            }
+        }
 
         next(PacketInfo(pkt))
     }
@@ -153,11 +159,16 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                         // Support for FIR and PLI is declared per-payload type, but currently
                         // our code which requests FIR and PLI is not payload-type aware. So
                         // until this changes we will just check if any of the PTs supports
-                        // FIR and PLI.
-                        hasPliSupport = event.payloadType.rtcpFeedbackSet.contains("nack pli")
-                        hasFirSupport = event.payloadType.rtcpFeedbackSet.contains("ccm fir")
+                        // FIR and PLI. This means that we effectively always assume support for FIR.
+                        hasPliSupport = hasPliSupport || event.payloadType.rtcpFeedbackSet.contains("nack pli")
+                        hasFirSupport = hasFirSupport || event.payloadType.rtcpFeedbackSet.contains("ccm fir")
                     }
                 }
+            }
+            is RtpPayloadTypeClearEvent -> {
+                // Reset to the defaults.
+                hasPliSupport = false
+                hasFirSupport = true
             }
         }
     }
