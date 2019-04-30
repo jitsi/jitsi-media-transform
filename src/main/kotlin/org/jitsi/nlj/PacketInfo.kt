@@ -17,6 +17,7 @@ package org.jitsi.nlj
 
 import org.jitsi.rtp.Packet
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 
 class EventTimeline(
     private val timeline: MutableList<Pair<String, Long>> = mutableListOf()
@@ -99,6 +100,8 @@ class PacketInfo @JvmOverloads constructor(
     fun resetPayloadVerification() {
         payloadVerification = if (ENABLE_PAYLOAD_VERIFICATION) packet.payloadVerification else null
     }
+
+    val properties: MutableMap<String, String> = ConcurrentHashMap()
 
     /**
      * Get the contained packet cast to [ExpectedPacketType]
