@@ -33,10 +33,10 @@ private data class JitterPacketInfo(
     val expectedJitter: Double
 )
 
-private fun createStatPacketInfo(seqNum: Int, sentTime: Long, receivedTime: Long): StatPacketInfo {
+private fun createStatPacketInfo(seqNum: Int, sentTime: Long, receivedTimeMs: Long): StatPacketInfo {
     val packetInfo = PacketInfo(RtpPacket(ByteArray(50), 0, 0))
     packetInfo.packetAs<RtpPacket>().sequenceNumber = seqNum
-    packetInfo.receivedTime = receivedTime
+    packetInfo.receivedTimeNs = receivedTimeMs * 1000_000
     return StatPacketInfo(packetInfo, sentTime)
 }
 
@@ -77,9 +77,9 @@ internal class IncomingSsrcStatsTest : ShouldSpec() {
                     jitter = IncomingSsrcStats.calculateJitter(
                         jitter,
                         previousJitterPacketInfo.statPacketInfo.sentTimeMs,
-                        previousJitterPacketInfo.statPacketInfo.packetInfo.receivedTime,
+                        previousJitterPacketInfo.statPacketInfo.packetInfo.receivedTimeMs,
                         it.statPacketInfo.sentTimeMs,
-                        it.statPacketInfo.packetInfo.receivedTime
+                        it.statPacketInfo.packetInfo.receivedTimeMs
                     )
                     jitter shouldBe (it.expectedJitter plusOrMinus .001)
                     previousJitterPacketInfo = it
@@ -136,7 +136,7 @@ internal class IncomingSsrcStatsTest : ShouldSpec() {
                 streamStatistics.packetReceived(
                     it.packetInfo.packetAs<RtpPacket>(),
                     it.sentTimeMs,
-                    it.packetInfo.receivedTime
+                    it.packetInfo.receivedTimeMs
                 )
             }
             val statSnapshot = streamStatistics.getSnapshot()

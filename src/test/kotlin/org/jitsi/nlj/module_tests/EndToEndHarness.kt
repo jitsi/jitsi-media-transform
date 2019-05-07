@@ -73,7 +73,7 @@ fun main() {
 
     producer.subscribe { pkt ->
         val packetInfo = PacketInfo(pkt)
-        packetInfo.receivedTime = System.currentTimeMillis()
+        packetInfo.receivedTimeNs = System.nanoTime()
         receiver.enqueuePacket(packetInfo)
     }
 

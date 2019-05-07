@@ -68,7 +68,7 @@ fun main() {
     producer.subscribe { pkt ->
         sentArrays.offer(System.identityHashCode(pkt.buffer))
         val packetInfo = PacketInfo(pkt)
-        packetInfo.receivedTime = System.currentTimeMillis()
+        packetInfo.receivedTimeNs = System.nanoTime()
         receiver.enqueuePacket(packetInfo)
     }
 

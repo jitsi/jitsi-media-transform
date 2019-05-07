@@ -76,7 +76,7 @@ class RtcpTermination(
             }
             // TODO: keep an eye on if anything in here takes a while it could slow the packet pipeline down
             packetReceiveCounts.merge(rtcpPacket::class.simpleName!!, 1, Int::plus)
-            rtcpEventNotifier.notifyRtcpReceived(rtcpPacket, packetInfo.receivedTime)
+            rtcpEventNotifier.notifyRtcpReceived(rtcpPacket, packetInfo.receivedTimeMs)
 
             if (rtcpPacket is RtcpSrPacket) {
                 // NOTE(george) effectively eliminates any report blocks as we don't want to relay those

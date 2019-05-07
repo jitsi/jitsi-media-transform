@@ -52,7 +52,7 @@ class TccGeneratorNode(
     private var currTccSeqNum: Int = 0
     private var lastTccSentTime: Long = 0
     private final val lock = Any()
-    // Tcc seq num -> arrival time in ms
+    // Tcc seq num -> arrival time in ms. TODO: use the nano time
     private val packetArrivalTimes = TreeMap<Int, Long>(object : Comparator<Int> {
         override fun compare(o1: Int, o2: Int): Int = RtpUtils.getSequenceNumberDelta(o1, o2)
     })
@@ -83,12 +83,12 @@ class TccGeneratorNode(
             val rtpPacket = packetInfo.packetAs<RtpPacket>()
             rtpPacket.getHeaderExtension(tccExtId)?.let { ext ->
                 val tccSeqNum = TccHeaderExtension.getSequenceNumber(ext)
-                addPacket(tccSeqNum, packetInfo.receivedTime, rtpPacket.isMarked)
+                addPacket(tccSeqNum, packetInfo.receivedTimeMs, rtpPacket.isMarked)
             }
         }
     }
 
-    private fun addPacket(tccSeqNum: Int, timestamp: Long, isMarked: Boolean) {
+    private fun addPacket(tccSeqNum: Int, timestampMs: Long, isMarked: Boolean) {
         synchronized(lock) {
             if (packetArrivalTimes.ceilingKey(windowStartSeq) == null) {
                 // Packets in map are all older than the start of the next tcc feedback packet,
@@ -101,7 +101,7 @@ class TccGeneratorNode(
             } else if (tccSeqNum isOlderThan windowStartSeq) {
                 windowStartSeq = tccSeqNum
             }
-            packetArrivalTimes.putIfAbsent(tccSeqNum, timestamp)
+            packetArrivalTimes.putIfAbsent(tccSeqNum, timestampMs)
             if (!periodicFeedbacks && isTccReadyToSend(isMarked)) {
                 buildFeedback()?.let { sendTcc(it) }
             }

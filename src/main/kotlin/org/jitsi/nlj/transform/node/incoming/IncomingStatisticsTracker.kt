@@ -68,7 +68,7 @@ class IncomingStatisticsTracker : ObserverNode("Incoming statistics tracker") {
                 IncomingSsrcStats(rtpPacket.ssrc, rtpPacket.sequenceNumber)
             }
             val packetSentTimestamp = convertRtpTimestampToMs(rtpPacket.timestamp.toUInt(), it.clockRate)
-            stats.packetReceived(rtpPacket, packetSentTimestamp, packetInfo.receivedTime)
+            stats.packetReceived(rtpPacket, packetSentTimestamp, packetInfo.receivedTimeMs)
         }
 
         val now = System.currentTimeMillis()

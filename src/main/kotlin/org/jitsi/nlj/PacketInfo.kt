@@ -76,9 +76,15 @@ open class PacketInfo @JvmOverloads constructor(
 ) {
     /**
      * An explicit tag for when this packet was originally received (assuming it
-     * was an incoming packet and not one created by jvb itself).
+     * was an incoming packet and not one created by jvb itself) in nanoseconds.
      */
-    var receivedTime: Long = -1L
+    var receivedTimeNs: Long = -1L
+
+    /**
+     * View [receivedTimeNs] in milliseconds.
+     */
+    val receivedTimeMs: Long
+        get() = (receivedTimeNs + 500_000) / 1000_000
 
     /**
      * Whether this packet has been recognized to contain only shouldDiscard.
@@ -125,7 +131,7 @@ open class PacketInfo @JvmOverloads constructor(
             // (This would change if we allowed enabling the timeline at runtime)
             PacketInfo(packet.clone(), timeline)
         }
-        clone.receivedTime = receivedTime
+        clone.receivedTimeNs = receivedTimeNs
         clone.payloadVerification = payloadVerification
         return clone
     }
