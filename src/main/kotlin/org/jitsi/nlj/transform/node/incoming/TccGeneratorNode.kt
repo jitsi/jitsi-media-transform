@@ -22,6 +22,8 @@ import org.jitsi.nlj.ReceiveSsrcAddedEvent
 import org.jitsi.nlj.ReceiveSsrcRemovedEvent
 import org.jitsi.nlj.RtpExtensionAddedEvent
 import org.jitsi.nlj.RtpExtensionClearEvent
+import org.jitsi.nlj.RtpPayloadTypeAddedEvent
+import org.jitsi.nlj.RtpPayloadTypeClearEvent
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
@@ -62,6 +64,7 @@ class TccGeneratorNode(
     private var sendIntervalMs: Long = 0
     private var running = true
     private var periodicFeedbacks = false
+    var supportsRtcpFbTcc = false
     private val tccFeedbackBitrate = RateStatistics(1000)
     /**
      * SSRCs we've been told this endpoint will transmit on.  We'll use an
@@ -103,7 +106,7 @@ class TccGeneratorNode(
                 windowStartSeq = tccSeqNum
             }
             packetArrivalTimes.putIfAbsent(tccSeqNum, timestamp)
-            if (!periodicFeedbacks && isTccReadyToSend(isMarked)) {
+            if (supportsRtcpFbTcc && !periodicFeedbacks && isTccReadyToSend(isMarked)) {
                 buildFeedback()?.let { sendTcc(it) }
             }
         }
@@ -112,7 +115,7 @@ class TccGeneratorNode(
     private fun sendPeriodicFeedbacks() {
         try {
             logger.cdebug { "${System.identityHashCode(this)} sending periodic feedback at " +
-                    "${ java.lang.System.currentTimeMillis()}, window start seq is $windowStartSeq" }
+                    "${ System.currentTimeMillis()}, window start seq is $windowStartSeq" }
             buildFeedback()?.let {
                 sendTcc(it)
             }
@@ -164,7 +167,7 @@ class TccGeneratorNode(
     }
 
     private fun reschedule() {
-        if (running && periodicFeedbacks) {
+        if (supportsRtcpFbTcc && running && periodicFeedbacks) {
             scheduler.schedule(::sendPeriodicFeedbacks, sendIntervalMs, TimeUnit.MILLISECONDS)
         }
     }
@@ -197,6 +200,12 @@ class TccGeneratorNode(
                 }
             }
             is RtpExtensionClearEvent -> tccExtensionId = null
+            is RtpPayloadTypeClearEvent -> supportsRtcpFbTcc = false
+            is RtpPayloadTypeAddedEvent -> {
+                if (event.payloadType.rtcpFeedbackSet.contains("transport-cc")) {
+                    supportsRtcpFbTcc = true
+                }
+            }
             is ReceiveSsrcAddedEvent -> mediaSsrcs.add(event.ssrc)
             is ReceiveSsrcRemovedEvent -> mediaSsrcs.remove(event.ssrc)
             is BandwidthEstimationChangedEvent -> onBandwidthChanged(event.bandwidthBps)

@@ -292,6 +292,23 @@ class RtpReceiverImpl @JvmOverloads constructor(
     }
 
     override fun handleEvent(event: Event) {
+        when (event) {
+            is BandwidthEstimationChangedEvent -> {
+                rtcpRrGenerator.bandwidthChanged(event.bandwidthBps)
+            }
+            is RtpPayloadTypeAddedEvent -> {
+                if (event.payloadType.rtcpFeedbackSet.contains("goog-remb")) {
+                    rtcpRrGenerator.supportsRemb = true
+                }
+                if (event.payloadType.rtcpFeedbackSet.contains("transport-cc")) {
+                    rtcpRrGenerator.supportsTcc = true
+                }
+            }
+            is RtpPayloadTypeClearEvent -> {
+                rtcpRrGenerator.supportsRemb = false
+                rtcpRrGenerator.supportsTcc = false
+            }
+        }
         NodeEventVisitor(event).visit(inputTreeRoot)
     }
 

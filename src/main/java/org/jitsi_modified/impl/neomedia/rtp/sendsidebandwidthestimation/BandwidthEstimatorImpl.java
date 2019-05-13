@@ -18,6 +18,7 @@ package org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation;
 import org.jetbrains.annotations.*;
 import org.jitsi.rtp.rtcp.*;
 
+import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.libjitsi.*;
 
@@ -198,6 +199,13 @@ public class BandwidthEstimatorImpl
                 RtcpRrPacket rrPacket = (RtcpRrPacket)packet;
                 rtcpReportBlocksReceived(rrPacket.getReportBlocks());
             }
+        }
+        else if (packet instanceof RtcpFbRembPacket)
+        {
+            // in theory we need some ssrc validation, but it wouldn't be useful
+            // in practice.
+            sendSideBandwidthEstimation
+                .updateReceiverEstimate(((RtcpFbRembPacket) packet).getBitrate());
         }
     }
 

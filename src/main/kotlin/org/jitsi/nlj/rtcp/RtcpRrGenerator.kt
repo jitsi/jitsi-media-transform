@@ -21,6 +21,7 @@ import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpReportBlock
 import org.jitsi.rtp.rtcp.RtcpRrPacketBuilder
 import org.jitsi.rtp.rtcp.RtcpSrPacket
+import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbRembPacketBuilder
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -55,6 +56,9 @@ class RtcpRrGenerator(
     private val rtcpSender: (RtcpPacket) -> Unit = {},
     private val incomingStatisticsTracker: IncomingStatisticsTracker
 ) : RtcpListener {
+    var supportsTcc: Boolean = false
+    var supportsRemb: Boolean = false
+    private var bandwidthBps: Long = -1
     var running: Boolean = true
 
     private val senderInfos: MutableMap<Long, SenderInfo> = ConcurrentHashMap()
@@ -101,7 +105,17 @@ class RtcpRrGenerator(
                 val rrPacket = RtcpRrPacketBuilder(reportBlocks = reportBlocks).build()
                 rtcpSender(rrPacket)
             }
+
+            if (supportsRemb && !supportsTcc && bandwidthBps > -1) {
+                // TODO we need to include a list of ssrcs here
+                val rembPacket = RtcpFbRembPacketBuilder(bandwidthBps).build()
+                rtcpSender(rembPacket)
+            }
             backgroundExecutor.schedule(this::doWork, 1, TimeUnit.SECONDS)
         }
+    }
+
+    fun bandwidthChanged(newBandwidthBps: Long) {
+        bandwidthBps = newBandwidthBps
     }
 }
