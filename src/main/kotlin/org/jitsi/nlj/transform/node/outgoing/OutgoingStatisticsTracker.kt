@@ -28,11 +28,11 @@ class OutgoingStatisticsTracker : ObserverNode("Outgoing statistics tracker") {
     /**
      * The bitrate in bits per seconds.
      */
-    private val bitrate = RateStatistics(Duration.ofSeconds(1).toMillis().toInt())
+    private val bitrate = RateStatistics(1000)
     /**
      * The packet rate in packets per second.
      */
-    private val packetRate = RateStatistics(Duration.ofSeconds(1).toMillis().toInt(), 1000f)
+    private val packetRate = RateStatistics(1000, 1000f)
 
     private var bytesSent: Long = 0
     private var packetsSent: Long = 0

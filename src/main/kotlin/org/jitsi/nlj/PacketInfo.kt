@@ -87,6 +87,14 @@ open class PacketInfo @JvmOverloads constructor(
         get() = (receivedTimeNs + 500_000) / 1000_000
 
     /**
+     * An explicit tag for when the output processing started for this packet (i.e. when the receive pipeline has
+     * finished it's work and the packet is passed to the send pipeline). We use this to calculate the processing time
+     * for the input and output pipelines separately without using [ENABLE_TIMELINE] (which has a performance impact
+     * and shouldn't be used in production).
+     */
+    var outputProcessingStartedTimeNs: Long = -1L
+
+    /**
      * Whether this packet has been recognized to contain only shouldDiscard.
      */
     var shouldDiscard: Boolean = false
@@ -132,6 +140,7 @@ open class PacketInfo @JvmOverloads constructor(
             PacketInfo(packet.clone(), timeline)
         }
         clone.receivedTimeNs = receivedTimeNs
+        clone.outputProcessingStartedTimeNs = outputProcessingStartedTimeNs
         clone.payloadVerification = payloadVerification
         return clone
     }
