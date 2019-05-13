@@ -94,7 +94,8 @@ class Transceiver(
             rtcpEventNotifier,
             senderExecutor,
             backgroundExecutor,
-            logLevelDelegate
+            logLevelDelegate,
+            diagnosticContext
     )
     private val rtpReceiver: RtpReceiver =
         RtpReceiverImpl(
