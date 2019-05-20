@@ -28,7 +28,6 @@ import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.extensions.clone
-import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -197,7 +196,7 @@ class DtlsStack(
     override fun receive(buf: ByteArray, off: Int, length: Int, waitMillis: Int): Int {
         val packetInfo = incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
         val packet = packetInfo.packet
-        System.arraycopy(packet.buffer, packet.offset, buf, off, min(length, packet.length))
+        System.arraycopy(packet.buffer, packet.offset, buf, off, packet.length)
 
         BufferPool.returnBuffer(packetInfo.packet.buffer)
 
