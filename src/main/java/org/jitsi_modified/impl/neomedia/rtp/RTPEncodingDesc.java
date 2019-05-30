@@ -18,7 +18,6 @@ package org.jitsi_modified.impl.neomedia.rtp;
 import org.jitsi.nlj.rtp.*;
 import org.jitsi.nlj.rtp.codec.vp8.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.logging.*;
 import org.jitsi.utils.stats.*;
 
 import java.util.*;
@@ -38,13 +37,6 @@ public class RTPEncodingDesc
     public static final int SUSPENDED_INDEX = -1;
 
     /**
-     * The {@link Logger} used by the {@link RTPEncodingDesc class to print
-     * debug information.
-     */
-    private static final Logger logger
-        = Logger.getLogger(RTPEncodingDesc.class);
-
-    /**
      * A value used to designate the absence of height information.
      */
     private final static int NO_HEIGHT = -1;
@@ -60,21 +52,6 @@ public class RTPEncodingDesc
      * TODO maybe make this configurable.
      */
     private static final int AVERAGE_BITRATE_WINDOW_MS = 5000;
-
-    /**
-     * The number of incoming frames to keep track of.
-     */
-    private static final int FRAMES_HISTORY_SZ = 60;
-
-     /**
-      * The maximum time interval (in millis) an encoding can be considered
-      * active without new frames. This value corresponds to 4fps + 50 millis
-      * to compensate for network noise. If the network is clogged and we don't
-      * get a new frame within 300 millis, and if the encoding is being
-      * received, then we will ask for a new key frame (this is done in the
-      * JVB in SimulcastController).
-      */
-    private static final int SUSPENSION_THRESHOLD_MS = 300;
 
     /**
      * The primary SSRC for this layering/encoding.
@@ -250,16 +227,6 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Gets the {@link MediaStreamTrackDesc} that this instance belongs to.
-     *
-     * @return the {@link MediaStreamTrackDesc} that this instance belongs to.
-     */
-    public MediaStreamTrackDesc getMediaStreamTrack()
-    {
-        return track;
-    }
-
-    /**
      * Gets the subjective quality index of this instance.
      *
      * @return the subjective quality index of this instance.
@@ -267,45 +234,6 @@ public class RTPEncodingDesc
     public int getIndex()
     {
         return idx;
-    }
-
-    /**
-     * Returns a boolean that indicates whether or not this
-     * {@link RTPEncodingDesc depends on the subjective quality index that is
-     * passed as an argument.
-     *
-     * @param idx the index of this instance in the track encodings array.
-     * @return true if this {@link RTPEncodingDesc depends on the subjective
-     * quality index that is passed as an argument, false otherwise.
-     */
-    public boolean requires(int idx)
-    {
-        if (idx < 0)
-        {
-            return false;
-        }
-
-        if (idx == this.idx)
-        {
-            return true;
-        }
-
-
-        boolean requires = false;
-
-        if (!ArrayUtils.isNullOrEmpty(dependencyEncodings))
-        {
-            for (RTPEncodingDesc enc : dependencyEncodings)
-            {
-                if (enc.requires(idx))
-                {
-                    requires = true;
-                    break;
-                }
-            }
-        }
-
-        return requires;
     }
 
     boolean matches(VideoRtpPacket packet)
