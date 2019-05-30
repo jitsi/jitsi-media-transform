@@ -38,12 +38,6 @@ public class MediaStreamTrackDesc
     private final RTPEncodingDesc[] rtpEncodings;
 
     /**
-     * Allow the lookup of an encoding by the SSRC of a received packet.  Note
-     * that multiple SSRCs in this map may point to the same encoding.
-     */
-    private final Map<Long, RTPEncodingDesc> encodingsBySsrc = new HashMap<>();
-
-    /**
      * A string which identifies the owner of this track (e.g. the endpoint
      * which is the sender of the track).
      */
@@ -75,14 +69,6 @@ public class MediaStreamTrackDesc
         this.owner = owner;
     }
 
-    public void updateEncodingCache()
-    {
-        for (RTPEncodingDesc encoding : this.rtpEncodings)
-        {
-            encodingsBySsrc.put(encoding.getPrimarySSRC(), encoding);
-        }
-    }
-
     /**
      * @return the identifier of the owner of this track.
      */
@@ -111,7 +97,7 @@ public class MediaStreamTrackDesc
      * @return the last "stable" bitrate (bps) of the encoding at the specified
      * index.
      */
-    public long getBps(int idx)
+    public long getBitrateBps(long nowMs, int idx)
     {
         if (ArrayUtils.isNullOrEmpty(rtpEncodings))
         {
@@ -120,10 +106,9 @@ public class MediaStreamTrackDesc
 
         if (idx > -1)
         {
-            long nowMs = System.currentTimeMillis();
             for (int i = idx; i > -1; i--)
             {
-                long bps = rtpEncodings[i].getLastStableBitrateBps(nowMs);
+                long bps = rtpEncodings[i].getBitrateBps(nowMs);
                 if (bps > 0)
                 {
                     return bps;
@@ -140,11 +125,7 @@ public class MediaStreamTrackDesc
         {
             return null;
         }
-        RTPEncodingDesc desc = encodingsBySsrc.get(videoRtpPacket.getSsrc());
-        if (desc != null)
-        {
-            return desc;
-        }
+
         return Arrays.stream(rtpEncodings)
                 .filter(encoding -> encoding.matches(videoRtpPacket))
                 .findFirst()
