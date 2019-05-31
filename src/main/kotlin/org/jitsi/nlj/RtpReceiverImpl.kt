@@ -46,12 +46,12 @@ import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.addMbps
-import org.jitsi.nlj.util.addRatio
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.util.RTCPUtils
 import org.jitsi.utils.logging.Logger
+import org.jitsi.utils.queue.CountingErrorHandler
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import java.lang.Double.max
 import java.util.concurrent.ExecutorService
@@ -95,6 +95,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     companion object {
         private val classLogger: Logger = Logger.getLogger(this::class.java)
+        val queueErrorCounter = CountingErrorHandler()
+
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP receiver incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP receiver incoming queue"
 
@@ -102,8 +104,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
         private const val RECEIVED_DURATION_MS = "received_duration_ms"
         private const val PROCESSED_BYTES = "processed_bytes"
         private const val PROCESSING_DURATION_MS = "processing_duration_ms"
-        private const val QUEUE_NUM_READS = "queue_num_reads"
-        private const val QUEUE_READ_DURATION_S = "queue_read_duration_s"
     }
 
     /**
@@ -141,13 +141,11 @@ class RtpReceiverImpl @JvmOverloads constructor(
     var firstPacketProcessedTime: Long = 0
     var lastPacketProcessedTime: Long = 0
 
-    private var firstQueueReadTime: Long = -1
-    private var lastQueueReadTime: Long = -1
-    private var numQueueReads: Long = 0
-
     init {
         logger.cdebug { "Receiver ${this.hashCode()} using executor ${executor.hashCode()}" }
         rtcpEventNotifier.addRtcpEventListener(rtcpRrGenerator)
+
+        incomingPacketQueue.setErrorHandler(queueErrorCounter)
 
         inputTreeRoot = pipeline {
             demux("SRTP/SRTCP") {
@@ -210,11 +208,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private fun handleIncomingPacket(packet: PacketInfo): Boolean {
         if (running) {
             val now = System.currentTimeMillis()
-            if (firstQueueReadTime == -1L) {
-                firstQueueReadTime = now
-            }
-            numQueueReads++
-            lastQueueReadTime = now
             packet.addEvent(PACKET_QUEUE_EXIT_EVENT)
             bytesProcessed += packet.packet.length
             packetsProcessed++
@@ -242,9 +235,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
         addNumber(PROCESSING_DURATION_MS, lastPacketProcessedTime - firstPacketProcessedTime)
         addMbps("processed_bitrate", PROCESSED_BYTES, PROCESSING_DURATION_MS)
 
-        addNumber(QUEUE_NUM_READS, numQueueReads)
-        addNumber(QUEUE_READ_DURATION_S, (lastQueueReadTime - firstQueueReadTime).toDouble() / 1000)
-        addRatio("queue_average_reads_per_second", QUEUE_NUM_READS, QUEUE_READ_DURATION_S)
+        addJson("packetQueue", incomingPacketQueue.debugState)
 
         addString("running", running.toString())
         NodeStatsVisitor(this).visit(inputTreeRoot)
