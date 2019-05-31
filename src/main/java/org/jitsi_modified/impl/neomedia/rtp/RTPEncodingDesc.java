@@ -255,8 +255,8 @@ public class RTPEncodingDesc
             // check that here (note, though, that the spatial layer index in a packet is currently set as of
             // the time of this writing and is from the perspective of a logical spatial index, i.e. the lowest sim
             // stream (180p) has spatial index 0, 360p has 1, 720p has 2.
-            return tid == vp8Packet.getTemporalLayerIndex();
-
+            int vp8PacketTid = vp8Packet.getTemporalLayerIndex();
+            return (tid == vp8PacketTid) || (vp8PacketTid == -1 && tid == 0);
         }
         else
         {
