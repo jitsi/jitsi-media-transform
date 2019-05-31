@@ -16,6 +16,7 @@
 package org.jitsi_modified.impl.neomedia.rtp;
 
 import org.jitsi.nlj.rtp.*;
+import org.jitsi.nlj.rtp.codec.vp8.*;
 import org.jitsi.utils.*;
 
 import java.util.*;
@@ -36,6 +37,12 @@ public class MediaStreamTrackDesc
      * possesses, ordered by their subjective quality from low to high.
      */
     private final RTPEncodingDesc[] rtpEncodings;
+
+    /**
+     * Allow the lookup of an encoding by the SSRC of a received packet.  Note
+     * that multiple SSRCs in this map may point to the same encoding.
+     */
+    private final Map<Long, RTPEncodingDesc> encodingsBySsrc = new HashMap<>();
 
     /**
      * A string which identifies the owner of this track (e.g. the endpoint
@@ -67,6 +74,21 @@ public class MediaStreamTrackDesc
     {
         this.rtpEncodings = rtpEncodings;
         this.owner = owner;
+    }
+
+    public void updateEncodingCache()
+    {
+        for (RTPEncodingDesc encoding : this.rtpEncodings)
+        {
+            long encodingId = encoding.getPrimarySSRC();
+            long tid = encoding.getTemporalLayerId();
+            if (tid > -1)
+            {
+                encodingId |= tid << 32;
+            }
+
+            encodingsBySsrc.put(encodingId, encoding);
+        }
     }
 
     /**
@@ -124,6 +146,19 @@ public class MediaStreamTrackDesc
         if (ArrayUtils.isNullOrEmpty(rtpEncodings))
         {
             return null;
+        }
+
+        long encodingId = videoRtpPacket.getSsrc();
+        if (videoRtpPacket instanceof Vp8Packet)
+        {
+            long tid = ((Vp8Packet) videoRtpPacket).getTemporalLayerIndex();
+            encodingId |= tid << 32;
+        }
+
+        RTPEncodingDesc desc = encodingsBySsrc.get(encodingId);
+        if (desc != null)
+        {
+            return desc;
         }
 
         return Arrays.stream(rtpEncodings)

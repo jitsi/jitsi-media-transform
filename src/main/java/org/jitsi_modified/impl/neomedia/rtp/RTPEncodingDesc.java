@@ -242,11 +242,11 @@ public class RTPEncodingDesc
         {
             return false;
         }
-        if (tid == -1 && sid == -1)
+        else if (tid == -1 && sid == -1)
         {
             return true;
         }
-        if (packet instanceof Vp8Packet)
+        else if (packet instanceof Vp8Packet)
         {
             Vp8Packet vp8Packet = (Vp8Packet)packet;
             // NOTE(brian): the spatial layer index of an encoding is only currently used for in-band spatial
@@ -382,5 +382,10 @@ public class RTPEncodingDesc
     public boolean isReceived()
     {
         return numOfReceivers.get() > 0;
+    }
+
+    public int getTemporalLayerId()
+    {
+        return tid;
     }
 }
