@@ -15,6 +15,7 @@
  */
 package org.jitsi_modified.impl.neomedia.rtp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.nlj.rtp.*;
 import org.jitsi.nlj.rtp.codec.vp8.*;
 import org.jitsi.utils.*;
@@ -177,6 +178,49 @@ public class RTPEncodingDesc
         {
             this.base = dependencyEncodings[0].getBaseLayer();
         }
+    }
+
+    /**
+     * @return the "id" of this encoding. This is a server-side id and should
+     * not be confused with any encoding id defined in the client (such us the
+     * rid). This server-side id is used in the encodings lookup table that is
+     * maintained in {@link MediaStreamTrackDesc}.
+     */
+    public long getEncodingId()
+    {
+        long encodingId = primarySSRC;
+        if (tid > -1)
+        {
+            encodingId |= (long) tid << 32;
+        }
+
+        return encodingId;
+    }
+
+    /**
+     * @param videoRtpPacket the video packet
+     * @return gets the server-side encoding id (see
+     * {@link #getEncodingId(VideoRtpPacket)}) of a video packet.
+     */
+    public static long getEncodingId(@NotNull VideoRtpPacket videoRtpPacket)
+    {
+        long encodingId = videoRtpPacket.getSsrc();
+        if (videoRtpPacket instanceof Vp8Packet)
+        {
+            // note(george) we've observed that a client may announce but not
+            // send simulcast (it is not clear atm who's to blame for this
+            // "bug", chrome or our client code). In any case, when this happens
+            // we "pretend" that the encoding of the packet is the base temporal
+            // layer of the rtp stream (ssrc) of the packet.
+            int tid = ((Vp8Packet) videoRtpPacket).getTemporalLayerIndex();
+            if (tid < 0)
+            {
+                tid = 0;
+            }
+            encodingId |= (long) tid << 32;
+        }
+
+        return encodingId;
     }
 
     public void addSecondarySsrc(long ssrc, SsrcAssociationType type)
@@ -382,10 +426,5 @@ public class RTPEncodingDesc
     public boolean isReceived()
     {
         return numOfReceivers.get() > 0;
-    }
-
-    public int getTemporalLayerId()
-    {
-        return tid;
     }
 }

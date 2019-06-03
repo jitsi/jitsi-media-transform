@@ -39,10 +39,9 @@ public class MediaStreamTrackDesc
     private final RTPEncodingDesc[] rtpEncodings;
 
     /**
-     * Allow the lookup of an encoding by the SSRC of a received packet.  Note
-     * that multiple SSRCs in this map may point to the same encoding.
+     * Allow the lookup of an encoding by the encoding id of a received packet.
      */
-    private final Map<Long, RTPEncodingDesc> encodingsBySsrc = new HashMap<>();
+    private final Map<Long, RTPEncodingDesc> encodingsById = new HashMap<>();
 
     /**
      * A string which identifies the owner of this track (e.g. the endpoint
@@ -80,14 +79,7 @@ public class MediaStreamTrackDesc
     {
         for (RTPEncodingDesc encoding : this.rtpEncodings)
         {
-            long encodingId = encoding.getPrimarySSRC();
-            long tid = encoding.getTemporalLayerId();
-            if (tid > -1)
-            {
-                encodingId |= tid << 32;
-            }
-
-            encodingsBySsrc.put(encodingId, encoding);
+            encodingsById.put(encoding.getEncodingId(), encoding);
         }
     }
 
@@ -148,14 +140,8 @@ public class MediaStreamTrackDesc
             return null;
         }
 
-        long encodingId = videoRtpPacket.getSsrc();
-        if (videoRtpPacket instanceof Vp8Packet)
-        {
-            long tid = ((Vp8Packet) videoRtpPacket).getTemporalLayerIndex();
-            encodingId |= tid << 32;
-        }
-
-        RTPEncodingDesc desc = encodingsBySsrc.get(encodingId);
+        long encodingId = RTPEncodingDesc.getEncodingId(videoRtpPacket);
+        RTPEncodingDesc desc = encodingsById.get(encodingId);
         if (desc != null)
         {
             return desc;
