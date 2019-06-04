@@ -121,7 +121,7 @@ class DtlsStack(
     /**
      * A buffer we'll use to receive data from [dtlsTransport].
      */
-    private val dtlsAppDataBuf = ByteArray(1500)
+    private val dtlsAppDataBuf = BufferPool.getBuffer(1500)
 
     /**
      * Install a handler to be invoked when the DTLS handshake is finished.
