@@ -28,9 +28,10 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
     /**
      * We'll cache all packets that come through before [transformer]
      * gets set so that we don't lose any packets at the beginning
-     * (likely a keyframe)
+     * (likely a keyframe).
+     * The value is initialized with a new list and changes to [null] once the cached packets are read.
      */
-    private var cachedPackets = mutableListOf<PacketInfo>()
+    private var cachedPackets: MutableList<PacketInfo>? = mutableListOf()
 
     /**
      * Transforms a list of packets using [#transformer]
@@ -61,23 +62,40 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
             if (firstPacketForwardedTimestamp == -1L) {
                 firstPacketForwardedTimestamp = System.currentTimeMillis()
             }
-            val outPackets: List<PacketInfo>
-            if (!cachedPackets.isEmpty()) {
-                cachedPackets.add(packetInfo)
-                outPackets = transformList(cachedPackets)
-                cachedPackets.clear()
-            } else {
-                outPackets = if (transformer!!.transform(packetInfo))
-                    listOf(packetInfo) else emptyList()
-            }
-            return outPackets
-        } ?: run {
-            numCachedPackets++
-            cachedPackets.add(packetInfo)
-            while (cachedPackets.size > 1024) {
-                cachedPackets.removeAt(0).let {
-                    packetDiscarded(it)
+
+            // This is necessary in order to guarantee that only one thread accesses this.cachedPackets at a time,
+            // while requiring no synchronization in the happy case (when this.cachedPackets has been set to null).
+            var cachedPackets = this.cachedPackets
+            if (cachedPackets != null) {
+                synchronized(cachedPackets) {
+                    cachedPackets = this.cachedPackets
+                    this.cachedPackets = null
+
+                    if (cachedPackets != null) {
+                        cachedPackets!!.add(packetInfo)
+                        return transformList(cachedPackets!!)
+                    }
                 }
+            }
+
+            return if (transformer!!.transform(packetInfo))
+                listOf(packetInfo) else emptyList()
+        } ?: run {
+            val cachedPackets = this.cachedPackets
+            if (cachedPackets != null) {
+                synchronized(cachedPackets) {
+                    numCachedPackets++
+                    cachedPackets.add(packetInfo)
+                    while (cachedPackets.size > 1024) {
+                        cachedPackets.removeAt(0).let {
+                            packetDiscarded(it)
+                        }
+                    }
+                }
+            } else {
+                // It is possible by this time this.transformer has been set, and another thread has handled the cached
+                // packets. This happens very very rarely, and we are OK dropping a packet in this case.
+                packetDiscarded(packetInfo)
             }
             return emptyList()
         }
@@ -85,7 +103,7 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
 
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
-            addNumber("num_cached_packets", cachedPackets.size)
+            addNumber("num_cached_packets", numCachedPackets)
             val timeBetweenReceivedAndForwarded = firstPacketForwardedTimestamp - firstPacketReceivedTimestamp
             addNumber("time_initial_hold_ms", timeBetweenReceivedAndForwarded)
         }
@@ -93,7 +111,14 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
 
     override fun stop() {
         super.stop()
-        cachedPackets.forEach { packetDiscarded(it) }
+        var cachedPackets = this.cachedPackets
+        if (cachedPackets != null) {
+            synchronized(cachedPackets) {
+                cachedPackets.forEach { packetDiscarded(it) }
+                cachedPackets.clear()
+                this.cachedPackets = null
+            }
+        }
         transformer?.close()
     }
 }
