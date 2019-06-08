@@ -43,10 +43,9 @@ import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext
-import org.jitsi.utils.queue.CountingErrorHandler
 import org.jitsi.utils.logging.Logger
+import org.jitsi.utils.queue.CountingErrorHandler
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
-import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
@@ -94,11 +93,35 @@ class RtpSenderImpl(
 
     private val nackHandler: NackHandler
 
+    private inner class DelayStats {
+        private var totalDelayMs: Long = 0
+        private var totalPackets: Long = 0
+        var maxDelayMs: Long = 0
+            private set
+        val averageDelay: Double
+            get() = totalDelayMs / totalPackets.toDouble()
+        fun addPacket(packetInfo: PacketInfo) {
+            val delayMs = if (packetInfo.receivedTime > 0) {
+                    System.currentTimeMillis() - packetInfo.receivedTime
+                } else {
+                    -1
+                }
+            if (delayMs >= 0) {
+                totalDelayMs += delayMs
+                if (delayMs > maxDelayMs) {
+                    maxDelayMs = delayMs
+                    logger.cerror { "New max packet delay $maxDelayMs:\n${packetInfo.timeline}" }
+                }
+                totalPackets++
+            }
+        }
+    }
+
+    private val delayStats = DelayStats()
+
     private val outputPipelineTerminationNode = object : ConsumerNode("Output pipeline termination node") {
         override fun consume(packetInfo: PacketInfo) {
-            if (packetInfo.timeline.totalDelay() > Duration.ofMillis(100)) {
-                logger.cerror { "Packet took >100ms to get through bridge:\n${packetInfo.timeline}" }
-            }
+            delayStats.addPacket(packetInfo)
             // While there's no handler set we're effectively dropping packets, so their buffers
             // should be returned.
             outgoingPacketHandler?.processPacket(packetInfo) ?: packetDiscarded(packetInfo)
@@ -234,6 +257,8 @@ class RtpSenderImpl(
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP sender $id").apply {
         addBlock(nackHandler.getNodeStats())
         addBlock(probingDataSender.getNodeStats())
+        addNumber("average packet delay", delayStats.averageDelay)
+        addNumber("maximum packet delay", delayStats.maxDelayMs)
         addJson("packetQueue", incomingPacketQueue.debugState)
         NodeStatsVisitor(this).reverseVisit(outputPipelineTerminationNode)
 
