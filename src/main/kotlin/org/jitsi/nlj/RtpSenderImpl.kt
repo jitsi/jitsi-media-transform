@@ -20,6 +20,7 @@ import org.jitsi.nlj.rtcp.NackHandler
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtcp.RtcpSrUpdater
 import org.jitsi.nlj.srtp.SrtpTransformers
+import org.jitsi.nlj.stats.DelayStats
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeEventVisitor
 import org.jitsi.nlj.transform.NodeStatsVisitor
@@ -93,35 +94,6 @@ class RtpSenderImpl(
 
     private val nackHandler: NackHandler
 
-    private inner class DelayStats {
-        private var totalDelayMs: Long = 0
-        private var totalPackets: Long = 0
-        var maxDelayMs: Long = 0
-            private set
-        val averageDelay: Double
-            get() = totalDelayMs / totalPackets.toDouble()
-        fun addPacket(packetInfo: PacketInfo) {
-            val delayMs = if (packetInfo.receivedTime > 0) {
-                    System.currentTimeMillis() - packetInfo.receivedTime
-                } else {
-                    -1
-                }
-            if (delayMs >= 0) {
-                totalDelayMs += delayMs
-                if (delayMs > maxDelayMs) {
-                    maxDelayMs = delayMs
-                    logger.cerror {
-                        "New max packet delay $maxDelayMs" +
-                            if (PacketInfo.ENABLE_TIMELINE) ":\n${packetInfo.timeline}" else ""
-                    }
-                }
-                totalPackets++
-            }
-        }
-    }
-
-    private val delayStats = DelayStats()
-
     private val outputPipelineTerminationNode = object : ConsumerNode("Output pipeline termination node") {
         override fun consume(packetInfo: PacketInfo) {
             delayStats.addPacket(packetInfo)
@@ -129,14 +101,6 @@ class RtpSenderImpl(
             // should be returned.
             outgoingPacketHandler?.processPacket(packetInfo) ?: packetDiscarded(packetInfo)
         }
-    }
-
-    companion object {
-        private val classLogger: Logger = Logger.getLogger(this::class.java)
-        val queueErrorCounter = CountingErrorHandler()
-
-        private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
-        private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
     }
 
     init {
@@ -260,8 +224,6 @@ class RtpSenderImpl(
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP sender $id").apply {
         addBlock(nackHandler.getNodeStats())
         addBlock(probingDataSender.getNodeStats())
-        addNumber("average packet delay", delayStats.averageDelay)
-        addNumber("maximum packet delay", delayStats.maxDelayMs)
         addJson("packetQueue", incomingPacketQueue.debugState)
         NodeStatsVisitor(this).reverseVisit(outputPipelineTerminationNode)
 
@@ -278,4 +240,14 @@ class RtpSenderImpl(
     override fun tearDown() {
         NodeTeardownVisitor().reverseVisit(outputPipelineTerminationNode)
     }
+
+    companion object {
+        private val classLogger: Logger = Logger.getLogger(this::class.java)
+        val queueErrorCounter = CountingErrorHandler()
+        val delayStats = DelayStats()
+
+        private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
+        private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
+    }
+
 }
