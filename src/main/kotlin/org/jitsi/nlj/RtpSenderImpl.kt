@@ -110,7 +110,10 @@ class RtpSenderImpl(
                 totalDelayMs += delayMs
                 if (delayMs > maxDelayMs) {
                     maxDelayMs = delayMs
-                    logger.cerror { "New max packet delay $maxDelayMs:\n${packetInfo.timeline}" }
+                    logger.cerror {
+                        "New max packet delay $maxDelayMs" +
+                            if (PacketInfo.ENABLE_TIMELINE) ":\n${packetInfo.timeline}" else ""
+                    }
                 }
                 totalPackets++
             }
