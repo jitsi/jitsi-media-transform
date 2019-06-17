@@ -20,7 +20,7 @@ import org.jitsi.nlj.PacketInfo
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 
-class DelayStats {
+class PacketDelayStats {
     private val totalDelayMs = LongAdder()
     private val totalPackets = LongAdder()
     val averageDelay: Double

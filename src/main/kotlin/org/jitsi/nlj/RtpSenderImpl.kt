@@ -20,7 +20,7 @@ import org.jitsi.nlj.rtcp.NackHandler
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtcp.RtcpSrUpdater
 import org.jitsi.nlj.srtp.SrtpTransformers
-import org.jitsi.nlj.stats.DelayStats
+import org.jitsi.nlj.stats.PacketDelayStats
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeEventVisitor
 import org.jitsi.nlj.transform.NodeStatsVisitor
@@ -39,7 +39,6 @@ import org.jitsi.nlj.transform.node.outgoing.TccSeqNumTagger
 import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.MediaType
@@ -244,10 +243,9 @@ class RtpSenderImpl(
     companion object {
         private val classLogger: Logger = Logger.getLogger(this::class.java)
         val queueErrorCounter = CountingErrorHandler()
-        val delayStats = DelayStats()
+        val delayStats = PacketDelayStats()
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
     }
-
 }
