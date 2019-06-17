@@ -18,12 +18,13 @@ package org.jitsi.nlj.stats
 
 import org.jitsi.nlj.PacketInfo
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.LongAdder
 
 class DelayStats {
-    private val totalDelayMs = AtomicLong(0)
-    private val totalPackets = AtomicLong(0)
+    private val totalDelayMs = LongAdder()
+    private val totalPackets = LongAdder()
     val averageDelay: Double
-        get() = totalDelayMs.get() / totalPackets.get().toDouble()
+        get() = totalDelayMs.sum() / totalPackets.sum().toDouble()
     val maxDelayMs = AtomicLong(0)
 
     fun addPacket(packetInfo: PacketInfo) {
@@ -33,11 +34,11 @@ class DelayStats {
             -1
         }
         if (delayMs >= 0) {
-            totalDelayMs.addAndGet(delayMs)
+            totalDelayMs.add(delayMs)
             if (delayMs > maxDelayMs.get()) {
                 maxDelayMs.set(delayMs)
             }
-            totalPackets.incrementAndGet()
+            totalPackets.increment()
         }
     }
 }
