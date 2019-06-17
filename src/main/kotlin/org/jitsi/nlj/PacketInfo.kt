@@ -143,7 +143,7 @@ open class PacketInfo @JvmOverloads constructor(
 
     companion object {
         // TODO: we could make this a public var to allow changing this at runtime
-        const val ENABLE_TIMELINE = true
+        private const val ENABLE_TIMELINE = false
 
         /**
          * If this is enabled all [Node]s will verify that the payload didn't unexpectedly change. This is expensive.
