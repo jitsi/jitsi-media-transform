@@ -95,7 +95,7 @@ class RtpSenderImpl(
 
     private val outputPipelineTerminationNode = object : ConsumerNode("Output pipeline termination node") {
         override fun consume(packetInfo: PacketInfo) {
-            delayStats.addPacket(packetInfo)
+            packetDelayStats.addPacket(packetInfo)
             // While there's no handler set we're effectively dropping packets, so their buffers
             // should be returned.
             outgoingPacketHandler?.processPacket(packetInfo) ?: packetDiscarded(packetInfo)
@@ -243,7 +243,7 @@ class RtpSenderImpl(
     companion object {
         private val classLogger: Logger = Logger.getLogger(this::class.java)
         val queueErrorCounter = CountingErrorHandler()
-        val delayStats = PacketDelayStats()
+        val packetDelayStats = PacketDelayStats()
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
