@@ -20,7 +20,6 @@ package org.jitsi.nlj.stats
 
 import org.jitsi.nlj.util.OrderedJsonObject
 
-
 fun DelayStats.toJson(): OrderedJsonObject {
     return OrderedJsonObject().apply {
         put("average_delay_ms", averageDelay)
