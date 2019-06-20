@@ -21,6 +21,12 @@ import kotlin.math.abs
 class JitterStats {
     var jitter: Double = 0.0
         private set
+    /**
+     * The timestamp of the previously received packet, converted to a millisecond timestamp based on the received
+     * RTP timestamp and the clock rate for that stream.
+     * 'previously received packet' here is as defined by the order in which the packets were received by this code,
+     * which may be different than the order according to sequence number.
+     */
     private var previousPacketReceivedTimestampMs: Long = -1
     private var previousPacketSentTimestampMs: Long = -1
 
