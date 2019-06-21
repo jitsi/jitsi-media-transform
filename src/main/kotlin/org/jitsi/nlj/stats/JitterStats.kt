@@ -16,9 +16,10 @@
 
 package org.jitsi.nlj.stats
 
+import org.jitsi.nlj.PacketInfo
 import kotlin.math.abs
 
-class JitterStats {
+open class JitterStats {
     var jitter: Double = 0.0
         private set
     /**
@@ -75,6 +76,18 @@ class JitterStats {
              * sampled.
              */
             return currentJitter + (abs(delta) - currentJitter) / 16.0
+        }
+    }
+}
+
+/**
+ * Tracks the jitter of packets *within* the bridge (not over the network)
+ */
+class BridgeJitterStats : JitterStats() {
+
+    fun packetSent(packetInfo: PacketInfo) {
+        if (packetInfo.receivedTime >= 0) {
+            super.addPacket(packetInfo.receivedTime, System.currentTimeMillis())
         }
     }
 }
