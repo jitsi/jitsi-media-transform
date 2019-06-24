@@ -70,7 +70,7 @@ class Transceiver(
     private val logger = getLogger(this.javaClass, logLevelDelegate)
     private val rtpExtensions = mutableMapOf<Byte, RtpExtension>()
     private val payloadTypes = mutableMapOf<Byte, PayloadType>()
-    private val receiveSsrcs = ConcurrentHashMap.newKeySet<Long>()
+    private val receiveSsrcs = ConcurrentHashMap<Long, MediaType>()
     val packetIOActivity = PacketIOActivity()
     private val endpointConnectionStats = EndpointConnectionStats()
     /**
@@ -160,9 +160,9 @@ class Transceiver(
         rtpSender.onOutgoingPacket(outgoingPacketHandler)
     }
 
-    fun addReceiveSsrc(ssrc: Long) {
+    fun addReceiveSsrc(ssrc: Long, mediaType: MediaType) {
         logger.cdebug { "${hashCode()} adding receive ssrc $ssrc" }
-        receiveSsrcs.add(ssrc)
+        receiveSsrcs[ssrc] = mediaType
         rtpReceiver.handleEvent(ReceiveSsrcAddedEvent(ssrc))
         // TODO: fire events to rtp sender as well
     }
@@ -182,7 +182,7 @@ class Transceiver(
         rtpReceiver.handleEvent(localSsrcSetEvent)
     }
 
-    fun receivesSsrc(ssrc: Long): Boolean = receiveSsrcs.contains(ssrc)
+    fun receivesSsrc(ssrc: Long): Boolean = receiveSsrcs.containsKey(ssrc)
 
     fun setMediaStreamTracks(mediaStreamTracks: Array<MediaStreamTrackDesc>): Boolean {
         logger.cdebug { "$id setting media stream tracks: ${mediaStreamTracks.joinToString()}" }
