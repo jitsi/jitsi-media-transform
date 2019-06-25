@@ -17,11 +17,16 @@
 package org.jitsi.nlj.rtcp
 
 import org.jitsi.nlj.Event
+import org.jitsi.nlj.LocalSsrcAssociationEvent
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.ReceiveSsrcAddedEvent
+import org.jitsi.nlj.ReceiveSsrcRemovedEvent
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeClearEvent
 import org.jitsi.nlj.SetLocalSsrcEvent
+import org.jitsi.nlj.SsrcAssociationEvent
 import org.jitsi.nlj.format.VideoPayloadType
+import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.cdebug
@@ -48,11 +53,22 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
         private const val DEFAULT_WAIT_INTERVAL_MS = 100
     }
 
-    // Map a SSRC to the timestamp (in ms) of when we last requested a keyframe for it
-    private val keyframeRequests = mutableMapOf<Long, Long>()
+    // The timestamp of when we last requested a keyframe
+    private var lastKeyframeRequestTimeMs: Long = 0
     private val firCommandSequenceNumber: AtomicInteger = AtomicInteger(0)
     private val keyframeRequestsSyncRoot = Any()
     private var localSsrc: Long? = null
+    private val receiveVideoSsrcs = mutableSetOf<Long>()
+    /**
+     * The SSRC we'll use to request keyframes.  We use only a single SSRC because, currently, we:
+     * 1) only support a single video 'source' at a time
+     * 2) all clients we support will send a keyframe on all simulcast SSRCs anytime we request
+     *    a keyframe on one of them.
+     * Because of this, we'll determine an SSRC to use based on the [ReceiveSsrcAddedEvent]s we
+     * receive (as well as the [SsrcAssociationEvent]s, to make sure we don't use any 'secondary'
+     * SSRCs such as RTX or FEC SSRCs) and use that SSRC in all keyframe requests.
+     */
+    private var keyframeSsrc: Long? = null
 
     // Stats
 
@@ -90,19 +106,17 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
 
         val now = System.currentTimeMillis()
         val sourceSsrc: Long
-        val canSend: Boolean
+        val canSend = canSendKeyframeRequest(now)
         val forward: Boolean
         when (packet) {
             is RtcpFbPliPacket -> {
                 sourceSsrc = packet.mediaSourceSsrc
-                canSend = canSendKeyframeRequest(sourceSsrc, now)
                 forward = canSend && hasPliSupport
                 if (forward) numPlisForwarded++
                 if (!canSend) numPlisDropped++
             }
             is RtcpFbFirPacket -> {
                 sourceSsrc = packet.mediaSenderSsrc
-                canSend = canSendKeyframeRequest(sourceSsrc, now)
                 // When both are supported, we favor generating a PLI rather than forwarding a FIR
                 forward = canSend && hasFirSupport && !hasPliSupport
                 if (forward) {
@@ -128,32 +142,32 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     /**
      * Returns 'true' when at least one method is supported, AND we haven't sent a request very recently.
      */
-    private fun canSendKeyframeRequest(mediaSsrc: Long, nowMs: Long): Boolean {
+    private fun canSendKeyframeRequest(nowMs: Long): Boolean {
         if (!hasPliSupport && !hasFirSupport) {
             return false
         }
         synchronized(keyframeRequestsSyncRoot) {
-            return if (nowMs - keyframeRequests.getOrDefault(mediaSsrc, 0) < waitIntervalMs) {
-                logger.cdebug { "Sent a keyframe request less than ${waitIntervalMs}ms ago for $mediaSsrc, " +
-                        "ignoring request" }
+            return if (nowMs - lastKeyframeRequestTimeMs < waitIntervalMs) {
+                logger.cdebug { "Sent a keyframe request less than ${waitIntervalMs}ms ago, ignoring request" }
                 false
             } else {
-                keyframeRequests[mediaSsrc] = nowMs
-                logger.cdebug { "Keyframe requester requesting keyframe for $mediaSsrc" }
+                lastKeyframeRequestTimeMs = nowMs
                 true
             }
         }
     }
 
     @JvmOverloads
-    fun requestKeyframe(mediaSsrc: Long, now: Long = System.currentTimeMillis()) {
+    fun requestKeyframe(now: Long = System.currentTimeMillis()) {
         numApiRequests++
-        if (!canSendKeyframeRequest(mediaSsrc, now)) {
+        if (!canSendKeyframeRequest(now)) {
             numApiRequestsDropped++
             return
         }
+        val keyframeSsrc = getKeyframeSsrc()
+        logger.cdebug { "Keyframe requester requesting keyframe for $keyframeSsrc" }
 
-        doRequestKeyframe(mediaSsrc)
+        doRequestKeyframe(keyframeSsrc)
     }
 
     private fun doRequestKeyframe(mediaSsrc: Long) {
@@ -178,6 +192,11 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
         next(PacketInfo(pkt))
     }
 
+    private fun getKeyframeSsrc(): Long {
+        keyframeSsrc = keyframeSsrc ?: receiveVideoSsrcs.first()
+        return keyframeSsrc!!
+    }
+
     override fun handleEvent(event: Event) {
         when (event) {
             is RtpPayloadTypeAddedEvent -> {
@@ -200,6 +219,22 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             is SetLocalSsrcEvent -> {
                 if (event.mediaType == MediaType.VIDEO) {
                     localSsrc = event.ssrc
+                }
+            }
+            is ReceiveSsrcAddedEvent -> {
+                if (event.mediaType == MediaType.VIDEO) {
+                    receiveVideoSsrcs.add(event.ssrc)
+                }
+            }
+            is ReceiveSsrcRemovedEvent -> {
+                receiveVideoSsrcs.remove(event.ssrc)
+                if (event.ssrc == keyframeSsrc) {
+                    keyframeSsrc = null
+                }
+            }
+            is LocalSsrcAssociationEvent -> {
+                if (event.type == SsrcAssociationType.RTX || event.type == SsrcAssociationType.FEC) {
+                    receiveVideoSsrcs.remove(event.secondarySsrc)
                 }
             }
         }

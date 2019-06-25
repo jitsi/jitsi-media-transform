@@ -195,7 +195,7 @@ class Transceiver(
     // and change all the storage of the media stream tracks to use a list
     fun getMediaStreamTracks(): Array<MediaStreamTrackDesc> = mediaStreamTracks.getMediaStreamTracks()
 
-    fun requestKeyFrame(mediaSsrc: Long) = rtpSender.requestKeyframe(mediaSsrc)
+    fun requestKeyFrame() = rtpSender.requestKeyframe()
 
     fun addPayloadType(payloadType: PayloadType) {
         payloadTypes[payloadType.pt] = payloadType

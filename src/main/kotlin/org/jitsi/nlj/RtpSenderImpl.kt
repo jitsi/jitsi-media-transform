@@ -181,9 +181,7 @@ class RtpSenderImpl(
         srtcpEncryptWrapper.transformer = srtpTransformers.srtcpEncryptTransformer
     }
 
-    override fun requestKeyframe(mediaSsrc: Long) {
-        keyframeRequester.requestKeyframe(mediaSsrc)
-    }
+    override fun requestKeyframe() = keyframeRequester.requestKeyframe()
 
     /**
      * Handles packets that have gone through the incoming queue and sends them
