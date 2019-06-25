@@ -163,7 +163,7 @@ class Transceiver(
     fun addReceiveSsrc(ssrc: Long, mediaType: MediaType) {
         logger.cdebug { "${hashCode()} adding receive ssrc $ssrc" }
         receiveSsrcs[ssrc] = mediaType
-        rtpReceiver.handleEvent(ReceiveSsrcAddedEvent(ssrc))
+        rtpReceiver.handleEvent(ReceiveSsrcAddedEvent(ssrc, mediaType))
         // TODO: fire events to rtp sender as well
     }
 

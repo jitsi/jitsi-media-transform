@@ -34,7 +34,7 @@ class RtpPayloadTypeClearEvent : Event
 class RtpExtensionAddedEvent(val rtpExtension: RtpExtension) : Event
 class RtpExtensionClearEvent : Event
 
-class ReceiveSsrcAddedEvent(val ssrc: Long) : Event
+class ReceiveSsrcAddedEvent(val ssrc: Long, val mediaType: MediaType) : Event
 class ReceiveSsrcRemovedEvent(val ssrc: Long) : Event
 
 class SsrcAssociationEvent(
