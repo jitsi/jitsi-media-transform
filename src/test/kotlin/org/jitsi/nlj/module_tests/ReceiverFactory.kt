@@ -16,11 +16,11 @@
 
 package org.jitsi.nlj.module_tests
 
+import org.jitsi.nlj.LocalSsrcAssociationEvent
 import org.jitsi.nlj.RtpExtensionAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpReceiver
 import org.jitsi.nlj.RtpReceiverImpl
-import org.jitsi.nlj.SsrcAssociationEvent
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
@@ -59,7 +59,7 @@ class ReceiverFactory {
                 receiver.handleEvent(RtpExtensionAddedEvent(it))
             }
             ssrcAssociations.forEach {
-                receiver.handleEvent(SsrcAssociationEvent(it.primarySsrc, it.secondarySsrc, it.associationType))
+                receiver.handleEvent(LocalSsrcAssociationEvent(it.primarySsrc, it.secondarySsrc, it.associationType))
             }
 
             return receiver

@@ -37,11 +37,23 @@ class RtpExtensionClearEvent : Event
 class ReceiveSsrcAddedEvent(val ssrc: Long, val mediaType: MediaType) : Event
 class ReceiveSsrcRemovedEvent(val ssrc: Long) : Event
 
-class SsrcAssociationEvent(
+abstract class SsrcAssociationEvent(
     val primarySsrc: Long,
     val secondarySsrc: Long,
     val type: SsrcAssociationType
 ) : Event
+
+class LocalSsrcAssociationEvent(
+    primarySsrc: Long,
+    secondarySsrc: Long,
+    type: SsrcAssociationType
+) : SsrcAssociationEvent(primarySsrc, secondarySsrc, type)
+
+class RemoteSsrcAssociationEvent(
+    primarySsrc: Long,
+    secondarySsrc: Long,
+    type: SsrcAssociationType
+) : SsrcAssociationEvent(primarySsrc, secondarySsrc, type)
 
 class SetMediaStreamTracksEvent(val mediaStreamTrackDescs: Array<MediaStreamTrackDesc>) : Event
 

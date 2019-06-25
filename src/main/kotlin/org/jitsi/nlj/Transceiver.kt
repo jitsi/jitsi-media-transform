@@ -235,11 +235,18 @@ class Transceiver(
         rtpReceiver.setAudioLevelListener(audioLevelListener)
     }
 
-    // TODO(brian): we may want to handle local and remote ssrc associations differently, as different parts of the
-    // code care about one or the other, but currently there is no issue treating them the same.
-    fun addSsrcAssociation(primarySsrc: Long, secondarySsrc: Long, type: SsrcAssociationType) {
+    /**
+     * Notifies this [Transceiver] of an association between [primarySsrc] and [secondarySsrc].  [isLocal]
+     * denotes whether or not the SSRCs being associated here belong to the endpoint this [Transceiver] is
+     * associated with or not.
+     */
+    fun addSsrcAssociation(primarySsrc: Long, secondarySsrc: Long, type: SsrcAssociationType, isLocal: Boolean) {
         logger.cdebug { "Adding SSRC association: $primarySsrc <-> $secondarySsrc ($type)" }
-        val ssrcAssociationEvent = SsrcAssociationEvent(primarySsrc, secondarySsrc, type)
+        val ssrcAssociationEvent = if (isLocal) {
+            LocalSsrcAssociationEvent(primarySsrc, secondarySsrc, type)
+        } else {
+            RemoteSsrcAssociationEvent(primarySsrc, secondarySsrc, type)
+        }
         rtpReceiver.handleEvent(ssrcAssociationEvent)
         rtpSender.handleEvent(ssrcAssociationEvent)
     }

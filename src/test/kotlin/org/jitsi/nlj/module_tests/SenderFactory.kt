@@ -16,12 +16,12 @@
 
 package org.jitsi.nlj.module_tests
 
+import org.jitsi.nlj.LocalSsrcAssociationEvent
 import org.jitsi.nlj.RtpExtensionAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpSender
 import org.jitsi.nlj.RtpSenderImpl
 import org.jitsi.nlj.SetLocalSsrcEvent
-import org.jitsi.nlj.SsrcAssociationEvent
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
@@ -58,7 +58,7 @@ class SenderFactory {
                 sender.handleEvent(RtpExtensionAddedEvent(it))
             }
             ssrcAssociations.forEach {
-                sender.handleEvent(SsrcAssociationEvent(it.primarySsrc, it.secondarySsrc, it.associationType))
+                sender.handleEvent(LocalSsrcAssociationEvent(it.primarySsrc, it.secondarySsrc, it.associationType))
             }
 
             // Set some dummy sender SSRCs so RTCP can be forwarded
