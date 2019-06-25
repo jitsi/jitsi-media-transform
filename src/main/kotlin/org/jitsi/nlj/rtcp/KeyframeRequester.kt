@@ -26,13 +26,11 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
-import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacketBuilder
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacketBuilder
 import org.jitsi.utils.MediaType
-import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
 
@@ -77,21 +75,23 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     private var waitIntervalMs = DEFAULT_WAIT_INTERVAL_MS
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val packet = packetInfo.packet.apply {
-            when (this) {
+        val packet = packetInfo.packet.let {
+            when (it) {
                 is CompoundRtcpPacket -> {
-                    packets.first { it is RtcpFbPliPacket || it is RtcpFbFirPacket } as RtcpFbPacket
+                    it.packets.first { compoundPacket ->
+                        compoundPacket is RtcpFbPliPacket || compoundPacket is RtcpFbFirPacket
+                    }
                 }
-                is RtcpFbFirPacket -> this
-                is RtcpFbPliPacket -> this
+                is RtcpFbFirPacket -> it
+                is RtcpFbPliPacket -> it
                 else -> return@transform packetInfo
             }
         }
 
         val now = System.currentTimeMillis()
-        var sourceSsrc: Long
-        var canSend: Boolean
-        var forward: Boolean
+        val sourceSsrc: Long
+        val canSend: Boolean
+        val forward: Boolean
         when (packet) {
             is RtcpFbPliPacket -> {
                 sourceSsrc = packet.mediaSourceSsrc
@@ -100,8 +100,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                 if (forward) numPlisForwarded++
                 if (!canSend) numPlisDropped++
             }
-            is RtcpFbFirPacket ->
-            {
+            is RtcpFbFirPacket -> {
                 sourceSsrc = packet.mediaSenderSsrc
                 canSend = canSendKeyframeRequest(sourceSsrc, now)
                 // When both are supported, we favor generating a PLI rather than forwarding a FIR
