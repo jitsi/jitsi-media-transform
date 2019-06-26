@@ -85,6 +85,8 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
     private var numApiRequests: Int = 0
     // Number of calls to requestKeyframe ignored due to throttling
     private var numApiRequestsDropped: Int = 0
+    // Number of times we were unable to find an SSRC from which to request a keyframe
+    private var numNoKeyframeSsrcFound: Int = 0
 
     private var hasPliSupport: Boolean = false
     private var hasFirSupport: Boolean = true
@@ -168,7 +170,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             logger.cdebug { "Keyframe requester requesting keyframe for $it" }
 
             doRequestKeyframe(it)
-        }
+        } ?: run { numNoKeyframeSsrcFound++ }
     }
 
     private fun doRequestKeyframe(mediaSsrc: Long) {
@@ -234,6 +236,10 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
                 }
             }
             is LocalSsrcAssociationEvent -> {
+                // NOTE(brian): this relies on getting the receive SSRCs before we get the
+                // associations.  This is currently the case in the bridge, so it works fine
+                // but is worth keeping in mind as an issue here could result in us using
+                // something like the RTX SSRC to request keyframes.
                 if (event.type == SsrcAssociationType.RTX || event.type == SsrcAssociationType.FEC) {
                     receiveVideoSsrcs.remove(event.secondarySsrc)
                 }
@@ -249,6 +255,7 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             addNumber("numApiRequests", numApiRequests)
             addNumber("numApiRequestsDropped", numApiRequestsDropped)
             addNumber("numFirsDropped", numFirsDropped)
+            addNumber("numNoKeyframeSsrcFound", numNoKeyframeSsrcFound)
             addNumber("numFirsGenerated", numFirsGenerated)
             addNumber("numFirsForwarded", numFirsForwarded)
             addNumber("numPlisDropped", numPlisDropped)
