@@ -164,10 +164,11 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
             numApiRequestsDropped++
             return
         }
-        val keyframeSsrc = getKeyframeSsrc()
-        logger.cdebug { "Keyframe requester requesting keyframe for $keyframeSsrc" }
+        getKeyframeSsrc()?.let {
+            logger.cdebug { "Keyframe requester requesting keyframe for $it" }
 
-        doRequestKeyframe(keyframeSsrc)
+            doRequestKeyframe(it)
+        }
     }
 
     private fun doRequestKeyframe(mediaSsrc: Long) {
@@ -192,9 +193,9 @@ class KeyframeRequester : TransformerNode("Keyframe Requester") {
         next(PacketInfo(pkt))
     }
 
-    private fun getKeyframeSsrc(): Long {
-        keyframeSsrc = keyframeSsrc ?: receiveVideoSsrcs.first()
-        return keyframeSsrc!!
+    private fun getKeyframeSsrc(): Long? {
+        keyframeSsrc = keyframeSsrc ?: receiveVideoSsrcs.firstOrNull()
+        return keyframeSsrc
     }
 
     override fun handleEvent(event: Event) {
