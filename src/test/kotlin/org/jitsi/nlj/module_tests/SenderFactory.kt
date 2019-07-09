@@ -25,6 +25,7 @@ import org.jitsi.nlj.SsrcAssociationEvent
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
+import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.test_utils.SourceAssociation
 import org.jitsi.test_utils.SrtpData
 import org.jitsi.utils.MediaType
@@ -42,12 +43,14 @@ class SenderFactory {
             headerExtensions: List<RtpExtension>,
             ssrcAssociations: List<SourceAssociation>
         ): RtpSender {
+            val streamInformationStore = StreamInformationStoreImpl()
             val sender = RtpSenderImpl(
                 Random().nextLong().toString(),
                 null,
                 RtcpEventNotifier(),
                 executor,
-                backgroundExecutor
+                backgroundExecutor,
+                streamInformationStore
             )
             sender.setSrtpTransformers(SrtpTransformerFactory.createSrtpTransformers(srtpData))
 
@@ -56,6 +59,7 @@ class SenderFactory {
             }
             headerExtensions.forEach {
                 sender.handleEvent(RtpExtensionAddedEvent(it))
+                streamInformationStore.addRtpExtensionMapping(it)
             }
             ssrcAssociations.forEach {
                 sender.handleEvent(SsrcAssociationEvent(it.primarySsrc, it.secondarySsrc, it.associationType))

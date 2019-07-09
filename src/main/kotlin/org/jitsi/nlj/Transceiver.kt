@@ -94,6 +94,7 @@ class Transceiver(
             rtcpEventNotifier,
             senderExecutor,
             backgroundExecutor,
+            streamInformationStore,
             logLevelDelegate,
             diagnosticContext
     )
