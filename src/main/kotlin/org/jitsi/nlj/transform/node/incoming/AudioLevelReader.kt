@@ -18,15 +18,12 @@ package org.jitsi.nlj.transform.node.incoming
 import org.jitsi.nlj.AudioLevelListener
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.RtpExtensionAddedEvent
-import org.jitsi.nlj.RtpExtensionClearEvent
 import org.jitsi.nlj.rtp.AudioRtpPacket
 import org.jitsi.nlj.rtp.RtpExtensionType.SSRC_AUDIO_LEVEL
 import org.jitsi.nlj.transform.node.ObserverNode
-import org.jitsi.nlj.util.cdebug
+import org.jitsi.nlj.util.StreamInformation
 import org.jitsi.rtp.extensions.unsigned.toPositiveLong
 import org.jitsi.rtp.rtp.header_extensions.AudioLevelHeaderExtension
-import unsigned.toUInt
 
 /**
  * https://tools.ietf.org/html/rfc6464#section-3
@@ -34,6 +31,14 @@ import unsigned.toUInt
 class AudioLevelReader : ObserverNode("Audio level reader") {
     private var audioLevelExtId: Int? = null
     var audioLevelListener: AudioLevelListener? = null
+    private val streamInformation = StreamInformation()
+
+    init {
+        streamInformation.onExtensionMapping(SSRC_AUDIO_LEVEL) {
+            audioLevelExtId = it
+        }
+    }
+
     companion object {
         const val MUTED_LEVEL = 127
     }
@@ -53,15 +58,5 @@ class AudioLevelReader : ObserverNode("Audio level reader") {
         }
     }
 
-    override fun handleEvent(event: Event) {
-        when (event) {
-            is RtpExtensionAddedEvent -> {
-                if (event.rtpExtension.type == SSRC_AUDIO_LEVEL) {
-                    audioLevelExtId = event.rtpExtension.id.toUInt()
-                    logger.cdebug { "Setting extension ID to $audioLevelExtId" }
-                }
-            }
-            is RtpExtensionClearEvent -> audioLevelExtId = null
-        }
-    }
+    override fun handleEvent(event: Event) = streamInformation.handleEvent(event)
 }
