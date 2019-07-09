@@ -219,9 +219,6 @@ class Transceiver(
     fun addRtpExtension(rtpExtension: RtpExtension) {
         logger.cdebug { "Adding RTP extension: $rtpExtension" }
         streamInformationStore.addRtpExtensionMapping(rtpExtension)
-        val rtpExtensionAddedEvent = RtpExtensionAddedEvent(rtpExtension)
-        rtpReceiver.handleEvent(rtpExtensionAddedEvent)
-        rtpSender.handleEvent(rtpExtensionAddedEvent)
     }
 
     fun clearRtpExtensions() {

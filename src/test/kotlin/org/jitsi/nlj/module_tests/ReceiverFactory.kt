@@ -16,7 +16,6 @@
 
 package org.jitsi.nlj.module_tests
 
-import org.jitsi.nlj.RtpExtensionAddedEvent
 import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpReceiver
 import org.jitsi.nlj.RtpReceiverImpl
@@ -59,7 +58,6 @@ class ReceiverFactory {
                 receiver.handleEvent(RtpPayloadTypeAddedEvent(it))
             }
             headerExtensions.forEach {
-                receiver.handleEvent(RtpExtensionAddedEvent(it))
                 streamInformationStore.addRtpExtensionMapping(it)
             }
             ssrcAssociations.forEach {

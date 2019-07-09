@@ -16,7 +16,6 @@
 package org.jitsi.nlj
 
 import org.jitsi.nlj.format.PayloadType
-import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.utils.MediaType
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
@@ -30,11 +29,6 @@ class RtpPayloadTypeAddedEvent(val payloadType: PayloadType) : Event {
     }
 }
 class RtpPayloadTypeClearEvent : Event
-
-@Deprecated("subscribe to a StreamInformationStore instead")
-class RtpExtensionAddedEvent(val rtpExtension: RtpExtension) : Event
-@Deprecated("subscribe to a StreamInformationStore instead")
-class RtpExtensionClearEvent : Event
 
 class ReceiveSsrcAddedEvent(val ssrc: Long) : Event
 class ReceiveSsrcRemovedEvent(val ssrc: Long) : Event
