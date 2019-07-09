@@ -112,7 +112,7 @@ class RtpSenderImpl(
             node(outgoingPacketCache)
             node(absSendTime)
             node(statsTracker)
-            node(TccSeqNumTagger(transportCcEngine))
+            node(TccSeqNumTagger(transportCcEngine, streamInformationStore))
             node(srtpEncryptWrapper)
             node(packetStreamStats.createNewNode())
             node(outputPipelineTerminationNode)
