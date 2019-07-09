@@ -16,12 +16,6 @@
 
 package org.jitsi.nlj.util
 
-import org.jitsi.nlj.Event
-import org.jitsi.nlj.EventHandler
-import org.jitsi.nlj.ReceiveSsrcAddedEvent
-import org.jitsi.nlj.ReceiveSsrcRemovedEvent
-import org.jitsi.nlj.RtpExtensionAddedEvent
-import org.jitsi.nlj.RtpExtensionClearEvent
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
 
@@ -33,47 +27,44 @@ import org.jitsi.nlj.rtp.RtpExtensionType
 typealias RtpExtensionHandler = (Int?) -> Unit
 
 /**
- * [StreamInformation] manages various signalled information
- * about streams on the scope of a [Transceiver].
+ * [StreamInformationStore] maintains various information about streams, including:
+ * 1) RTP Extension mapping
  *
+ * and allows classes to register to be notified of certain events/mappings
  */
-class StreamInformation : EventHandler {
-    val receiveSsrcs = mutableSetOf<Long>()
+interface StreamInformationStore {
+    val rtpExtensions: List<RtpExtension>
+    fun addRtpExtensionMapping(rtpExtension: RtpExtension)
+    fun clearRtpExtensions()
+    fun onRtpExtensionMapping(rtpExtensionType: RtpExtensionType, handler: RtpExtensionHandler)
+}
+
+class StreamInformationStoreImpl : StreamInformationStore {
     private val extensionsLock = Any()
     private val extensionHandlers =
         mutableMapOf<RtpExtensionType, MutableList<RtpExtensionHandler>>()
-    private val rtpExtensions = mutableListOf<RtpExtension>()
+    private val _rtpExtensions = mutableListOf<RtpExtension>()
+    override val rtpExtensions: List<RtpExtension>
+        get() = _rtpExtensions
 
-    /**
-     * Video SSRCs received by this [Transceiver] which
-     * are for primary video, i.e. not FEC or RTX
-     * SSRCs
-     */
-    val receiveVideoSsrcs = mutableSetOf<Long>()
-
-    override fun handleEvent(event: Event) {
-        when (event) {
-            is ReceiveSsrcAddedEvent -> receiveSsrcs.add(event.ssrc)
-            is ReceiveSsrcRemovedEvent -> receiveSsrcs.remove(event.ssrc)
-            is RtpExtensionAddedEvent -> {
-                synchronized(extensionsLock) {
-                    rtpExtensions.add(event.rtpExtension)
-                    extensionHandlers.get(event.rtpExtension.type)?.forEach { it(event.rtpExtension.id.toInt()) }
-                }
-            }
-            is RtpExtensionClearEvent -> {
-                synchronized(extensionsLock) {
-                    rtpExtensions.clear()
-                    extensionHandlers.values.forEach { handlers -> handlers.forEach { it(null) } }
-                }
-            }
+    override fun addRtpExtensionMapping(rtpExtension: RtpExtension) {
+        synchronized(extensionsLock) {
+            _rtpExtensions.add(rtpExtension)
+            extensionHandlers.get(rtpExtension.type)?.forEach { it(rtpExtension.id.toInt()) }
         }
     }
 
-    fun onExtensionMapping(rtpExtensionType: RtpExtensionType, handler: RtpExtensionHandler) {
+    override fun clearRtpExtensions() {
+        synchronized(extensionsLock) {
+            _rtpExtensions.clear()
+            extensionHandlers.values.forEach { handlers -> handlers.forEach { it(null) } }
+        }
+    }
+
+    override fun onRtpExtensionMapping(rtpExtensionType: RtpExtensionType, handler: RtpExtensionHandler) {
         synchronized(extensionsLock) {
             extensionHandlers.getOrPut(rtpExtensionType, { mutableListOf() }).add(handler)
-            rtpExtensions.find { it.type == rtpExtensionType }?.let { handler(it.id.toInt()) }
+            _rtpExtensions.find { it.type == rtpExtensionType }?.let { handler(it.id.toInt()) }
         }
     }
 }

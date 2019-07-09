@@ -22,7 +22,7 @@ import org.jitsi.nlj.ReceiveSsrcRemovedEvent
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
-import org.jitsi.nlj.util.StreamInformation
+import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.isOlderThan
 import org.jitsi.rtp.extensions.unsigned.toPositiveLong
@@ -46,7 +46,7 @@ class TccGeneratorNode(
     private val scheduler: ScheduledExecutorService,
     private val getSendBitrate: () -> Long
 ) : ObserverNode("TCC generator") {
-    private val streamInformation = StreamInformation()
+    private val streamInformation = StreamInformationStoreImpl()
     private var tccExtensionId: Int? = null
     private var currTccSeqNum: Int = 0
     private var lastTccSentTime: Long = 0
@@ -69,7 +69,7 @@ class TccGeneratorNode(
     private var numTccSent: Int = 0
 
     init {
-        streamInformation.onExtensionMapping(TRANSPORT_CC) {
+        streamInformation.onRtpExtensionMapping(TRANSPORT_CC) {
             tccExtensionId = it
         }
         reschedule()
@@ -190,7 +190,6 @@ class TccGeneratorNode(
         when (event) {
             is ReceiveSsrcAddedEvent -> mediaSsrcs.add(event.ssrc)
             is ReceiveSsrcRemovedEvent -> mediaSsrcs.remove(event.ssrc)
-            else -> streamInformation.handleEvent(event)
         }
     }
 

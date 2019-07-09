@@ -31,7 +31,9 @@ class RtpPayloadTypeAddedEvent(val payloadType: PayloadType) : Event {
 }
 class RtpPayloadTypeClearEvent : Event
 
+@Deprecated("subscribe to a StreamInformationStore instead")
 class RtpExtensionAddedEvent(val rtpExtension: RtpExtension) : Event
+@Deprecated("subscribe to a StreamInformationStore instead")
 class RtpExtensionClearEvent : Event
 
 class ReceiveSsrcAddedEvent(val ssrc: Long) : Event
