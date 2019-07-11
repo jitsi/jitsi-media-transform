@@ -54,7 +54,6 @@ class ReceiverFactory {
             receiver.setSrtpTransformers(SrtpTransformerFactory.createSrtpTransformers(srtpData))
 
             payloadTypes.forEach {
-                receiver.handleEvent(RtpPayloadTypeAddedEvent(it))
                 streamInformationStore.addRtpPayloadType(it)
             }
             headerExtensions.forEach {
