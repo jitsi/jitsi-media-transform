@@ -91,7 +91,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val tccGenerator = TccGeneratorNode(rtcpSender, backgroundExecutor, getSendBitrate)
     private val audioLevelReader = AudioLevelReader(streamInformationStore)
     private val silenceDiscarder = SilenceDiscarder(true)
-    private val statsTracker = IncomingStatisticsTracker()
+    private val statsTracker = IncomingStatisticsTracker(streamInformationStore)
     private val packetStreamStats = PacketStreamStatsNode()
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker)
     private val rtcpTermination = RtcpTermination(rtcpEventNotifier)
