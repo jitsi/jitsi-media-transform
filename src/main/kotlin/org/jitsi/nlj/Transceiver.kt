@@ -202,10 +202,16 @@ class Transceiver(
     fun addPayloadType(payloadType: PayloadType) {
         logger.cdebug { "Payload type added: $payloadType" }
         streamInformationStore.addRtpPayloadType(payloadType)
+        val rtpPayloadTypeAddedEvent = RtpPayloadTypeAddedEvent(payloadType)
+        rtpReceiver.handleEvent(rtpPayloadTypeAddedEvent)
+        rtpSender.handleEvent(rtpPayloadTypeAddedEvent)
     }
 
     fun clearPayloadTypes() {
         logger.cinfo { "All payload types being cleared" }
+        val rtpPayloadTypeClearEvent = RtpPayloadTypeClearEvent()
+        rtpReceiver.handleEvent(rtpPayloadTypeClearEvent)
+        rtpSender.handleEvent(rtpPayloadTypeClearEvent)
         streamInformationStore.clearRtpPayloadTypes()
     }
 
