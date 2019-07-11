@@ -137,7 +137,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                     name = "SRTP path"
                     predicate = PacketPredicate { !RTCPUtils.isRtcp(it.buffer, it.offset, it.length) }
                     path = pipeline {
-                        node(RtpParser())
+                        node(RtpParser(streamInformationStore))
                         node(tccGenerator)
                         // TODO: temporarily putting the audioLevelReader node here such that we can determine whether
                         // or not a packet should be discarded before doing SRTP. audioLevelReader has been moved here
