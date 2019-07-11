@@ -56,6 +56,7 @@ class ReceiverFactory {
 
             payloadTypes.forEach {
                 receiver.handleEvent(RtpPayloadTypeAddedEvent(it))
+                streamInformationStore.addRtpPayloadType(it)
             }
             headerExtensions.forEach {
                 streamInformationStore.addRtpExtensionMapping(it)

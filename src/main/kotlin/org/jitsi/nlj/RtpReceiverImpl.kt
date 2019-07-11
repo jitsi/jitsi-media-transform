@@ -164,7 +164,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 path = pipeline {
                                     node(RtxHandler())
                                     node(PaddingTermination())
-                                    node(VideoParser())
+                                    node(VideoParser(streamInformationStore))
                                     node(Vp8Parser())
                                     node(VideoBitrateCalculator())
                                     node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor))
