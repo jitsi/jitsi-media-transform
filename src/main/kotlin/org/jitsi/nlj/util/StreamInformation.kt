@@ -19,6 +19,8 @@ package org.jitsi.nlj.util
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * A handler installed on a specific [RtpExtensionType] to be notified
@@ -51,13 +53,13 @@ class StreamInformationStoreImpl : StreamInformationStore {
     private val extensionsLock = Any()
     private val extensionHandlers =
         mutableMapOf<RtpExtensionType, MutableList<RtpExtensionHandler>>()
-    private val _rtpExtensions = mutableListOf<RtpExtension>()
+    private val _rtpExtensions: MutableList<RtpExtension> = CopyOnWriteArrayList()
     override val rtpExtensions: List<RtpExtension>
         get() = _rtpExtensions
 
     private val payloadTypesLock = Any()
     private val payloadTypeHandlers = mutableListOf<RtpPayloadTypesChangedHandler>()
-    private val _rtpPayloadTypes = mutableMapOf<Byte, PayloadType>()
+    private val _rtpPayloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
 
