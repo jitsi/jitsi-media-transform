@@ -119,7 +119,7 @@ class RtpSenderImpl(
         }
 
         outgoingRtxRoot = pipeline {
-            node(RetransmissionSender())
+            node(RetransmissionSender(streamInformationStore))
             // We want RTX packets to hook into the main RTP pipeline starting at AbsSendTime
             node(absSendTime)
         }
