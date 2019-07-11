@@ -162,7 +162,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 name = "Video path"
                                 predicate = PacketPredicate { it is VideoRtpPacket }
                                 path = pipeline {
-                                    node(RtxHandler())
+                                    node(RtxHandler(streamInformationStore))
                                     node(PaddingTermination())
                                     node(VideoParser(streamInformationStore))
                                     node(Vp8Parser())
