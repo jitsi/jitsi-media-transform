@@ -150,8 +150,9 @@ class RtpSenderImpl(
         }
 
         probingDataSender = ProbingDataSender(
-                outgoingPacketCache.getPacketCache(),
-                outgoingRtxRoot, absSendTime, diagnosticContext)
+            outgoingPacketCache.getPacketCache(), outgoingRtxRoot, absSendTime, diagnosticContext,
+            streamInformationStore
+        )
     }
 
     override fun onRttUpdate(newRtt: Double) {
