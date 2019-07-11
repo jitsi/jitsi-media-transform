@@ -59,7 +59,7 @@ class StreamInformationStoreImpl : StreamInformationStore {
 
     private val payloadTypesLock = Any()
     private val payloadTypeHandlers = mutableListOf<RtpPayloadTypesChangedHandler>()
-    private val _rtpPayloadTypes = mutableMapOf<Byte, PayloadType>()
+    private val _rtpPayloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
 
