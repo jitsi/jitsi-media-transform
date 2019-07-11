@@ -90,7 +90,7 @@ class RtpSenderImpl(
     private val statsTracker = OutgoingStatisticsTracker()
     private val packetStreamStats = PacketStreamStatsNode()
     private val rtcpSrUpdater = RtcpSrUpdater(statsTracker)
-    private val keyframeRequester = KeyframeRequester()
+    private val keyframeRequester = KeyframeRequester(streamInformationStore)
     private val probingDataSender: ProbingDataSender
 
     private val nackHandler: NackHandler
