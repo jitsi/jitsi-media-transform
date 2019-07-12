@@ -19,7 +19,6 @@ package org.jitsi.nlj.util
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -57,9 +56,7 @@ class StreamInformationStoreImpl : StreamInformationStore {
     override val rtpExtensions: List<RtpExtension>
         get() = _rtpExtensions
 
-    private val payloadTypesLock = Any()
-    private val payloadTypeHandlers = mutableListOf<RtpPayloadTypesChangedHandler>()
-    private val _rtpPayloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
+    private val _rtpPayloadTypes = ObservableMap<Byte, PayloadType>()
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
 
@@ -85,23 +82,12 @@ class StreamInformationStoreImpl : StreamInformationStore {
     }
 
     override fun addRtpPayloadType(payloadType: PayloadType) {
-        synchronized(payloadTypesLock) {
-            _rtpPayloadTypes[payloadType.pt] = payloadType
-            payloadTypeHandlers.forEach { it(_rtpPayloadTypes) }
-        }
+        _rtpPayloadTypes[payloadType.pt] = payloadType
     }
 
-    override fun clearRtpPayloadTypes() {
-        synchronized(payloadTypesLock) {
-            _rtpPayloadTypes.clear()
-            payloadTypeHandlers.forEach { it(_rtpPayloadTypes) }
-        }
-    }
+    override fun clearRtpPayloadTypes() = _rtpPayloadTypes.clear()
 
     override fun onRtpPayloadTypesChanged(handler: RtpPayloadTypesChangedHandler) {
-        synchronized(payloadTypesLock) {
-            payloadTypeHandlers.add(handler)
-            handler(_rtpPayloadTypes)
-        }
+        _rtpPayloadTypes.onChange(handler)
     }
 }
