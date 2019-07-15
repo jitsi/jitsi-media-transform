@@ -18,6 +18,7 @@ package org.jitsi.nlj.util
 
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.format.RtxPayloadType
+import org.jitsi.nlj.format.supportsPli
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
 import java.util.concurrent.CopyOnWriteArrayList
@@ -49,6 +50,8 @@ interface StreamInformationStore {
     fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler)
 
     val isRtxSupported: Boolean
+
+    val supportsPli: Boolean
 }
 
 class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
@@ -71,6 +74,10 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
     private var _isRtxSupported: Boolean = false
     override val isRtxSupported: Boolean
         get() = _isRtxSupported
+
+    private var _supportsPli: Boolean = false
+    override val supportsPli: Boolean
+        get() = _supportsPli
 
     override fun addRtpExtensionMapping(rtpExtension: RtpExtension) {
         synchronized(extensionsLock) {
@@ -101,11 +108,17 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
             }
             _isRtxSupported = true
         }
+        if (payloadType.rtcpFeedbackSet.supportsPli()) {
+            if (!_supportsPli) {
+                logger.cdebug { "$id PLI support signaled for payload type $payloadType" }
+            }
+        }
     }
 
     override fun clearRtpPayloadTypes() {
         _rtpPayloadTypes.clear()
         _isRtxSupported = false
+        _supportsPli = false
         logger.cdebug { "$id RTX payload type removed, disabling RTX probing" }
     }
 
