@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.util
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 class Notifier<HandlerType : Any> {
@@ -25,5 +26,73 @@ class Notifier<HandlerType : Any> {
 
     fun notifyAll(block: (HandlerType) -> Unit) {
         handlers.forEach(block)
+    }
+}
+
+class MapNotifier<MapKeyType, MapValueType> {
+    /**
+     * Handlers which subscribe to the state of a specific key and are notified when any
+     * change in value for that key occurs.  It's invoked for adds, updates and removed
+     * (removed is implemented by passing a null value to the handler)
+     */
+    private val keyChangeHandlers: MutableMap<MapKeyType, MutableList<(MapValueType?) -> Unit>> = ConcurrentHashMap()
+    /**
+     * Handlers which subscribe to any change of state in the map and receive the event which
+     * occurred.  The event includes a key, the key's new value and a copy of the current
+     * state of the map.  If the key has been removed, the new value will be null
+     */
+    private val mapEventHandlers: MutableList<(MapKeyType, MapValueType?, Map<MapKeyType, MapValueType>) -> Unit> = CopyOnWriteArrayList()
+
+    private fun notifyMapEvent(key: MapKeyType, newValue: MapValueType?, currentState: Map<MapKeyType, MapValueType>) {
+        keyChangeHandlers[key]?.forEach { it(newValue) }
+        mapEventHandlers.forEach {
+            it(key, newValue, currentState)
+        }
+    }
+
+    fun handleMapEvent(event: ObservableMapEvent<MapKeyType, MapValueType>) {
+        when (event) {
+            is ObservableMapEvent.EntryAdded<*, *> -> {
+                @Suppress("UNCHECKED_CAST")
+                notifyMapEvent(
+                    event.newEntry.key as MapKeyType,
+                    event.newEntry.value as MapValueType,
+                    event.currentState as Map<MapKeyType, MapValueType>
+                )
+            }
+            is ObservableMapEvent.EntryUpdated<*, *> -> {
+                @Suppress("UNCHECKED_CAST")
+                notifyMapEvent(
+                    event.key as MapKeyType,
+                    event.newValue as MapValueType,
+                    event.currentState as Map<MapKeyType, MapValueType>
+                )
+            }
+            is ObservableMapEvent.EntryRemoved<*, *> -> {
+                @Suppress("UNCHECKED_CAST")
+                notifyMapEvent(
+                    event.removedEntry.key as MapKeyType,
+                    null as MapValueType,
+                    event.currentState as Map<MapKeyType, MapValueType>
+                )
+            }
+        }
+    }
+
+    /**
+     * Subscribe to changes in value for a specific key (including the key
+     * being removed entirely, which results in the handler being invoked
+     * with 'null'
+     */
+    fun onKeyChange(keyValue: MapKeyType, handler: (MapValueType?) -> Unit) {
+        keyChangeHandlers.getOrPut(keyValue, { mutableListOf() }).add(handler)
+    }
+
+    /**
+     * Subscribe to any changes in the map.  The handler will be invoked with
+     * the current state of the map.
+     */
+    fun onMapEvent(handler: (MapKeyType, MapValueType?, Map<MapKeyType, MapValueType>) -> Unit) {
+        mapEventHandlers.add(handler)
     }
 }
