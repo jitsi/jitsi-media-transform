@@ -52,21 +52,19 @@ class RetransmissionSender(
     private var numRetransmittedPlainPackets = 0
 
     init {
-        streamInformationStore.onRtpPayloadTypesChanged { currentRtpPayloadTypes ->
-            if (currentRtpPayloadTypes.isEmpty()) {
-                associatedPayloadTypes.clear()
+        streamInformationStore.onRtpPayloadTypeEvent { ptId, payloadType, currentPayloadTypes ->
+            if (payloadType is RtxPayloadType) {
+                payloadType.associatedPayloadType?.let {
+                    associatedPayloadTypes[ptId.toInt()] = it
+                    logger.cdebug { "Associating RTX payload type ${ptId.toInt()} " +
+                        "with primary $it" }
+                } ?: logger.cerror { "Unable to parse RTX associated payload type from payload " +
+                    "type $payloadType" }
             } else {
-                currentRtpPayloadTypes.values.filterIsInstance<RtxPayloadType>()
-                    .map { rtxPayloadType ->
-                        rtxPayloadType.associatedPayloadType?.let { associatedPayloadType ->
-                            associatedPayloadTypes[rtxPayloadType.pt.toInt()] = associatedPayloadType
-                            logger.cdebug { "Associating RTX payload type ${rtxPayloadType.pt.toInt()} " +
-                                "with primary $associatedPayloadType" }
-                        } ?: run {
-                            logger.cerror { "Unable to parse RTX associated payload type from payload " +
-                                "type $rtxPayloadType" }
-                        }
-                    }
+                associatedPayloadTypes.remove(ptId.toInt())?.let {
+                    logger.cdebug { "Removing RTX payload type association${ptId.toInt()} with" +
+                        "primary $it" }
+                }
             }
         }
     }
