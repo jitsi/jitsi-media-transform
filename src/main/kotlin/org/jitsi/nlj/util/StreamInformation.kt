@@ -17,6 +17,7 @@
 package org.jitsi.nlj.util
 
 import org.jitsi.nlj.format.PayloadType
+import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
 import java.util.concurrent.CopyOnWriteArrayList
@@ -28,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 typealias RtpExtensionHandler = (Int?) -> Unit
 
-typealias RtpPayloadTypesChangedHandler = (Map<Byte, PayloadType>) -> Unit
+typealias RtpPayloadTypeEventHandler = (Byte, PayloadType?, Map<Byte, PayloadType>) -> Unit
 
 /**
  * [StreamInformationStore] maintains various information about streams, including:
@@ -45,10 +46,14 @@ interface StreamInformationStore {
     val rtpPayloadTypes: Map<Byte, PayloadType>
     fun addRtpPayloadType(payloadType: PayloadType)
     fun clearRtpPayloadTypes()
-    fun onRtpPayloadTypesChanged(handler: RtpPayloadTypesChangedHandler)
+    fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler)
+
+    val isRtxSupported: Boolean
 }
 
-class StreamInformationStoreImpl : StreamInformationStore {
+class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
+    private val logger = getLogger(this.javaClass)
+
     private val extensionsLock = Any()
     private val extensionHandlers =
         mutableMapOf<RtpExtensionType, MutableList<RtpExtensionHandler>>()
@@ -57,8 +62,15 @@ class StreamInformationStoreImpl : StreamInformationStore {
         get() = _rtpExtensions
 
     private val _rtpPayloadTypes = ObservableMap<Byte, PayloadType>()
+    private val mapNotifier = MapNotifier<Byte, PayloadType>().also {
+        _rtpPayloadTypes.onChange(it::handleMapEvent)
+    }
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
+
+    private var _isRtxSupported: Boolean = false
+    override val isRtxSupported: Boolean
+        get() = _isRtxSupported
 
     override fun addRtpExtensionMapping(rtpExtension: RtpExtension) {
         synchronized(extensionsLock) {
@@ -83,11 +95,21 @@ class StreamInformationStoreImpl : StreamInformationStore {
 
     override fun addRtpPayloadType(payloadType: PayloadType) {
         _rtpPayloadTypes[payloadType.pt] = payloadType
+        if (payloadType is RtxPayloadType) {
+            if (!_isRtxSupported) {
+                logger.cdebug { "$id RTX payload type signaled, enabling RTX probing" }
+            }
+            _isRtxSupported = true
+        }
     }
 
-    override fun clearRtpPayloadTypes() = _rtpPayloadTypes.clear()
+    override fun clearRtpPayloadTypes() {
+        _rtpPayloadTypes.clear()
+        _isRtxSupported = false
+        logger.cdebug { "$id RTX payload type removed, disabling RTX probing" }
+    }
 
-    override fun onRtpPayloadTypesChanged(handler: RtpPayloadTypesChangedHandler) {
-        _rtpPayloadTypes.onChange(handler)
+    override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) {
+        mapNotifier.onMapEvent(handler)
     }
 }

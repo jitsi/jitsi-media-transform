@@ -72,7 +72,7 @@ class Transceiver(
     private val receiveSsrcs = ConcurrentHashMap.newKeySet<Long>()
     val packetIOActivity = PacketIOActivity()
     private val endpointConnectionStats = EndpointConnectionStats()
-    private val streamInformationStore = StreamInformationStoreImpl()
+    private val streamInformationStore = StreamInformationStoreImpl(id)
     /**
      * A central place to subscribe to be notified on the reception or transmission of RTCP packets for
      * this transceiver.  This is intended to be used by internal entities: mainly logic for things like generating
