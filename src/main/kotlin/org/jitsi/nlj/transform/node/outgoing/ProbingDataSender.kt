@@ -21,7 +21,6 @@ import org.jitsi.nlj.EventHandler
 import org.jitsi.nlj.PacketHandler
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SetLocalSsrcEvent
-import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.format.VideoPayloadType
 import org.jitsi.nlj.rtp.PaddingVideoPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
@@ -49,14 +48,14 @@ class ProbingDataSender(
     private val rtxDataSender: PacketHandler,
     private val garbageDataSender: PacketHandler,
     private val diagnosticContext: DiagnosticContext,
-    streamInformationStore: StreamInformationStore
+    private val streamInformationStore: StreamInformationStore
 ) : EventHandler, NodeStatsProducer {
 
     private val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
     private val logger = getLogger(this.javaClass)
 
-    private var rtxSupported = false
-    private val videoPayloadTypes = mutableSetOf<VideoPayloadType>()
+    // TODO: this will move to stream information store
+    private var videoPayloadTypes = setOf<VideoPayloadType>()
     private var localVideoSsrc: Long? = null
 
     // Stats
@@ -64,28 +63,15 @@ class ProbingDataSender(
     private var numProbingBytesSentDummyData: Int = 0
 
     init {
-        streamInformationStore.onRtpPayloadTypesChanged { currentRtpPayloadTypes ->
-            if (currentRtpPayloadTypes.isEmpty()) {
-                videoPayloadTypes.clear()
-                rtxSupported = false
-            } else {
-                currentRtpPayloadTypes.values.forEach { pt ->
-                    if (!rtxSupported && pt is RtxPayloadType) {
-                        rtxSupported = true
-                        logger.cdebug { "RTX payload type signaled, enabling RTX probing" }
-                    }
-                    if (pt is VideoPayloadType) {
-                        videoPayloadTypes.add(pt)
-                    }
-                }
-            }
+        streamInformationStore.onRtpPayloadTypeEvent { _, _, currentRtpPayloadTypes ->
+            videoPayloadTypes = currentRtpPayloadTypes.values.filterIsInstance<VideoPayloadType>().toSet()
         }
     }
 
     fun sendProbing(mediaSsrc: Long, numBytes: Int): Int {
         var totalBytesSent = 0
 
-        if (rtxSupported) {
+        if (streamInformationStore.isRtxSupported) {
             val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes)
             numProbingBytesSentRtx += rtxBytesSent
             totalBytesSent += rtxBytesSent
@@ -196,7 +182,7 @@ class ProbingDataSender(
         return NodeStatsBlock("Probing data sender").apply {
             addNumber("num_bytes_of_probing_data_sent_as_rtx", numProbingBytesSentRtx)
             addNumber("num_bytes_of_probing_data_sent_as_dummy", numProbingBytesSentDummyData)
-            addBoolean("rtxSupported", rtxSupported)
+            addBoolean("rtxSupported", streamInformationStore.isRtxSupported)
             addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
             addString("currDummyTimestamp", currDummyTimestamp.toString())
             addString("currDummySeqNum", currDummySeqNum.toString())
