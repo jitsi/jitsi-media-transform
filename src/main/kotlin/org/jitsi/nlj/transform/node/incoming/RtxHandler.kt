@@ -26,6 +26,7 @@ import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.StreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
+import org.jitsi.nlj.util.cinfo
 import org.jitsi.rtp.extensions.unsigned.toPositiveInt
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.utils.logging.Logger
@@ -51,21 +52,18 @@ class RtxHandler(
     private val associatedSsrcs: ConcurrentHashMap<Long, Long> = ConcurrentHashMap()
 
     init {
-        streamInformationStore.onRtpPayloadTypesChanged { currentPayloadTypes ->
-            if (currentPayloadTypes.isEmpty()) {
-                associatedPayloadTypes.clear()
-            } else {
-                currentPayloadTypes.values.filterIsInstance<RtxPayloadType>()
-                    .map { rtxPayloadType ->
-                        rtxPayloadType.associatedPayloadType?.let { associatedPayloadType ->
-                            associatedPayloadTypes[rtxPayloadType.pt.toInt()] = associatedPayloadType
-                            logger.cdebug { "Associating RTX payload type ${rtxPayloadType.pt.toInt()} " +
-                                "with primary $associatedPayloadType" }
-                        } ?: run {
-                            logger.cerror { "Unable to parse RTX associated payload type from payload " +
-                                "type $rtxPayloadType" }
-                        }
-                    }
+        streamInformationStore.onRtpPayloadTypeEvent { _, pt, _ ->
+            if (pt is RtxPayloadType) {
+                pt.associatedPayloadType?.let { associatedPayloadType ->
+                    associatedPayloadTypes[pt.pt.toInt()] = associatedPayloadType
+                    logger.cdebug { "Associating RTX payload type ${pt.pt.toInt()} " +
+                        "with primary $associatedPayloadType" }
+                    logger.cinfo { "Associating RTX payload type ${pt.pt.toInt()} " +
+                        "with primary $associatedPayloadType" }
+                } ?: run {
+                    logger.cerror { "Unable to parse RTX associated payload type from payload " +
+                        "type $pt" }
+                }
             }
         }
     }
