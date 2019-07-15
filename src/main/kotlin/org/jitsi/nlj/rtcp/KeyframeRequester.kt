@@ -47,7 +47,7 @@ class KeyframeRequester(
 ) : TransformerNode("Keyframe Requester") {
 
     init {
-        streamInformationStore.onRtpPayloadTypesChanged { currentPayloadTypes ->
+        streamInformationStore.onRtpPayloadTypeEvent { _, _, currentPayloadTypes ->
             // Support for FIR and PLI is declared per-payload type, but currently
             // our code which requests FIR and PLI is not payload-type aware. So
             // until this changes we will just check if any of the PTs supports
