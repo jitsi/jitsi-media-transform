@@ -41,9 +41,10 @@ class ReceiverFactory {
             ssrcAssociations: List<SourceAssociation>,
             rtcpSender: (RtcpPacket) -> Unit = {}
         ): RtpReceiver {
-            val streamInformationStore = StreamInformationStoreImpl()
+            val id = Random().nextLong().toString()
+            val streamInformationStore = StreamInformationStoreImpl(id)
             val receiver = RtpReceiverImpl(
-                id = Random().nextLong().toString(),
+                id = id,
                 rtcpSender = rtcpSender,
                 rtcpEventNotifier = RtcpEventNotifier(),
                 executor = executor,

@@ -41,9 +41,10 @@ class SenderFactory {
             headerExtensions: List<RtpExtension>,
             ssrcAssociations: List<SourceAssociation>
         ): RtpSender {
-            val streamInformationStore = StreamInformationStoreImpl()
+            val id = Random().nextLong().toString()
+            val streamInformationStore = StreamInformationStoreImpl(id)
             val sender = RtpSenderImpl(
-                Random().nextLong().toString(),
+                id,
                 null,
                 RtcpEventNotifier(),
                 executor,
