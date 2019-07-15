@@ -22,7 +22,7 @@ import org.jitsi.nlj.ReceiveSsrcRemovedEvent
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
-import org.jitsi.nlj.util.StreamInformationStoreImpl
+import org.jitsi.nlj.util.StreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.isOlderThan
 import org.jitsi.rtp.extensions.unsigned.toPositiveLong
@@ -44,9 +44,9 @@ import java.util.concurrent.TimeUnit
 class TccGeneratorNode(
     private val onTccPacketReady: (RtcpPacket) -> Unit = {},
     private val scheduler: ScheduledExecutorService,
-    private val getSendBitrate: () -> Long
+    private val getSendBitrate: () -> Long,
+    streamInformationStore: StreamInformationStore
 ) : ObserverNode("TCC generator") {
-    private val streamInformation = StreamInformationStoreImpl()
     private var tccExtensionId: Int? = null
     private var currTccSeqNum: Int = 0
     private var lastTccSentTime: Long = 0
@@ -69,7 +69,7 @@ class TccGeneratorNode(
     private var numTccSent: Int = 0
 
     init {
-        streamInformation.onRtpExtensionMapping(TRANSPORT_CC) {
+        streamInformationStore.onRtpExtensionMapping(TRANSPORT_CC) {
             tccExtensionId = it
         }
         reschedule()
