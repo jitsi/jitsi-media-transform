@@ -71,7 +71,7 @@ class ProbingDataSender(
     fun sendProbing(mediaSsrc: Long, numBytes: Int): Int {
         var totalBytesSent = 0
 
-        if (streamInformationStore.isRtxSupported) {
+        if (streamInformationStore.supportsRtx) {
             val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes)
             numProbingBytesSentRtx += rtxBytesSent
             totalBytesSent += rtxBytesSent
@@ -182,7 +182,7 @@ class ProbingDataSender(
         return NodeStatsBlock("Probing data sender").apply {
             addNumber("num_bytes_of_probing_data_sent_as_rtx", numProbingBytesSentRtx)
             addNumber("num_bytes_of_probing_data_sent_as_dummy", numProbingBytesSentDummyData)
-            addBoolean("rtxSupported", streamInformationStore.isRtxSupported)
+            addBoolean("rtxSupported", streamInformationStore.supportsRtx)
             addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
             addString("currDummyTimestamp", currDummyTimestamp.toString())
             addString("currDummySeqNum", currDummySeqNum.toString())
