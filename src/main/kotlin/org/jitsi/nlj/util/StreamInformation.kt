@@ -32,26 +32,34 @@ typealias RtpExtensionHandler = (Int?) -> Unit
 
 typealias RtpPayloadTypeEventHandler = (Byte, PayloadType?, Map<Byte, PayloadType>) -> Unit
 
+interface ReadOnlyStreamInformationStore {
+    val rtpExtensions: List<RtpExtension>
+        get() = emptyList()
+    fun onRtpExtensionMapping(rtpExtensionType: RtpExtensionType, handler: RtpExtensionHandler) {}
+
+    val rtpPayloadTypes: Map<Byte, PayloadType>
+        get() = emptyMap()
+    fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) {}
+
+    val supportsRtx: Boolean
+        get() = false
+
+    val supportsPli: Boolean
+        get() = false
+}
+
 /**
  * [StreamInformationStore] maintains various information about streams, including:
  * 1) RTP Extension mapping
  *
  * and allows classes to register to be notified of certain events/mappings
  */
-interface StreamInformationStore {
-    val rtpExtensions: List<RtpExtension>
+interface StreamInformationStore : ReadOnlyStreamInformationStore {
     fun addRtpExtensionMapping(rtpExtension: RtpExtension)
     fun clearRtpExtensions()
-    fun onRtpExtensionMapping(rtpExtensionType: RtpExtensionType, handler: RtpExtensionHandler)
 
-    val rtpPayloadTypes: Map<Byte, PayloadType>
     fun addRtpPayloadType(payloadType: PayloadType)
     fun clearRtpPayloadTypes()
-    fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler)
-
-    val supportsRtx: Boolean
-
-    val supportsPli: Boolean
 }
 
 class StreamInformationStoreImpl(val id: String) : StreamInformationStore {

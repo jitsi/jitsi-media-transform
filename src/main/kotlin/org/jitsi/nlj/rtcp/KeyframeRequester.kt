@@ -21,7 +21,7 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SetLocalSsrcEvent
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
-import org.jitsi.nlj.util.StreamInformationStore
+import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.RtcpFbPacket
@@ -42,7 +42,7 @@ import kotlin.math.min
  * 3) Aggregation.  This class will pace outgoing requests such that we don't spam the sender
  */
 class KeyframeRequester(
-    private val streamInformationStore: StreamInformationStore
+    private val streamInformationStore: ReadOnlyStreamInformationStore
 ) : TransformerNode("Keyframe Requester") {
 
     // Map a SSRC to the timestamp (in ms) of when we last requested a keyframe for it
