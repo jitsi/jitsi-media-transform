@@ -52,8 +52,7 @@ class ObservableMapTest : ShouldSpec() {
         keyChanges.clear()
         mapEvents.clear()
     }
-    private val mapNotifier = MapNotifier<Int, String>().also { it ->
-        map.onChange(it::handleMapEvent)
+    private val mapNotifier = map.Notifier().also {
         // We'll watch the key '1' by default
         it.onKeyChange(1) {
             keyChanges.add(1 to it)

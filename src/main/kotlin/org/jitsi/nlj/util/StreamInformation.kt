@@ -73,9 +73,8 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
         get() = _rtpExtensions
 
     private val _rtpPayloadTypes = ObservableMap<Byte, PayloadType>()
-    private val mapNotifier = MapNotifier<Byte, PayloadType>().also {
-        _rtpPayloadTypes.onChange(it::handleMapEvent)
-    }
+    private val rtpPayloadTypeNotifier = _rtpPayloadTypes.Notifier()
+
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
 
@@ -130,7 +129,6 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
         logger.cdebug { "$id RTX payload type removed, disabling RTX probing" }
     }
 
-    override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) {
-        mapNotifier.onMapEvent(handler)
-    }
+    override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) =
+        rtpPayloadTypeNotifier.onMapEvent(handler)
 }

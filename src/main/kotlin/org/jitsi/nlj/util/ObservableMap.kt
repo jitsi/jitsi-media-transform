@@ -16,29 +16,11 @@
 
 package org.jitsi.nlj.util
 
-import org.jitsi.nlj.util.ObservableMapEvent.EntryUpdated
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.BiFunction
 import java.util.function.Function
 
-/**
- * Note: we use a single [EntryUpdated] class to handle adds, updates and removals.  This is
- * because some cases (e.g. [ObservableMap.computeIfAbsent]) make it hard to detect whether
- * or not an entry already existed (at least, not without implementing the computeIfAbsent
- * logic manually here).
- *
- * Technically this makes it impossible to distinguish the difference between a map which
- * has an entry for a given key but with a null value and a map without an entry for a given
- * key at all, but as of now this distinction is not important to us.
- */
-
-// TODO: do we really need the current state in any of these events?  maybe we can just have 'updated'
-// and implement 'clear' as a bunch of removes?  that is only awkward if we push the full state every
-// time, but if we don't need that then it wouldn't be so bad?
-// --> some things like hasPliSupport would be trickier if we just had add and remove (it would have to
-// track WHICH pts denoted pli support so it could know to set it to false (we could, instead, keep track
-// of all the payload types which added pli support, and add/remove to the set as things updated?)
-// -->
 sealed class ObservableMapEvent<T, U> {
     class EntryAdded<T, U>(val newEntry: Map.Entry<T, U>, val currentState: Map<T, U>) : ObservableMapEvent<T, U>()
     class EntryUpdated<T, U>(val key: T, val newValue: U?, val currentState: Map<T, U>) : ObservableMapEvent<T, U>()
@@ -128,7 +110,7 @@ class ObservableMap<T, U>(private val data: MutableMap<T, U> = mutableMapOf()) :
     }
 
     override fun compute(key: T, remappingFunction: BiFunction<in T, in U?, out U?>): U? = synchronized(lock) {
-        val oldValue = data.get(key)
+        val oldValue = data[key]
         val newValue = remappingFunction.apply(key, oldValue)
         return if (oldValue != null) {
             if (newValue != null) {
@@ -165,17 +147,17 @@ class ObservableMap<T, U>(private val data: MutableMap<T, U> = mutableMapOf()) :
 
     override fun computeIfPresent(key: T, remappingFunction: BiFunction<in T, in U, out U?>): U? = synchronized(lock) {
         val oldValue = data[key]
-        if (oldValue != null) {
+        return if (oldValue != null) {
             val newValue = remappingFunction.apply(key, oldValue)
             if (newValue != null) {
                 put(key, newValue)
-                return newValue
+                newValue
             } else {
                 remove(key)
-                return null
+                null
             }
         } else {
-            return null
+            null
         }
     }
 
@@ -219,6 +201,78 @@ class ObservableMap<T, U>(private val data: MutableMap<T, U> = mutableMapOf()) :
         // put so we can get the proper events for each one
         data.forEach { (key, value) ->
             put(key, function.apply(key, value))
+        }
+    }
+
+    inner class Notifier {
+        /**
+         * Handlers which subscribe to the state of a specific key and are notified when any
+         * change in value for that key occurs.  It's invoked for adds, updates and removed
+         * (removed is implemented by passing a null value to the handler)
+         */
+        private val keyChangeHandlers: MutableMap<T, MutableList<(U?) -> Unit>> = ConcurrentHashMap()
+        /**
+         * Handlers which subscribe to any change of state in the map and receive the event which
+         * occurred.  The event includes a key, the key's new value and a copy of the current
+         * state of the map.  If the key has been removed, the new value will be null
+         */
+        private val mapEventHandlers: MutableList<(T, U?, Map<T, U>) -> Unit> = CopyOnWriteArrayList()
+
+        init {
+            this@ObservableMap.onChange(this::handleMapEvent)
+        }
+
+        private fun notifyMapEvent(key: T, newValue: U?, currentState: Map<T, U>) {
+            keyChangeHandlers[key]?.forEach { it(newValue) }
+            mapEventHandlers.forEach {
+                it(key, newValue, currentState)
+            }
+        }
+
+        private fun handleMapEvent(event: ObservableMapEvent<T, U>) {
+            when (event) {
+                is ObservableMapEvent.EntryAdded<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    notifyMapEvent(
+                        event.newEntry.key as T,
+                        event.newEntry.value as U,
+                        event.currentState as Map<T, U>
+                    )
+                }
+                is ObservableMapEvent.EntryUpdated<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    notifyMapEvent(
+                        event.key as T,
+                        event.newValue as U,
+                        event.currentState as Map<T, U>
+                    )
+                }
+                is ObservableMapEvent.EntryRemoved<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    notifyMapEvent(
+                        event.removedEntry.key as T,
+                        null as U,
+                        event.currentState as Map<T, U>
+                    )
+                }
+            }
+        }
+
+        /**
+         * Subscribe to changes in value for a specific key (including the key
+         * being removed entirely, which results in the handler being invoked
+         * with 'null'
+         */
+        fun onKeyChange(keyValue: T, handler: (U?) -> Unit) {
+            keyChangeHandlers.getOrPut(keyValue, { mutableListOf() }).add(handler)
+        }
+
+        /**
+         * Subscribe to any changes in the map.  The handler will be invoked with
+         * the current state of the map.
+         */
+        fun onMapEvent(handler: (T, U?, Map<T, U>) -> Unit) {
+            mapEventHandlers.add(handler)
         }
     }
 }
