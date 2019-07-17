@@ -30,7 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 typealias RtpExtensionHandler = (Int?) -> Unit
 
-typealias RtpPayloadTypeEventHandler = (Byte, PayloadType?, Map<Byte, PayloadType>) -> Unit
+typealias RtpPayloadTypeEventHandler = MapEventHandler<Byte, PayloadType>
 
 interface ReadOnlyStreamInformationStore {
     val rtpExtensions: List<RtpExtension>
@@ -73,7 +73,6 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
         get() = _rtpExtensions
 
     private val _rtpPayloadTypes = ObservableMap<Byte, PayloadType>()
-    private val rtpPayloadTypeNotifier = _rtpPayloadTypes.Notifier()
 
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
@@ -129,6 +128,5 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
         logger.cdebug { "$id RTX payload type removed, disabling RTX probing" }
     }
 
-    override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) =
-        rtpPayloadTypeNotifier.onMapEvent(handler)
+    override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) = _rtpPayloadTypes.onChange(handler)
 }

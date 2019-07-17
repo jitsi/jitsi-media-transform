@@ -27,7 +27,6 @@ import io.kotlintest.specs.ShouldSpec
 class ObservableMapTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val map = ObservableMap<Int, String>()
     /**
      * Track each key change event that's been fired by tracking a list of
      * pairs of the key to the value at the time of the event
@@ -45,21 +44,41 @@ class ObservableMapTest : ShouldSpec() {
      */
     private val mapEvents = mutableListOf<MapEvent>()
 
+    private val map = ObservableMap<Int, String>().apply {
+        onChange(object : MapEventHandler<Int, String> {
+            override fun entryAdded(newEntry: Map.Entry<Int, String>, currentState: Map<Int, String>) {
+                mapEvents.add(MapEvent(newEntry.key, newEntry.value, currentState))
+            }
+
+            override fun entryRemoved(removedEntry: Map.Entry<Int, String>, currentState: Map<Int, String>) {
+                mapEvents.add(MapEvent(removedEntry.key, null, currentState))
+            }
+
+            override fun entryUpdated(updatedEntry: Map.Entry<Int, String>, currentState: Map<Int, String>) {
+                mapEvents.add(MapEvent(updatedEntry.key, updatedEntry.value, currentState))
+            }
+        })
+        object : MapEventKeyFilterHandler<Int, String>(this, 1) {
+            override fun keyAdded(value: String) {
+                keyChanges.add(keyToWatch to value)
+            }
+
+            override fun keyRemoved() {
+                keyChanges.add(keyToWatch to null)
+            }
+
+            override fun keyUpdated(newValue: String) {
+                keyChanges.add(keyToWatch to newValue)
+            }
+        }
+    }
+
     /**
      * Clear any prior key/state change events
      */
     private fun resetChangeHistory() {
         keyChanges.clear()
         mapEvents.clear()
-    }
-    private val mapNotifier = map.Notifier().also {
-        // We'll watch the key '1' by default
-        it.onKeyChange(1) {
-            keyChanges.add(1 to it)
-        }
-        it.onMapEvent { key, value, currentState ->
-            mapEvents.add(MapEvent(key, value, currentState))
-        }
     }
 
     private fun expectKeyChange(key: Int, expectedNewValue: String?) {
