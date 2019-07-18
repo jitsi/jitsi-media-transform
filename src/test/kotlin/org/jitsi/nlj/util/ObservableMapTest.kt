@@ -58,19 +58,19 @@ class ObservableMapTest : ShouldSpec() {
                 mapEvents.add(MapEvent(updatedEntry.key, updatedEntry.value, currentState))
             }
         })
-        object : MapEventKeyFilterHandler<Int, String>(this, 1) {
-            override fun keyAdded(value: String) {
-                keyChanges.add(keyToWatch to value)
+        onChange(object : MapEventKeyFilterHandler<Int, String>({ it == 1}) {
+            override fun keyAdded(key: Int, value: String) {
+                keyChanges.add(key to value)
             }
 
-            override fun keyRemoved() {
-                keyChanges.add(keyToWatch to null)
+            override fun keyRemoved(key: Int) {
+                keyChanges.add(key to null)
             }
 
-            override fun keyUpdated(newValue: String) {
-                keyChanges.add(keyToWatch to newValue)
+            override fun keyUpdated(key: Int, newValue: String) {
+                keyChanges.add(key to newValue)
             }
-        }
+        }.getMapHandler())
     }
 
     /**

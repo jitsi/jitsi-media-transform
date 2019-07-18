@@ -27,40 +27,92 @@ interface MapEventHandler<T, U> {
 }
 
 /**
- * Filters events from the map except for those pertaining to a
- * specific key
+ * Filters events from the map except for those pertaining to keys
+ * which map the supplied predicate
  */
 abstract class MapEventKeyFilterHandler<T, U>(
-    map: ObservableMap<T, U>,
-    val keyToWatch: T
+    val keyPredicate: (T) -> Boolean
 ) {
-    init {
-        map.onChange(this.MapHandler())
-    }
-    abstract fun keyAdded(value: U)
-    abstract fun keyRemoved()
-    abstract fun keyUpdated(newValue: U)
+    private val mapEventHandler = this.MapHandler()
+    fun getMapHandler(): MapEventHandler<T, U> = mapEventHandler
+
+    abstract fun keyAdded(key: T, value: U)
+    abstract fun keyRemoved(key: T)
+    abstract fun keyUpdated(key: T, newValue: U)
 
     private inner class MapHandler : MapEventHandler<T, U> {
         override fun entryAdded(newEntry: Map.Entry<T, U>, currentState: Map<T, U>) {
-            if (newEntry.key == keyToWatch) {
-                keyAdded(newEntry.value)
+            if (keyPredicate(newEntry.key)) {
+                keyAdded(newEntry.key, newEntry.value)
             }
         }
 
         override fun entryUpdated(updatedEntry: Map.Entry<T, U>, currentState: Map<T, U>) {
-            if (updatedEntry.key == keyToWatch) {
-                keyUpdated(updatedEntry.value)
+            if (keyPredicate(updatedEntry.key)) {
+                keyUpdated(updatedEntry.key, updatedEntry.value)
             }
         }
 
         override fun entryRemoved(removedEntry: Map.Entry<T, U>, currentState: Map<T, U>) {
-            if (removedEntry.key == keyToWatch) {
-                keyRemoved()
+            if (keyPredicate(removedEntry.key)) {
+                keyRemoved(removedEntry.key)
             }
         }
     }
 }
+
+abstract class MapEventValueFilterHandler<T, U>(
+    val valuePredicate: (U) -> Boolean
+) {
+    fun getMapHandler(): MapEventHandler<T, U> = this.MapHandler()
+
+    abstract fun entryAdded(key: T, value: U)
+    abstract fun entryRemoved(key: T)
+    abstract fun entryUpdated(key: T, newValue: U)
+
+    private inner class MapHandler : MapEventHandler<T, U> {
+        override fun entryAdded(newEntry: Map.Entry<T, U>, currentState: Map<T, U>) {
+            if (valuePredicate(newEntry.value)) {
+                entryAdded(newEntry.key, newEntry.value)
+            }
+        }
+
+        override fun entryUpdated(updatedEntry: Map.Entry<T, U>, currentState: Map<T, U>) {
+            if (valuePredicate(updatedEntry.value)) {
+                entryUpdated(updatedEntry.key, updatedEntry.value)
+            }
+        }
+
+        override fun entryRemoved(removedEntry: Map.Entry<T, U>, currentState: Map<T, U>) {
+            if (valuePredicate(removedEntry.value)) {
+                entryRemoved(removedEntry.key)
+            }
+        }
+    }
+}
+
+// This would make life easier for filtering on an instance
+// type, but we don't currently get access to the observable map directly.
+// it's still awkward to re-pass the map's generic types though
+// inline fun<reified V, T, U> ObservableMap<T, U>.forValuesOfType(
+//     entryAdded: (Map.Entry<T, V>) -> Unit,
+//     entryUpdated: (Map.Entry<T, V>) -> Unit,
+//     entryRemoved: (Map.Entry<T, V>) -> Unit
+// ): MapEventValueFilterHandler<T, U> {
+//     return object : MapEventValueFilterHandler<T, U>({ it is V} ) {
+//         override fun entryAdded(key: T, value: U) {
+//             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+//         }
+//
+//         override fun entryRemoved(key: T) {
+//             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+//         }
+//
+//         override fun entryUpdated(key: T, newValue: U) {
+//             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+//         }
+//     }
+// }
 
 private class MyEntry<T, U>(
     override val key: T,

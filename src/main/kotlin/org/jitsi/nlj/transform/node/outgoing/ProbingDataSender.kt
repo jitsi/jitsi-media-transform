@@ -21,10 +21,12 @@ import org.jitsi.nlj.EventHandler
 import org.jitsi.nlj.PacketHandler
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SetLocalSsrcEvent
+import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.format.VideoPayloadType
 import org.jitsi.nlj.rtp.PaddingVideoPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
+import org.jitsi.nlj.util.MapEventValueFilterHandler
 import org.jitsi.nlj.util.PacketCache
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
@@ -35,6 +37,7 @@ import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging.TimeSeriesLogger
 import java.util.Random
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * [ProbingDataSender] currently supports probing via 2 methods:
@@ -55,7 +58,7 @@ class ProbingDataSender(
     private val logger = getLogger(this.javaClass)
 
     // TODO: this will move to stream information store
-    private var videoPayloadTypes = setOf<VideoPayloadType>()
+    private val videoPayloadTypes: MutableMap<Int, VideoPayloadType> = ConcurrentHashMap()
     private var localVideoSsrc: Long? = null
 
     // Stats
@@ -63,9 +66,19 @@ class ProbingDataSender(
     private var numProbingBytesSentDummyData: Int = 0
 
     init {
-        streamInformationStore.onRtpPayloadTypeEvent { _, _, currentRtpPayloadTypes ->
-            videoPayloadTypes = currentRtpPayloadTypes.values.filterIsInstance<VideoPayloadType>().toSet()
-        }
+        object : MapEventValueFilterHandler<Byte, PayloadType>({ it is VideoPayloadType }) {
+            override fun entryAdded(key: Byte, value: PayloadType) {
+                videoPayloadTypes[key.toInt()] = (value as VideoPayloadType)
+            }
+
+            override fun entryUpdated(key: Byte, newValue: PayloadType) {
+                videoPayloadTypes[key.toInt()] = (newValue as VideoPayloadType)
+            }
+
+            override fun entryRemoved(key: Byte) {
+                videoPayloadTypes.remove(key.toInt())
+            }
+        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.getMapHandler()) }
     }
 
     fun sendProbing(mediaSsrc: Long, numBytes: Int): Int {
@@ -145,7 +158,7 @@ class ProbingDataSender(
 
     private fun sendDummyData(numBytes: Int): Int {
         var bytesSent = 0
-        val pt = videoPayloadTypes.firstOrNull() ?: return bytesSent
+        val pt = videoPayloadTypes.values.firstOrNull() ?: return bytesSent
         val senderSsrc = localVideoSsrc ?: return bytesSent
         // TODO(brian): shouldn't this take into account numBytes? what if it's less than
         // the size of one dummy packet?

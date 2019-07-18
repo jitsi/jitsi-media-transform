@@ -128,5 +128,6 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
         logger.cdebug { "$id RTX payload type removed, disabling RTX probing" }
     }
 
-    override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) = _rtpPayloadTypes.onChange(handler)
+    override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) =
+        _rtpPayloadTypes.onChange(handler)
 }

@@ -18,11 +18,14 @@ package org.jitsi.nlj.transform.node.outgoing
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SsrcAssociationEvent
+import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.RtxPacket
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
+import org.jitsi.nlj.util.MapEventValueFilterHandler
+import org.jitsi.nlj.util.ObservableMap
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
@@ -51,21 +54,30 @@ class RetransmissionSender(
     private var numRetransmittedRtxPackets = 0
     private var numRetransmittedPlainPackets = 0
 
+    private val dummyMap = ObservableMap<Byte, PayloadType>()
+
     init {
-        streamInformationStore.onRtpPayloadTypeEvent { ptId, payloadType, currentPayloadTypes ->
-            if (payloadType is RtxPayloadType) {
-                payloadType.associatedPayloadType?.let {
-                    associatedPayloadTypes[ptId.toInt()] = it
-                    logger.cdebug { "Associating RTX payload type ${ptId.toInt()} " +
-                        "with primary $it" }
-                } ?: logger.cerror { "Unable to parse RTX associated payload type from payload " +
-                    "type $payloadType" }
-            } else {
-                associatedPayloadTypes.remove(ptId.toInt())?.let {
-                    logger.cdebug { "Removing RTX payload type association${ptId.toInt()} with" +
-                        "primary $it" }
-                }
+        object : MapEventValueFilterHandler<Byte, PayloadType>({ it is RtxPayloadType }) {
+            override fun entryAdded(key: Byte, value: PayloadType) =
+                setRtxPayloadTypeAssociation(value as RtxPayloadType)
+
+            override fun entryUpdated(key: Byte, newValue: PayloadType) =
+                setRtxPayloadTypeAssociation(newValue as RtxPayloadType)
+
+            override fun entryRemoved(key: Byte) {
+                associatedPayloadTypes.remove(key.toInt())
             }
+        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.getMapHandler()) }
+    }
+
+    private fun setRtxPayloadTypeAssociation(rtxPayloadType: RtxPayloadType) {
+        rtxPayloadType.associatedPayloadType?.let { associatedPayloadType ->
+            associatedPayloadTypes[rtxPayloadType.pt.toInt()] = associatedPayloadType
+            logger.cdebug { "Associating RTX payload type ${rtxPayloadType.pt.toInt()} " +
+                "with primary $associatedPayloadType" }
+        } ?: run {
+            logger.cerror { "Unable to parse RTX associated payload type from payload " +
+                "type $rtxPayloadType" }
         }
     }
 
