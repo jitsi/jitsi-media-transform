@@ -27,12 +27,6 @@ import io.kotlintest.specs.ShouldSpec
 class ObservableMapTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    /**
-     * Track each key change event that's been fired by tracking a list of
-     * pairs of the key to the value at the time of the event
-     */
-    private val keyChanges = mutableListOf<Pair<Int, String?>>()
-
     private data class MapEvent(
         val key: Int,
         val value: String?,
@@ -58,31 +52,24 @@ class ObservableMapTest : ShouldSpec() {
                 mapEvents.add(MapEvent(updatedEntry.key, updatedEntry.value, currentState))
             }
         })
-        onChange(object : MapEventKeyFilterHandler<Int, String>({ it == 1}) {
-            override fun keyAdded(key: Int, value: String) {
-                keyChanges.add(key to value)
-            }
-
-            override fun keyRemoved(key: Int) {
-                keyChanges.add(key to null)
-            }
-
-            override fun keyUpdated(key: Int, newValue: String) {
-                keyChanges.add(key to newValue)
-            }
-        }.getMapHandler())
     }
 
     /**
      * Clear any prior key/state change events
      */
     private fun resetChangeHistory() {
-        keyChanges.clear()
         mapEvents.clear()
     }
 
-    private fun expectKeyChange(key: Int, expectedNewValue: String?) {
-        keyChanges.last() shouldBe (key to expectedNewValue)
+    /**
+     * Test setup often requires getting the map to a certain state so it can be further
+     * manipulated and verified.  The verification should ignore any events that were
+     * generated during that 'setup' phase.  This helper allows the setup to be done
+     * and then automatically clears the event history.
+     */
+    private fun setup(block: ObservableMapTest.() -> Unit) {
+        block()
+        resetChangeHistory()
     }
 
     private fun expectStateChange(expectedKey: Int, expectedNewValue: String?, expectedNewState: Map<Int, String>) {
@@ -94,84 +81,32 @@ class ObservableMapTest : ShouldSpec() {
     }
 
     init {
-        "assigning map[key] = value" {
-            "for a key which has a handler" {
-                map.put(1, "one") shouldBe null
-                should("fire a key change event") {
-                    expectKeyChange(1, "one")
-                }
-                should("fire a state change event") {
-                    expectStateChange(1, "one", mapOf(1 to "one"))
-                }
-                "and then updating it" {
-                    map.put(1, "uno") shouldBe "one"
-                    should("fire a key change event") {
-                        expectKeyChange(1, "uno")
-                    }
-                    should("fire a state change event") {
-                        expectStateChange(1, "uno", mapOf(1 to "uno"))
-                    }
-                }
-                "and then removing it" {
-                    map.remove(1) shouldBe "one"
-                    should("fire a key change event") {
-                        expectKeyChange(1, null)
-                    }
-                    should("fire a state change event") {
-                        expectStateChange(1, null, emptyMap())
-                    }
-                }
-                "and then trying to remove it using a specific value" {
-                    "which does match the current value" {
-                        map.remove(1, "one") shouldBe true
-                        should("fire a key change event") {
-                            expectKeyChange(1, null)
-                        }
-                        should("fire a state change event") {
-                            expectStateChange(1, null, emptyMap())
-                        }
-                    }
-                    "which doesn't match the current value" {
-                        map.remove(1, "two") shouldBe false
-                        should("not fire a key change event") {
-                            keyChanges should haveSize(1)
-                        }
-                        should("not fire a state change event") {
-                            mapEvents should haveSize(1)
-                        }
-                    }
-                }
+        "put" {
+            map.put(1, "one") shouldBe null
+            should("fire a state change event") {
+                expectStateChange(1, "one", mapOf(1 to "one"))
             }
-            "for a key without a handler" {
-                map.put(2, "two") shouldBe null
-                should("not fire a key change event") {
-                    keyChanges shouldHaveSize 0
-                }
+            "and then updating it" {
+                map.put(1, "uno") shouldBe "one"
                 should("fire a state change event") {
-                    expectStateChange(2, "two", mapOf(2 to "two"))
+                    expectStateChange(1, "uno", mapOf(1 to "uno"))
                 }
             }
         }
-        "adding entries via putAll" {
+        "putAll" {
             map.putAll(mapOf(
                 1 to "one",
                 2 to "two",
                 3 to "three"
             ))
-            should("fire a key change event") {
-                expectKeyChange(1, "one")
-            }
             should("fire multiple state change events") {
                 mapEvents should haveSize(3)
-                mapEvents[0].currentState shouldContainExactly mapOf(1 to "one")
-                mapEvents[1].currentState shouldContainExactly mapOf(1 to "one", 2 to "two")
+                // We don't know the order in which they'll be added, so just verify
+                // the final state
                 mapEvents[2].currentState shouldContainExactly mapOf(1 to "one", 2 to "two", 3 to "three")
             }
             "and then clearing it" {
                 map.clear()
-                should("fire a key change event") {
-                    expectKeyChange(1, null)
-                }
                 should("fire multiple state change events") {
                     mapEvents should haveSize(6)
                     // We don't know the order in which they'll be removed, so just
@@ -180,44 +115,67 @@ class ObservableMapTest : ShouldSpec() {
                 }
             }
         }
+        "remove" {
+            setup {
+                map[1] = "one"
+            }
+            "a key which is in the map" {
+                map.remove(1) shouldBe "one"
+                should("fire a state change event") {
+                    expectStateChange(1, null, emptyMap())
+                }
+            }
+            "a key which wasn't in the map" {
+                map.remove(2) shouldBe null
+                should("not fire a state change event") {
+                    mapEvents should haveSize(0)
+                }
+            }
+        }
+        "remove with a specific value" {
+            setup {
+                map[1] = "one"
+            }
+            "which does match the current value" {
+                map.remove(1, "one") shouldBe true
+                should("fire a state change event") {
+                    expectStateChange(1, null, emptyMap())
+                }
+            }
+            "which doesn't match the current value" {
+                map.remove(1, "two") shouldBe false
+                should("not fire a state change event") {
+                    mapEvents should haveSize(0)
+                }
+            }
+        }
         "compute" {
             "for a key not present in the map" {
                 "where the compute result is non-null" {
                     map.compute(1) { key, oldValue -> "uno" } shouldBe "uno"
-                    should("fire a key change event") {
-                        expectKeyChange(1, "uno")
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, "uno", mapOf(1 to "uno"))
                     }
                 }
                 "where the compute result is null" {
                     map.compute(1) { key, oldValue -> null } shouldBe null
-                    should("not fire a key change event") {
-                        keyChanges shouldHaveSize 0
-                    }
                     should("not fire a state change event") {
                         mapEvents shouldHaveSize 0
                     }
                 }
             }
             "for a key already present in the map" {
-                map[1] = "one"
-                resetChangeHistory()
+                setup {
+                    map[1] = "one"
+                }
                 "where the compute result is non-null" {
                     map.compute(1) { key, oldValue -> "uno" } shouldBe "uno"
-                    should("fire a key change event") {
-                        expectKeyChange(1, "uno")
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, "uno", mapOf(1 to "uno"))
                     }
                 }
                 "where the compute result is null" {
                     map.compute(1) { key, oldValue -> null } shouldBe null
-                    should("fire a key change event") {
-                        expectKeyChange(1, null)
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, null, emptyMap())
                     }
@@ -226,22 +184,16 @@ class ObservableMapTest : ShouldSpec() {
         }
         "computeIfAbsent" {
             "when the key is already in the map" {
-                map[1] = "one"
-                resetChangeHistory()
-
-                map.computeIfAbsent(1) { key -> "uno" } shouldBe "one"
-                should("not fire a key change event") {
-                    keyChanges shouldHaveSize 0
+                setup {
+                    map[1] = "one"
                 }
+                map.computeIfAbsent(1) { key -> "uno" } shouldBe "one"
                 should("not fire a state change event") {
                     mapEvents shouldHaveSize 0
                 }
             }
             "when the key isn't in the map" {
                 map.computeIfAbsent(1) { key -> "uno" } shouldBe "uno"
-                should("fire a key change event") {
-                    expectKeyChange(1, "uno")
-                }
                 should("fire a state change event") {
                     expectStateChange(1, "uno", mapOf(1 to "uno"))
                 }
@@ -249,22 +201,17 @@ class ObservableMapTest : ShouldSpec() {
         }
         "computeIfPresent" {
             "when the key is already in the map" {
-                map[1] = "one"
-                resetChangeHistory()
+                setup {
+                    map[1] = "one"
+                }
                 "and the result of the compute function is non-null" {
                     map.computeIfPresent(1) { key, value -> "uno" } shouldBe "uno"
-                    should("fire a key change event") {
-                        expectKeyChange(1, "uno")
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, "uno", mapOf(1 to "uno"))
                     }
                 }
                 "and the result of the compute function is null" {
                     map.computeIfPresent(1) { key, value -> null } shouldBe null
-                    should("fire a key change event") {
-                        expectKeyChange(1, null)
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, null, emptyMap())
                     }
@@ -272,9 +219,6 @@ class ObservableMapTest : ShouldSpec() {
             }
             "when the key isn't in the map" {
                 map.computeIfPresent(1) { key, value -> "uno" } shouldBe null
-                should("not fire a key change event") {
-                    keyChanges shouldHaveSize 0
-                }
                 should("not fire a state change event") {
                     mapEvents shouldHaveSize 0
                 }
@@ -282,32 +226,23 @@ class ObservableMapTest : ShouldSpec() {
         }
         "merge" {
             "when the key isn't in the map" {
-                resetChangeHistory()
                 map.merge(1, "one") { _, _ -> throw Exception("should not reach here") }
-                should("fire a key change event") {
-                    expectKeyChange(1, "one")
-                }
                 should("fire a state change event") {
                     expectStateChange(1, "one", mapOf(1 to "one"))
                 }
             }
             "when the key is in the map" {
-                map[1] = "one"
-                resetChangeHistory()
+                setup {
+                    map[1] = "one"
+                }
                 "when the new value is null" {
                     map.merge(1, "uno") { _, _ -> null } shouldBe null
-                    should("fire a key change event") {
-                        expectKeyChange(1, null)
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, null, emptyMap())
                     }
                 }
                 "when the new value is non-null" {
                     map.merge(1, "uno") { oldValue, newValue -> newValue } shouldBe "uno"
-                    should("fire a key change event") {
-                        expectKeyChange(1, "uno")
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, "uno", mapOf(1 to "uno"))
                     }
@@ -316,21 +251,16 @@ class ObservableMapTest : ShouldSpec() {
         }
         "putIfAbsent" {
             "when the key is present" {
-                map[1] = "one"
-                resetChangeHistory()
-                map.putIfAbsent(1, "uno") shouldBe "one"
-                should("not fire a key change event") {
-                    keyChanges shouldHaveSize 0
+                setup {
+                    map[1] = "one"
                 }
+                map.putIfAbsent(1, "uno") shouldBe "one"
                 should("not fire a state change event") {
                     mapEvents shouldHaveSize 0
                 }
             }
             "when the key is absent" {
                 map.putIfAbsent(1, "uno") shouldBe null
-                should("fire a key change event") {
-                    expectKeyChange(1, "uno")
-                }
                 should("fire a state change event") {
                     expectStateChange(1, "uno", mapOf(1 to "uno"))
                 }
@@ -338,21 +268,16 @@ class ObservableMapTest : ShouldSpec() {
         }
         "replace" {
             "when the key is present" {
-                map[1] = "one"
-                resetChangeHistory()
-                map.replace(1, "uno") shouldBe "one"
-                should("fire a key change event") {
-                    expectKeyChange(1, "uno")
+                setup {
+                    map[1] = "one"
                 }
+                map.replace(1, "uno") shouldBe "one"
                 should("fire a state change event") {
                     expectStateChange(1, "uno", mapOf(1 to "uno"))
                 }
             }
             "when the key is absent" {
                 map.replace(1, "uno") shouldBe null
-                should("not fire a key change event") {
-                    keyChanges shouldHaveSize 0
-                }
                 should("not fire a state change event") {
                     mapEvents shouldHaveSize 0
                 }
@@ -360,22 +285,17 @@ class ObservableMapTest : ShouldSpec() {
         }
         "replace with a specific old value" {
             "when the key is present" {
-                map[1] = "one"
-                resetChangeHistory()
+                setup {
+                    map[1] = "one"
+                }
                 "with a matching old value" {
                     map.replace(1, "one", "uno") shouldBe true
-                    should("fire a key change event") {
-                        expectKeyChange(1, "uno")
-                    }
                     should("fire a state change event") {
                         expectStateChange(1, "uno", mapOf(1 to "uno"))
                     }
                 }
                 "with a non-matching old value" {
                     map.replace(1, "uno", "one") shouldBe false
-                    should("not fire a key change event") {
-                        keyChanges shouldHaveSize 0
-                    }
                     should("not fire a state change event") {
                         mapEvents shouldHaveSize 0
                     }
@@ -383,24 +303,18 @@ class ObservableMapTest : ShouldSpec() {
             }
             "when the key is absent" {
                 map.replace(1, "one", "uno") shouldBe false
-                should("not fire a key change event") {
-                    keyChanges shouldHaveSize 0
-                }
                 should("not fire a state change event") {
                     mapEvents shouldHaveSize 0
                 }
             }
         }
         "replaceAll" {
-            map[1] = "one"
-            map[2] = "two"
-            resetChangeHistory()
+            setup {
+                map[1] = "one"
+                map[2] = "two"
+            }
             map.replaceAll { key, value ->
                 value + value
-            }
-            should("fire one key change event") {
-                keyChanges shouldHaveSize 1
-                expectKeyChange(1, "oneone")
             }
             should("fire 2 state change events") {
                 mapEvents shouldHaveSize 2
