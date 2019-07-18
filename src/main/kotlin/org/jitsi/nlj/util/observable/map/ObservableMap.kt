@@ -54,15 +54,18 @@ class ObservableMap<T, U>(private val data: MutableMap<T, U> = mutableMapOf()) :
     }
 
     private fun notifyAdded(key: T, newValue: U) {
-        handlers.forEach { it.entryAdded(MyEntry(key, newValue), data.toMap()) }
+        val dataCopy = data.toMap()
+        handlers.forEach { it.entryAdded(MyEntry(key, newValue), dataCopy) }
     }
 
     private fun notifyUpdated(key: T, newValue: U) {
-        handlers.forEach { it.entryUpdated(MyEntry(key, newValue), data.toMap()) }
+        val dataCopy = data.toMap()
+        handlers.forEach { it.entryUpdated(MyEntry(key, newValue), dataCopy) }
     }
 
     private fun notifyRemoved(key: T, value: U) {
-        handlers.forEach { it.entryRemoved(MyEntry(key, value), data.toMap()) }
+        val dataCopy = data.toMap()
+        handlers.forEach { it.entryRemoved(MyEntry(key, value), dataCopy) }
     }
 
     override fun put(key: T, value: U): U? = synchronized(lock) {
