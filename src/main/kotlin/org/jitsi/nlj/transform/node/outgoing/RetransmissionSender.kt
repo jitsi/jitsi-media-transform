@@ -24,8 +24,8 @@ import org.jitsi.nlj.rtp.RtxPacket
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
-import org.jitsi.nlj.util.MapEventValueFilterHandler
-import org.jitsi.nlj.util.ObservableMap
+import org.jitsi.nlj.util.observable.map.MapEventValueFilterHandler
+import org.jitsi.nlj.util.observable.map.ObservableMap
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror

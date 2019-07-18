@@ -23,6 +23,8 @@ import io.kotlintest.matchers.maps.shouldContainExactly
 import io.kotlintest.should
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
+import org.jitsi.nlj.util.observable.map.MapEventHandler
+import org.jitsi.nlj.util.observable.map.ObservableMap
 
 class ObservableMapTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf

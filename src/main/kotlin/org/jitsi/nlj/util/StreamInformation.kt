@@ -21,6 +21,8 @@ import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.format.supportsPli
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
+import org.jitsi.nlj.util.observable.map.MapEventHandler
+import org.jitsi.nlj.util.observable.map.ObservableMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**

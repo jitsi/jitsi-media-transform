@@ -26,7 +26,7 @@ import org.jitsi.nlj.format.VideoPayloadType
 import org.jitsi.nlj.rtp.PaddingVideoPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
-import org.jitsi.nlj.util.MapEventValueFilterHandler
+import org.jitsi.nlj.util.observable.map.MapEventValueFilterHandler
 import org.jitsi.nlj.util.PacketCache
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
