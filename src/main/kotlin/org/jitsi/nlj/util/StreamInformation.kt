@@ -75,7 +75,6 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
         get() = _rtpExtensions
 
     private val _rtpPayloadTypes = ObservableMap<Byte, PayloadType>()
-
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
 

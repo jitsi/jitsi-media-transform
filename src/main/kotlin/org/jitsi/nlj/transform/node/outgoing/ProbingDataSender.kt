@@ -78,7 +78,7 @@ class ProbingDataSender(
             override fun entryRemoved(key: Byte) {
                 videoPayloadTypes.remove(key.toInt())
             }
-        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.getMapHandler()) }
+        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.mapEventHandler) }
     }
 
     fun sendProbing(mediaSsrc: Long, numBytes: Int): Int {

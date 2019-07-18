@@ -67,7 +67,7 @@ class RetransmissionSender(
             override fun entryRemoved(key: Byte) {
                 associatedPayloadTypes.remove(key.toInt())
             }
-        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.getMapHandler()) }
+        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.mapEventHandler) }
     }
 
     private fun setRtxPayloadTypeAssociation(rtxPayloadType: RtxPayloadType) {
