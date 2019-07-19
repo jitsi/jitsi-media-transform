@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj
 
-import org.jitsi.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateObserver
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
@@ -27,12 +26,14 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.stats.PacketIOActivity
 import org.jitsi.nlj.stats.TransceiverStats
 import org.jitsi.nlj.transform.NodeStatsProducer
+import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.getLogger
+import org.jitsi.utils.MediaType
+import org.jitsi.utils.concurrent.RecurringRunnableExecutor
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging.Logger
-import org.jitsi.utils.MediaType
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.BandwidthEstimatorImpl
@@ -66,13 +67,12 @@ class Transceiver(
     backgroundExecutor: ScheduledExecutorService,
     diagnosticContext: DiagnosticContext,
     logLevelDelegate: Logger? = null
-) : Stoppable, NodeStatsProducer, RemoteBitrateObserver {
+) : Stoppable, NodeStatsProducer {
     private val logger = getLogger(this.javaClass, logLevelDelegate)
-    private val rtpExtensions = mutableMapOf<Byte, RtpExtension>()
-    private val payloadTypes = mutableMapOf<Byte, PayloadType>()
     private val receiveSsrcs = ConcurrentHashMap.newKeySet<Long>()
     val packetIOActivity = PacketIOActivity()
     private val endpointConnectionStats = EndpointConnectionStats()
+    private val streamInformationStore = StreamInformationStoreImpl()
     /**
      * A central place to subscribe to be notified on the reception or transmission of RTCP packets for
      * this transceiver.  This is intended to be used by internal entities: mainly logic for things like generating
@@ -83,9 +83,9 @@ class Transceiver(
 
     private var mediaStreamTracks = MediaStreamTracks()
 
-    private val transportCcEngine = TransportCCEngine(diagnosticContext, this)
-
     private val bandwidthEstimator: BandwidthEstimatorImpl = BandwidthEstimatorImpl(diagnosticContext)
+
+    private val transportCcEngine = TransportCCEngine(diagnosticContext, bandwidthEstimator)
 
     private val rtpSender: RtpSender = RtpSenderImpl(
             id,
@@ -93,6 +93,7 @@ class Transceiver(
             rtcpEventNotifier,
             senderExecutor,
             backgroundExecutor,
+            streamInformationStore,
             logLevelDelegate,
             diagnosticContext
     )
@@ -102,10 +103,11 @@ class Transceiver(
             { rtcpPacket ->
                 rtpSender.processPacket(PacketInfo(rtcpPacket))
             },
-            transportCcEngine,
             rtcpEventNotifier,
             receiverExecutor,
             backgroundExecutor,
+            { rtpSender.getPacketStreamStats().bitrate },
+            streamInformationStore,
             logLevelDelegate
         )
 
@@ -114,24 +116,15 @@ class Transceiver(
 
         endpointConnectionStats.addListener(bandwidthEstimator)
         rtcpEventNotifier.addRtcpEventListener(bandwidthEstimator)
+        rtcpEventNotifier.addRtcpEventListener(transportCcEngine)
 
         endpointConnectionStats.addListener(rtpSender)
-    }
-
-    override fun onReceiveBitrateChanged(ssrcs: MutableCollection<Long>?, bandwidth: Long) {
-        bandwidthEstimator.updateReceiverEstimate(bandwidth)
-        rtpReceiver.handleEvent(BandwidthEstimationChangedEvent(bandwidth))
+        bandwidthEstimatorExecutor.registerRecurringRunnable(bandwidthEstimator)
     }
 
     fun onBandwidthEstimateChanged(listener: BandwidthEstimator.Listener) {
         bandwidthEstimator.addListener(listener)
     }
-
-    // TODO(brian): we expose this because the bitratecontroller in jvb needs access to it but it just uses it
-    // to get the latest estimate, maybe we can give it that information another way without having to expose this
-    // (a getLatestAvailableBandwidthEstimate method on transceiver? or something else?  the whole bandwidth estimation
-    // flow (abs send time -> transport cc engine -> bandwidthestimator -> sendsidebwe) feels a bit jumpy
-    fun getBandwidthEstimator(): BandwidthEstimator = bandwidthEstimator
 
     /**
      * Handle an incoming [PacketInfo] (that is, a packet received by the endpoint
@@ -207,27 +200,18 @@ class Transceiver(
     fun requestKeyFrame(mediaSsrc: Long) = rtpSender.requestKeyframe(mediaSsrc)
 
     fun addPayloadType(payloadType: PayloadType) {
-        payloadTypes[payloadType.pt] = payloadType
         logger.cdebug { "Payload type added: $payloadType" }
-        val rtpPayloadTypeAddedEvent = RtpPayloadTypeAddedEvent(payloadType)
-        rtpReceiver.handleEvent(rtpPayloadTypeAddedEvent)
-        rtpSender.handleEvent(rtpPayloadTypeAddedEvent)
+        streamInformationStore.addRtpPayloadType(payloadType)
     }
 
     fun clearPayloadTypes() {
         logger.cinfo { "All payload types being cleared" }
-        val rtpPayloadTypeClearEvent = RtpPayloadTypeClearEvent()
-        rtpReceiver.handleEvent(rtpPayloadTypeClearEvent)
-        rtpSender.handleEvent(rtpPayloadTypeClearEvent)
-        payloadTypes.clear()
+        streamInformationStore.clearRtpPayloadTypes()
     }
 
     fun addRtpExtension(rtpExtension: RtpExtension) {
         logger.cdebug { "Adding RTP extension: $rtpExtension" }
-        rtpExtensions[rtpExtension.id] = rtpExtension
-        val rtpExtensionAddedEvent = RtpExtensionAddedEvent(rtpExtension)
-        rtpReceiver.handleEvent(rtpExtensionAddedEvent)
-        rtpSender.handleEvent(rtpExtensionAddedEvent)
+        streamInformationStore.addRtpExtensionMapping(rtpExtension)
     }
 
     fun clearRtpExtensions() {
@@ -274,12 +258,12 @@ class Transceiver(
     override fun getNodeStats(): NodeStatsBlock {
         return NodeStatsBlock("Transceiver $id").apply {
             addBlock(NodeStatsBlock("rtpExtensions").apply {
-                rtpExtensions.forEach {
-                    addString(it.key.toString(), it.value.type.toString())
+                streamInformationStore.rtpExtensions.forEach {
+                    addString(it.id.toString(), it.type.toString())
                 }
             })
             addBlock(NodeStatsBlock("payloadTypes").apply {
-                payloadTypes.forEach {
+                streamInformationStore.rtpPayloadTypes.forEach {
                     addString(it.key.toString(), it.value.toString())
                 }
             })
@@ -299,13 +283,16 @@ class Transceiver(
         return TransceiverStats(
             endpointConnectionStats.getSnapshot(),
             rtpReceiver.getStreamStats(),
+            rtpReceiver.getPacketStreamStats(),
             rtpSender.getStreamStats(),
+            rtpSender.getPacketStreamStats(),
             bandwidthEstimator.statistics)
     }
 
     override fun stop() {
         rtpReceiver.stop()
         rtpSender.stop()
+        bandwidthEstimatorExecutor.deRegisterRecurringRunnable(bandwidthEstimator)
     }
 
     fun teardown() {
@@ -314,6 +301,11 @@ class Transceiver(
     }
 
     companion object {
+        /**
+         * The executor which will periodically run the bandwidth estimators.
+         */
+        private val bandwidthEstimatorExecutor = RecurringRunnableExecutor("BandwidthEstimator")
+
         init {
 //            Node.plugins.add(BufferTracePlugin)
 //            Node.PLUGINS_ENABLED = true

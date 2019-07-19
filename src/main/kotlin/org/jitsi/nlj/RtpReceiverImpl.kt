@@ -27,10 +27,10 @@ import org.jitsi.nlj.transform.NodeStatsVisitor
 import org.jitsi.nlj.transform.NodeTeardownVisitor
 import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
+import org.jitsi.nlj.transform.node.PacketStreamStatsNode
 import org.jitsi.nlj.transform.node.RtpParser
 import org.jitsi.nlj.transform.node.SrtpTransformerNode
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
-import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsSnapshot
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.transform.node.incoming.PaddingTermination
 import org.jitsi.nlj.transform.node.incoming.RetransmissionRequesterNode
@@ -45,13 +45,13 @@ import org.jitsi.nlj.transform.packetPath
 import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
+import org.jitsi.nlj.util.StreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.util.RTCPUtils
 import org.jitsi.utils.logging.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
-import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
@@ -62,7 +62,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * participant it's receiving data from (NACK packets, for example)
      */
     private val rtcpSender: (RtcpPacket) -> Unit = {},
-    transportCcEngine: TransportCCEngine? = null,
     private val rtcpEventNotifier: RtcpEventNotifier,
     /**
      * The executor this class will use for its primary work (i.e. critical path
@@ -75,6 +74,11 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * background tasks, or tasks that need to execute at some fixed delay/rate
      */
     private val backgroundExecutor: ScheduledExecutorService,
+    /**
+     * Returns the current sending bitrate in bps.
+     */
+    getSendBitrate: () -> Long,
+    streamInformationStore: StreamInformationStore,
     logLevelDelegate: Logger? = null
 ) : RtpReceiver() {
     private val logger = getLogger(classLogger, logLevelDelegate)
@@ -84,12 +88,13 @@ class RtpReceiverImpl @JvmOverloads constructor(
             PacketInfoQueue("rtp-receiver-incoming-packet-queue", executor, this::handleIncomingPacket)
     private val srtpDecryptWrapper = SrtpTransformerNode("SRTP Decrypt node")
     private val srtcpDecryptWrapper = SrtpTransformerNode("SRTCP Decrypt node")
-    private val tccGenerator = TccGeneratorNode(rtcpSender, backgroundExecutor)
-    private val audioLevelReader = AudioLevelReader()
+    private val tccGenerator = TccGeneratorNode(rtcpSender, backgroundExecutor, getSendBitrate)
+    private val audioLevelReader = AudioLevelReader(streamInformationStore)
     private val silenceDiscarder = SilenceDiscarder(true)
-    private val statsTracker = IncomingStatisticsTracker()
+    private val statsTracker = IncomingStatisticsTracker(streamInformationStore)
+    private val packetStreamStats = PacketStreamStatsNode()
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker)
-    private val rtcpTermination = RtcpTermination(rtcpEventNotifier, transportCcEngine)
+    private val rtcpTermination = RtcpTermination(rtcpEventNotifier)
 
     companion object {
         private val classLogger: Logger = Logger.getLogger(this::class.java)
@@ -126,12 +131,13 @@ class RtpReceiverImpl @JvmOverloads constructor(
         incomingPacketQueue.setErrorHandler(queueErrorCounter)
 
         inputTreeRoot = pipeline {
+            node(packetStreamStats)
             demux("SRTP/SRTCP") {
                 packetPath {
                     name = "SRTP path"
                     predicate = PacketPredicate { !RTCPUtils.isRtcp(it.buffer, it.offset, it.length) }
                     path = pipeline {
-                        node(RtpParser())
+                        node(RtpParser(streamInformationStore))
                         node(tccGenerator)
                         // TODO: temporarily putting the audioLevelReader node here such that we can determine whether
                         // or not a packet should be discarded before doing SRTP. audioLevelReader has been moved here
@@ -156,9 +162,9 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 name = "Video path"
                                 predicate = PacketPredicate { it is VideoRtpPacket }
                                 path = pipeline {
-                                    node(RtxHandler())
+                                    node(RtxHandler(streamInformationStore))
                                     node(PaddingTermination())
-                                    node(VideoParser())
+                                    node(VideoParser(streamInformationStore))
                                     node(Vp8Parser())
                                     node(VideoBitrateCalculator())
                                     node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor))
@@ -219,9 +225,9 @@ class RtpReceiverImpl @JvmOverloads constructor(
         audioLevelReader.audioLevelListener = audioLevelListener
     }
 
-    override fun getStreamStats(): IncomingStatisticsSnapshot {
-        return statsTracker.getSnapshot()
-    }
+    override fun getStreamStats() = statsTracker.getSnapshot()
+
+    override fun getPacketStreamStats() = packetStreamStats.snapshot()
 
     override fun stop() {
         running = false

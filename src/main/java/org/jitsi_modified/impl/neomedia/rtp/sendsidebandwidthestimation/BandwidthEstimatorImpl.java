@@ -16,6 +16,7 @@
 package org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.impl.neomedia.rtp.remotebitrateestimator.*;
 import org.jitsi.rtp.rtcp.*;
 
 import org.jitsi.service.configuration.*;
@@ -38,7 +39,7 @@ import java.util.concurrent.*;
  * @author George Politis
  */
 public class BandwidthEstimatorImpl
-    implements BandwidthEstimator, RecurringRunnable
+    implements BandwidthEstimator, RecurringRunnable, RemoteBitrateObserver
 {
     /**
      * The system property name of the initial value of the estimation, in bits
@@ -101,10 +102,12 @@ public class BandwidthEstimatorImpl
         long fraction_lost_aggregate = 0;
         for (RtcpReportBlock reportBlock : reportBlocks)
         {
-            Long ssrc = reportBlock.getSsrc();
-            Long extSeqNum = reportBlock.getExtendedHighestSeqNum();
-            Long lastEHSN = ssrc_to_last_received_extended_high_seq_num_.getOrDefault(ssrc, extSeqNum);
-            ssrc_to_last_received_extended_high_seq_num_.put(ssrc, lastEHSN);
+            long ssrc = reportBlock.getSsrc();
+            long extSeqNum = reportBlock.getExtendedHighestSeqNum();
+            long lastEHSN = ssrc_to_last_received_extended_high_seq_num_
+                    .getOrDefault(ssrc, extSeqNum);
+            ssrc_to_last_received_extended_high_seq_num_
+                    .put(ssrc, Math.max(lastEHSN, extSeqNum));
 
             if (lastEHSN >= extSeqNum)
             {
@@ -184,7 +187,7 @@ public class BandwidthEstimatorImpl
     }
 
     @Override
-    public void onRtcpPacketReceived(@NotNull RtcpPacket packet, Long receivedTime)
+    public void rtcpPacketReceived(@NotNull RtcpPacket packet, long receivedTime)
     {
         if (packet instanceof RtcpSrPacket ||
                 packet instanceof RtcpRrPacket)
@@ -237,5 +240,20 @@ public class BandwidthEstimatorImpl
             lastUpdateTime = System.currentTimeMillis();
             sendSideBandwidthEstimation.updateEstimate(lastUpdateTime);
         }
+    }
+
+    /**
+     * This is hooked up to the
+     * {@link org.jitsi.service.neomedia.rtp.RemoteBitrateEstimator} in
+     * {@link org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine}, which
+     * performs the delay-based estimation (also referred to as
+     * "receiver estimate").
+     *
+     */
+    @Override
+    public void onReceiveBitrateChanged(
+            Collection<Long> ssrcs, long delayBasedEstimateBps)
+    {
+        updateReceiverEstimate(delayBasedEstimateBps);
     }
 }

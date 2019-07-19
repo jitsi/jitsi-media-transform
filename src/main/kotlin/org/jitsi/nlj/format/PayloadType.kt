@@ -22,6 +22,9 @@ import java.util.concurrent.CopyOnWriteArraySet
 typealias PayloadTypeParams = Map<String, String>
 
 typealias RtcpFeedbackSet = Set<String>
+
+fun RtcpFeedbackSet.supportsPli(): Boolean = this.contains("nack pli")
+fun RtcpFeedbackSet.supportsFir(): Boolean = this.contains("ccm fir")
 /**
  * Represents an RTP payload type.
  *
@@ -123,7 +126,10 @@ class H264PayloadType(
 class RtxPayloadType(
     pt: Byte,
     parameters: PayloadTypeParams = ConcurrentHashMap()
-) : VideoPayloadType(pt, PayloadTypeEncoding.RTX, parameters = parameters)
+) : VideoPayloadType(pt, PayloadTypeEncoding.RTX, parameters = parameters) {
+    val associatedPayloadType: Int?
+        get() = parameters["apt"]?.toInt()
+}
 
 abstract class AudioPayloadType(
     pt: Byte,

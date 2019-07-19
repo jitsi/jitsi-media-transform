@@ -27,9 +27,9 @@ import org.jitsi.nlj.transform.NodeTeardownVisitor
 import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketCacher
+import org.jitsi.nlj.transform.node.PacketStreamStatsNode
 import org.jitsi.nlj.transform.node.SrtpTransformerNode
 import org.jitsi.nlj.transform.node.outgoing.AbsSendTime
-import org.jitsi.nlj.transform.node.outgoing.OutgoingStatisticsSnapshot
 import org.jitsi.nlj.transform.node.outgoing.OutgoingStatisticsTracker
 import org.jitsi.nlj.transform.node.outgoing.ProbingDataSender
 import org.jitsi.nlj.transform.node.outgoing.RetransmissionSender
@@ -37,16 +37,15 @@ import org.jitsi.nlj.transform.node.outgoing.SentRtcpStats
 import org.jitsi.nlj.transform.node.outgoing.TccSeqNumTagger
 import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
+import org.jitsi.nlj.util.StreamInformationStore
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.getLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext
-import org.jitsi.utils.queue.CountingErrorHandler
 import org.jitsi.utils.logging.Logger
+import org.jitsi.utils.queue.CountingErrorHandler
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
-import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
@@ -65,6 +64,7 @@ class RtpSenderImpl(
      * background tasks, or tasks that need to execute at some fixed delay/rate
      */
     val backgroundExecutor: ScheduledExecutorService,
+    private val streamInformationStore: StreamInformationStore,
     logLevelDelegate: Logger? = null,
     diagnosticContext: DiagnosticContext = DiagnosticContext()
 ) : RtpSender() {
@@ -86,31 +86,21 @@ class RtpSenderImpl(
     private val srtpEncryptWrapper = SrtpTransformerNode("SRTP encrypt")
     private val srtcpEncryptWrapper = SrtpTransformerNode("SRTCP encrypt")
     private val outgoingPacketCache = PacketCacher()
-    private val absSendTime = AbsSendTime()
-    private val statTracker = OutgoingStatisticsTracker()
-    private val rtcpSrUpdater = RtcpSrUpdater(statTracker)
-    private val keyframeRequester = KeyframeRequester()
+    private val absSendTime = AbsSendTime(streamInformationStore)
+    private val statsTracker = OutgoingStatisticsTracker()
+    private val packetStreamStats = PacketStreamStatsNode()
+    private val rtcpSrUpdater = RtcpSrUpdater(statsTracker)
+    private val keyframeRequester = KeyframeRequester(streamInformationStore)
     private val probingDataSender: ProbingDataSender
 
     private val nackHandler: NackHandler
 
     private val outputPipelineTerminationNode = object : ConsumerNode("Output pipeline termination node") {
         override fun consume(packetInfo: PacketInfo) {
-            if (packetInfo.timeline.totalDelay() > Duration.ofMillis(100)) {
-                logger.cerror { "Packet took >100ms to get through bridge:\n${packetInfo.timeline}" }
-            }
             // While there's no handler set we're effectively dropping packets, so their buffers
             // should be returned.
             outgoingPacketHandler?.processPacket(packetInfo) ?: packetDiscarded(packetInfo)
         }
-    }
-
-    companion object {
-        private val classLogger: Logger = Logger.getLogger(this::class.java)
-        val queueErrorCounter = CountingErrorHandler()
-
-        private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
-        private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
     }
 
     init {
@@ -121,14 +111,15 @@ class RtpSenderImpl(
         outgoingRtpRoot = pipeline {
             node(outgoingPacketCache)
             node(absSendTime)
-            node(statTracker)
-            node(TccSeqNumTagger(transportCcEngine))
+            node(statsTracker)
+            node(TccSeqNumTagger(transportCcEngine, streamInformationStore))
             node(srtpEncryptWrapper)
+            node(packetStreamStats.createNewNode())
             node(outputPipelineTerminationNode)
         }
 
         outgoingRtxRoot = pipeline {
-            node(RetransmissionSender())
+            node(RetransmissionSender(streamInformationStore))
             // We want RTX packets to hook into the main RTP pipeline starting at AbsSendTime
             node(absSendTime)
         }
@@ -154,12 +145,14 @@ class RtpSenderImpl(
             }
             node(rtcpSrUpdater)
             node(srtcpEncryptWrapper)
+            node(packetStreamStats.createNewNode())
             node(outputPipelineTerminationNode)
         }
 
         probingDataSender = ProbingDataSender(
-                outgoingPacketCache.getPacketCache(),
-                outgoingRtxRoot, absSendTime, diagnosticContext)
+            outgoingPacketCache.getPacketCache(), outgoingRtxRoot, absSendTime, diagnosticContext,
+            streamInformationStore
+        )
     }
 
     override fun onRttUpdate(newRtt: Double) {
@@ -213,9 +206,9 @@ class RtpSenderImpl(
         return false
     }
 
-    override fun getStreamStats(): OutgoingStatisticsSnapshot {
-        return statTracker.getSnapshot()
-    }
+    override fun getStreamStats() = statsTracker.getSnapshot()
+
+    override fun getPacketStreamStats() = packetStreamStats.snapshot()
 
     override fun handleEvent(event: Event) {
         when (event) {
@@ -249,5 +242,13 @@ class RtpSenderImpl(
 
     override fun tearDown() {
         NodeTeardownVisitor().reverseVisit(outputPipelineTerminationNode)
+    }
+
+    companion object {
+        private val classLogger: Logger = Logger.getLogger(this::class.java)
+        val queueErrorCounter = CountingErrorHandler()
+
+        private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
+        private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
     }
 }

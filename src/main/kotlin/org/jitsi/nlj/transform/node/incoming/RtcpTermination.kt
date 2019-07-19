@@ -33,11 +33,9 @@ import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
-import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 
 class RtcpTermination(
-    private val rtcpEventNotifier: RtcpEventNotifier,
-    private val transportCcEngine: TransportCCEngine? = null
+    private val rtcpEventNotifier: RtcpEventNotifier
 ) : TransformerNode("RTCP termination") {
     private var packetReceiveCounts = mutableMapOf<String, Int>()
     /**
@@ -52,10 +50,9 @@ class RtcpTermination(
 
         compoundRtcp.packets.forEach { rtcpPacket ->
             when (rtcpPacket) {
-                is RtcpFbTccPacket -> transportCcEngine?.tccReceived(rtcpPacket)
                 is RtcpFbPliPacket, is RtcpFbFirPacket, is RtcpSrPacket -> {
-                    // We'll let these pass through and be forwarded to the sender who will be
-                    // responsible for translating/aggregating them
+                    // We'll let these pass through and be forwarded to the conference (where they will be
+                    // routed to the other endpoint(s))
                     // NOTE(brian): this should work fine as long as we can't receive 2 RTCP packets
                     // we want to forward in the same compound packet.  If we can, then we may need
                     // to turn this into a MultipleOutputNode
@@ -66,7 +63,7 @@ class RtcpTermination(
                     }
                     forwardedRtcp = rtcpPacket
                 }
-                is RtcpSdesPacket, is RtcpRrPacket, is RtcpFbNackPacket, is RtcpByePacket -> {
+                is RtcpSdesPacket, is RtcpRrPacket, is RtcpFbNackPacket, is RtcpByePacket, is RtcpFbTccPacket -> {
                     // Supported, but no special handling here (any special handling will be in
                     // notifyRtcpReceived below
                 }

@@ -16,14 +16,13 @@
 
 package org.jitsi.nlj.module_tests
 
-import org.jitsi.nlj.RtpExtensionAddedEvent
-import org.jitsi.nlj.RtpPayloadTypeAddedEvent
 import org.jitsi.nlj.RtpReceiver
 import org.jitsi.nlj.RtpReceiverImpl
 import org.jitsi.nlj.SsrcAssociationEvent
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
+import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.test_utils.SourceAssociation
 import org.jitsi.test_utils.SrtpData
@@ -42,21 +41,23 @@ class ReceiverFactory {
             ssrcAssociations: List<SourceAssociation>,
             rtcpSender: (RtcpPacket) -> Unit = {}
         ): RtpReceiver {
+            val streamInformationStore = StreamInformationStoreImpl()
             val receiver = RtpReceiverImpl(
-                Random().nextLong().toString(),
-                rtcpSender,
-                null,
-                RtcpEventNotifier(),
-                executor,
-                backgroundExecutor
+                id = Random().nextLong().toString(),
+                rtcpSender = rtcpSender,
+                rtcpEventNotifier = RtcpEventNotifier(),
+                executor = executor,
+                backgroundExecutor = backgroundExecutor,
+                getSendBitrate = { 0L },
+                streamInformationStore = streamInformationStore
             )
             receiver.setSrtpTransformers(SrtpTransformerFactory.createSrtpTransformers(srtpData))
 
             payloadTypes.forEach {
-                receiver.handleEvent(RtpPayloadTypeAddedEvent(it))
+                streamInformationStore.addRtpPayloadType(it)
             }
             headerExtensions.forEach {
-                receiver.handleEvent(RtpExtensionAddedEvent(it))
+                streamInformationStore.addRtpExtensionMapping(it)
             }
             ssrcAssociations.forEach {
                 receiver.handleEvent(SsrcAssociationEvent(it.primarySsrc, it.secondarySsrc, it.associationType))

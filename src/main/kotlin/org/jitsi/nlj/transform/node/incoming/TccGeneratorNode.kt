@@ -15,16 +15,14 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import org.jitsi.nlj.BandwidthEstimationChangedEvent
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.ReceiveSsrcAddedEvent
 import org.jitsi.nlj.ReceiveSsrcRemovedEvent
-import org.jitsi.nlj.RtpExtensionAddedEvent
-import org.jitsi.nlj.RtpExtensionClearEvent
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
+import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.isOlderThan
 import org.jitsi.rtp.extensions.unsigned.toPositiveLong
@@ -35,7 +33,6 @@ import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
 import org.jitsi.rtp.util.RtpUtils
 import org.jitsi.utils.stats.RateStatistics
-import unsigned.toUInt
 import java.util.TreeMap
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -46,16 +43,17 @@ import java.util.concurrent.TimeUnit
  */
 class TccGeneratorNode(
     private val onTccPacketReady: (RtcpPacket) -> Unit = {},
-    private val scheduler: ScheduledExecutorService
+    private val scheduler: ScheduledExecutorService,
+    private val getSendBitrate: () -> Long
 ) : ObserverNode("TCC generator") {
+    private val streamInformation = StreamInformationStoreImpl()
     private var tccExtensionId: Int? = null
     private var currTccSeqNum: Int = 0
     private var lastTccSentTime: Long = 0
-    private final val lock = Any()
+    private val lock = Any()
     // Tcc seq num -> arrival time in ms
-    private val packetArrivalTimes = TreeMap<Int, Long>(object : Comparator<Int> {
-        override fun compare(o1: Int, o2: Int): Int = RtpUtils.getSequenceNumberDelta(o1, o2)
-    })
+    private val packetArrivalTimes =
+        TreeMap<Int, Long>(Comparator<Int> { o1, o2 -> RtpUtils.getSequenceNumberDelta(o1, o2) })
     // The first sequence number of the current tcc feedback packet
     private var windowStartSeq: Int = -1
     private var sendIntervalMs: Long = 0
@@ -68,13 +66,12 @@ class TccGeneratorNode(
      * TCC packets we generate
      */
     private var mediaSsrcs: MutableSet<Long> = mutableSetOf()
-    private fun <T> MutableSet<T>.firstOr(defaultValue: T): T {
-        val iter = iterator()
-        return if (iter.hasNext()) iter.next() else defaultValue
-    }
     private var numTccSent: Int = 0
 
     init {
+        streamInformation.onRtpExtensionMapping(TRANSPORT_CC) {
+            tccExtensionId = it
+        }
         reschedule()
     }
 
@@ -111,7 +108,7 @@ class TccGeneratorNode(
     private fun sendPeriodicFeedbacks() {
         try {
             logger.cdebug { "${System.identityHashCode(this)} sending periodic feedback at " +
-                    "${ java.lang.System.currentTimeMillis()}, window start seq is $windowStartSeq" }
+                    "${System.currentTimeMillis()}, window start seq is $windowStartSeq" }
             buildFeedback()?.let {
                 sendTcc(it)
             }
@@ -124,7 +121,7 @@ class TccGeneratorNode(
 
     private fun buildFeedback(): RtcpFbTccPacket? {
         val tccBuilder = RtcpFbTccPacketBuilder(
-            mediaSourceSsrc = mediaSsrcs.firstOr(-1L),
+            mediaSourceSsrc = mediaSsrcs.firstOrNull() ?: -1L,
             feedbackPacketSeqNum = currTccSeqNum++
         )
         synchronized(lock) {
@@ -158,6 +155,7 @@ class TccGeneratorNode(
     private fun sendTcc(tccPacket: RtcpFbTccPacket) {
         onTccPacketReady(tccPacket)
         numTccSent++
+        recalculateSendInterval(getSendBitrate())
         lastTccSentTime = System.currentTimeMillis()
         tccFeedbackBitrate.update(tccPacket.length, lastTccSentTime)
     }
@@ -174,12 +172,13 @@ class TccGeneratorNode(
             ((timeSinceLastTcc >= 20) && currentPacketMarked)
     }
 
-    private fun onBandwidthChanged(bandwidthBps: Long) {
+    private fun recalculateSendInterval(sendBitrateBps: Long) {
         synchronized(lock) {
-            // Let TWCC reports occupy 5% of total bandwidth
+            // Let TWCC reports occupy 5% of the total sending bitrate. See
+            // https://cs.chromium.org/chromium/src/third_party/webrtc/modules/congestion_controller/include/receive_side_congestion_controller.h?type=cs&g=0&l=52
             sendIntervalMs = (.5 + kTwccReportSize * 8.0 * 1000.0 /
-                    (.05 * bandwidthBps).coerceIn(kMinTwccRate, kMaxTwccRate)).toPositiveLong()
-            logger.cdebug { "Bandwidth is now $bandwidthBps, tcc send interval is $sendIntervalMs ms" }
+                    (.05 * sendBitrateBps).coerceIn(kMinTwccRate, kMaxTwccRate)).toPositiveLong()
+            logger.cdebug { "Send bitrate is now $sendBitrateBps, tcc send interval is $sendIntervalMs ms" }
         }
     }
 
@@ -189,16 +188,8 @@ class TccGeneratorNode(
 
     override fun handleEvent(event: Event) {
         when (event) {
-            is RtpExtensionAddedEvent -> {
-                if (event.rtpExtension.type == TRANSPORT_CC) {
-                    tccExtensionId = event.rtpExtension.id.toUInt()
-                    logger.cdebug { "TCC generator setting extension ID to $tccExtensionId" }
-                }
-            }
-            is RtpExtensionClearEvent -> tccExtensionId = null
             is ReceiveSsrcAddedEvent -> mediaSsrcs.add(event.ssrc)
             is ReceiveSsrcRemovedEvent -> mediaSsrcs.remove(event.ssrc)
-            is BandwidthEstimationChangedEvent -> onBandwidthChanged(event.bandwidthBps)
         }
     }
 

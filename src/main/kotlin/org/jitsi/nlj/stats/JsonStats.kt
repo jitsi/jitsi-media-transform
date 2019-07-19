@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package org.jitsi.nlj.rtcp;
+@file:JvmName("JsonStats")
 
-import org.jitsi.rtp.rtcp.*;
+package org.jitsi.nlj.stats
 
-/**
- * NOTE(brian): Java doesn't see default implementation interface methods when
- * written from kotlin, so this is implemented in java (which works for both
- * kotlin and java) because I got tired of adding no-op methods for one of
- * these methods as most listeners care about one but not the other
- */
-public interface RtcpListener {
-    default void rtcpPacketReceived(RtcpPacket packet, long receivedTime) {}
-    default void rtcpPacketSent(RtcpPacket packet) {}
+import org.jitsi.nlj.util.OrderedJsonObject
+
+fun DelayStats.toJson(): OrderedJsonObject {
+    return OrderedJsonObject().apply {
+        put("average_delay_ms", averageDelay)
+        put("max_delay_ms", maxDelayMs)
+    }
 }
-
