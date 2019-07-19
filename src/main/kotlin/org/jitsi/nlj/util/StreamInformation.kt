@@ -109,16 +109,13 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
 
     override fun addRtpPayloadType(payloadType: PayloadType) {
         _rtpPayloadTypes[payloadType.pt] = payloadType
-        if (payloadType is RtxPayloadType) {
-            if (!_supportsRtx) {
-                logger.cdebug { "$id RTX payload type signaled, enabling RTX probing" }
-            }
+        if (!_supportsRtx && payloadType is RtxPayloadType) {
+            logger.cdebug { "$id RTX payload type signaled, enabling RTX probing" }
             _supportsRtx = true
         }
-        if (payloadType.rtcpFeedbackSet.supportsPli()) {
-            if (!_supportsPli) {
-                logger.cdebug { "$id PLI support signaled for payload type $payloadType" }
-            }
+        if (!_supportsPli && payloadType.rtcpFeedbackSet.supportsPli()) {
+            logger.cdebug { "$id PLI support signaled for payload type $payloadType" }
+            _supportsPli = true
         }
     }
 
