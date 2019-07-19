@@ -39,7 +39,7 @@ private class MyEntry<T, U>(
  * entry one by one.
  *
  * NOTE: It was considered to invoke the handlers outside of the lock, but doing so could
- * result in duplicate events being fired to the handler, so I kept them inside the lock.
+ * result in duplicate/out-of-order events being fired to the handler, so I kept them inside the lock.
  */
 class ObservableMap<T, U>(private val data: MutableMap<T, U> = mutableMapOf()) : MutableMap<T, U> by data {
     private val handlers: MutableList<MapEventHandler<T, U>> = CopyOnWriteArrayList()

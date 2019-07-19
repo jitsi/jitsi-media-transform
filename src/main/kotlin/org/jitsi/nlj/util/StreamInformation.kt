@@ -122,8 +122,9 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
     override fun clearRtpPayloadTypes() {
         _rtpPayloadTypes.clear()
         _supportsRtx = false
-        _supportsPli = false
         logger.cdebug { "$id RTX payload type removed, disabling RTX probing" }
+        _supportsPli = false
+        logger.cdebug { "$id PLI payload type removed, disabling PLI support" }
     }
 
     override fun onRtpPayloadTypeEvent(handler: RtpPayloadTypeEventHandler) =
