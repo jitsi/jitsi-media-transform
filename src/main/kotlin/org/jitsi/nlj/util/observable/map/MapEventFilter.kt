@@ -20,7 +20,7 @@ package org.jitsi.nlj.util.observable.map
  * Filters events from an [ObservableMap] except for those whose
  * key pass the given predicate.
  */
-abstract class MapEventKeyFilterHandler<T, U>(
+abstract class MapEventKeyFilter<T, U>(
     val keyPredicate: (T) -> Boolean
 ) {
     val mapEventHandler: MapEventHandler<T, U> = this.MapHandler()
@@ -54,7 +54,7 @@ abstract class MapEventKeyFilterHandler<T, U>(
  * Filters events from an [ObservableMap] except for those whose
  * value pass the given predicate.
  */
-abstract class MapEventValueFilterHandler<T, U>(
+abstract class MapEventValueFilter<T, U>(
     val valuePredicate: (U) -> Boolean
 ) {
     val mapEventHandler: MapEventHandler<T, U> = this.MapHandler()

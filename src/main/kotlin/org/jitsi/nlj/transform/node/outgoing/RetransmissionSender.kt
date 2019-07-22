@@ -24,7 +24,7 @@ import org.jitsi.nlj.rtp.RtxPacket
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
-import org.jitsi.nlj.util.observable.map.MapEventValueFilterHandler
+import org.jitsi.nlj.util.observable.map.MapEventValueFilter
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
@@ -54,7 +54,7 @@ class RetransmissionSender(
     private var numRetransmittedPlainPackets = 0
 
     init {
-        val rtxPayloadTypeFilter = object : MapEventValueFilterHandler<Byte, PayloadType>({ it is RtxPayloadType }) {
+        val rtxPayloadTypeFilter = object : MapEventValueFilter<Byte, PayloadType>({ it is RtxPayloadType }) {
             override fun entryAdded(key: Byte, value: PayloadType) =
                 setRtxPayloadTypeAssociation(value as RtxPayloadType)
 

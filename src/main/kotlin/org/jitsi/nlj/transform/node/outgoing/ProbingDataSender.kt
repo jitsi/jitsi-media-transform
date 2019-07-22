@@ -30,7 +30,7 @@ import org.jitsi.nlj.util.PacketCache
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.getLogger
-import org.jitsi.nlj.util.observable.map.MapEventValueFilterHandler
+import org.jitsi.nlj.util.observable.map.MapEventValueFilter
 import org.jitsi.rtp.extensions.unsigned.toPositiveInt
 import org.jitsi.rtp.rtp.RtpHeader
 import org.jitsi.utils.MediaType
@@ -66,7 +66,7 @@ class ProbingDataSender(
     private var numProbingBytesSentDummyData: Int = 0
 
     init {
-        val videoPayloadTypeFilter = object : MapEventValueFilterHandler<Byte, PayloadType>({ it is VideoPayloadType }) {
+        val videoPayloadTypeFilter = object : MapEventValueFilter<Byte, PayloadType>({ it is VideoPayloadType }) {
             override fun entryAdded(key: Byte, value: PayloadType) {
                 videoPayloadTypes[key.toInt()] = (value as VideoPayloadType)
             }
