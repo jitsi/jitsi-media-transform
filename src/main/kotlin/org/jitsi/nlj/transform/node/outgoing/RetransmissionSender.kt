@@ -25,7 +25,6 @@ import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.observable.map.MapEventValueFilterHandler
-import org.jitsi.nlj.util.observable.map.ObservableMap
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
@@ -53,8 +52,6 @@ class RetransmissionSender(
     private var numRetransmissionsRequested = 0
     private var numRetransmittedRtxPackets = 0
     private var numRetransmittedPlainPackets = 0
-
-    private val dummyMap = ObservableMap<Byte, PayloadType>()
 
     init {
         object : MapEventValueFilterHandler<Byte, PayloadType>({ it is RtxPayloadType }) {
