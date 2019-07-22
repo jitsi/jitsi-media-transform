@@ -53,7 +53,7 @@ class RtxHandler(
     private val associatedSsrcs: ConcurrentHashMap<Long, Long> = ConcurrentHashMap()
 
     init {
-        object : MapEventValueFilterHandler<Byte, PayloadType>({ it is RtxPayloadType }) {
+        val rtxPayloadTypeFilter = object : MapEventValueFilterHandler<Byte, PayloadType>({ it is RtxPayloadType }) {
             override fun entryAdded(key: Byte, value: PayloadType) =
                 setRtxPayloadTypeAssociation(value as RtxPayloadType)
 
@@ -63,7 +63,9 @@ class RtxHandler(
             override fun entryRemoved(key: Byte) {
                 associatedPayloadTypes.remove(key.toInt())
             }
-        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.mapEventHandler) }
+        }
+
+        streamInformationStore.onRtpPayloadTypeEvent(rtxPayloadTypeFilter.mapEventHandler)
     }
 
     private fun setRtxPayloadTypeAssociation(rtxPayloadType: RtxPayloadType) {

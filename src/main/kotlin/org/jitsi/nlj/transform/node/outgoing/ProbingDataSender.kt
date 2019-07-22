@@ -66,7 +66,7 @@ class ProbingDataSender(
     private var numProbingBytesSentDummyData: Int = 0
 
     init {
-        object : MapEventValueFilterHandler<Byte, PayloadType>({ it is VideoPayloadType }) {
+        val videoPayloadTypeFilter = object : MapEventValueFilterHandler<Byte, PayloadType>({ it is VideoPayloadType }) {
             override fun entryAdded(key: Byte, value: PayloadType) {
                 videoPayloadTypes[key.toInt()] = (value as VideoPayloadType)
             }
@@ -78,7 +78,8 @@ class ProbingDataSender(
             override fun entryRemoved(key: Byte) {
                 videoPayloadTypes.remove(key.toInt())
             }
-        }.apply { streamInformationStore.onRtpPayloadTypeEvent(this.mapEventHandler) }
+        }
+        streamInformationStore.onRtpPayloadTypeEvent(videoPayloadTypeFilter.mapEventHandler)
     }
 
     fun sendProbing(mediaSsrc: Long, numBytes: Int): Int {
