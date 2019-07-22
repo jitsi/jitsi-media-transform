@@ -54,7 +54,8 @@ class KeyframeRequester(
     // our code which requests FIR and PLI is not payload-type aware. So
     // until this changes we will just check if any of the PTs supports
     // FIR and PLI. This means that we effectively always assume support for FIR.
-    private val hasFirSupport: Boolean = true
+    // TODO: move this to stream information store
+    private val supportsFir: Boolean = true
     private var waitIntervalMs = DEFAULT_WAIT_INTERVAL_MS
 
     // Stats
@@ -102,7 +103,7 @@ class KeyframeRequester(
                 sourceSsrc = packet.mediaSenderSsrc
                 canSend = canSendKeyframeRequest(sourceSsrc, now)
                 // When both are supported, we favor generating a PLI rather than forwarding a FIR
-                forward = canSend && hasFirSupport && !streamInformationStore.supportsPli
+                forward = canSend && supportsFir && !streamInformationStore.supportsPli
                 if (forward) {
                     // When we forward a FIR we need to update the seq num.
                     packet.seqNum = firCommandSequenceNumber.incrementAndGet()
@@ -127,7 +128,7 @@ class KeyframeRequester(
      * Returns 'true' when at least one method is supported, AND we haven't sent a request very recently.
      */
     private fun canSendKeyframeRequest(mediaSsrc: Long, nowMs: Long): Boolean {
-        if (!streamInformationStore.supportsPli && !hasFirSupport) {
+        if (!streamInformationStore.supportsPli && !supportsFir) {
             return false
         }
         synchronized(keyframeRequestsSyncRoot) {
@@ -160,7 +161,7 @@ class KeyframeRequester(
                 numPlisGenerated++
                 RtcpFbPliPacketBuilder(mediaSourceSsrc = mediaSsrc).build()
             }
-            hasFirSupport -> {
+            supportsFir -> {
                 numFirsGenerated++
                 RtcpFbFirPacketBuilder(
                     mediaSenderSsrc = mediaSsrc,
@@ -189,7 +190,7 @@ class KeyframeRequester(
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
             addBoolean("supportsPli", streamInformationStore.supportsPli)
-            addBoolean("supportFir", hasFirSupport)
+            addBoolean("supportsFir", supportsFir)
             addString("waitIntervalMs", waitIntervalMs.toString()) // use string to prevent aggregation
             addNumber("numApiRequests", numApiRequests)
             addNumber("numApiRequestsDropped", numApiRequestsDropped)
