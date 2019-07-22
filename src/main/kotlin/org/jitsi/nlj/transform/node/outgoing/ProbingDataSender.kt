@@ -195,7 +195,7 @@ class ProbingDataSender(
         return NodeStatsBlock("Probing data sender").apply {
             addNumber("num_bytes_of_probing_data_sent_as_rtx", numProbingBytesSentRtx)
             addNumber("num_bytes_of_probing_data_sent_as_dummy", numProbingBytesSentDummyData)
-            addBoolean("rtxSupported", streamInformationStore.supportsRtx)
+            addBoolean("supportsRtx", streamInformationStore.supportsRtx)
             addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
             addString("currDummyTimestamp", currDummyTimestamp.toString())
             addString("currDummySeqNum", currDummySeqNum.toString())
