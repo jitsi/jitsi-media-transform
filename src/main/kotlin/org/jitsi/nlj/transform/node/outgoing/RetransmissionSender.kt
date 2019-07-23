@@ -18,17 +18,13 @@ package org.jitsi.nlj.transform.node.outgoing
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SsrcAssociationEvent
-import org.jitsi.nlj.format.PayloadType
-import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.RtxPacket
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
+import org.jitsi.nlj.transform.node.RtxPayloadTypeStore
 import org.jitsi.nlj.transform.node.TransformerNode
-import org.jitsi.nlj.util.observable.map.MapEventValueFilter
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.cerror
-import org.jitsi.rtp.extensions.unsigned.toPositiveInt
 import org.jitsi.rtp.rtp.RtpPacket
 import java.util.concurrent.ConcurrentHashMap
 
@@ -36,13 +32,13 @@ class RetransmissionSender(
     streamInformationStore: ReadOnlyStreamInformationStore
 ) : TransformerNode("Retransmission sender") {
     /**
-     * Maps the video payload types to their RTX payload types
-     */
-    private val associatedPayloadTypes: ConcurrentHashMap<Int, Int> = ConcurrentHashMap()
-    /**
      * Map the original media ssrcs to their RTX stream ssrcs
      */
+    // TODO: this information should probably live alongside the associated payload types
+    // in rtxpayloadstore (probably with a different name)
     private val associatedSsrcs: ConcurrentHashMap<Long, Long> = ConcurrentHashMap()
+
+    private val rtxPayloadTypeStore = RtxPayloadTypeStore(logger)
 
     /**
      * A map of rtx stream ssrc to the current sequence number for that stream
@@ -54,29 +50,7 @@ class RetransmissionSender(
     private var numRetransmittedPlainPackets = 0
 
     init {
-        val rtxPayloadTypeFilter = object : MapEventValueFilter<Byte, PayloadType>({ it is RtxPayloadType }) {
-            override fun entryAdded(key: Byte, value: PayloadType) =
-                setRtxPayloadTypeAssociation(value as RtxPayloadType)
-
-            override fun entryUpdated(key: Byte, newValue: PayloadType) =
-                setRtxPayloadTypeAssociation(newValue as RtxPayloadType)
-
-            override fun entryRemoved(key: Byte) {
-                associatedPayloadTypes.remove(key.toInt())
-            }
-        }
-        streamInformationStore.onRtpPayloadTypeEvent(rtxPayloadTypeFilter.mapEventHandler)
-    }
-
-    private fun setRtxPayloadTypeAssociation(rtxPayloadType: RtxPayloadType) {
-        rtxPayloadType.associatedPayloadType?.let { associatedPayloadType ->
-            associatedPayloadTypes[rtxPayloadType.pt.toInt()] = associatedPayloadType
-            logger.cdebug { "Associating RTX payload type ${rtxPayloadType.pt.toInt()} " +
-                "with primary $associatedPayloadType" }
-        } ?: run {
-            logger.cerror { "Unable to parse RTX associated payload type from payload " +
-                "type $rtxPayloadType" }
-        }
+        streamInformationStore.onRtpPayloadTypeEvent(rtxPayloadTypeStore.mapEventHandler)
     }
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
@@ -84,7 +58,8 @@ class RetransmissionSender(
         numRetransmissionsRequested++
         // note(george) this instance gets notified about both remote/local ssrcs (see Transeiver.addSsrcAssociation)
         // so, in the case of firefox, we end up having rtx (associated) ssrcs but no rtx (associated) payload type.
-        val rtxPt = associatedPayloadTypes[rtpPacket.payloadType.toPositiveInt()] ?: return retransmitPlain(packetInfo)
+        val rtxPt =
+            rtxPayloadTypeStore.getOriginalPayloadType(rtpPacket.payloadType) ?: return retransmitPlain(packetInfo)
         val rtxSsrc = associatedSsrcs[rtpPacket.ssrc] ?: return retransmitPlain(packetInfo)
 
         return retransmitRtx(packetInfo, rtxPt, rtxSsrc)
@@ -140,6 +115,7 @@ class RetransmissionSender(
             addNumber("num_retransmissions_requested", numRetransmissionsRequested)
             addNumber("num_retransmissions_rtx_sent", numRetransmittedRtxPackets)
             addNumber("num_retransmissions_plain_sent", numRetransmittedPlainPackets)
+            addString("rtx_payload_type_associations", rtxPayloadTypeStore.associatedPayloadTypes.toString())
         }
     }
 }
