@@ -78,13 +78,11 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
 
-    private var _supportsRtx: Boolean = false
-    override val supportsRtx: Boolean
-        get() = _supportsRtx
+    override var supportsRtx: Boolean = false
+        private set
 
-    private var _supportsPli: Boolean = false
-    override val supportsPli: Boolean
-        get() = _supportsPli
+    override var supportsPli: Boolean = false
+        private set
 
     override fun addRtpExtensionMapping(rtpExtension: RtpExtension) {
         synchronized(extensionsLock) {
@@ -109,21 +107,21 @@ class StreamInformationStoreImpl(val id: String) : StreamInformationStore {
 
     override fun addRtpPayloadType(payloadType: PayloadType) {
         _rtpPayloadTypes[payloadType.pt] = payloadType
-        if (!_supportsRtx && payloadType is RtxPayloadType) {
+        if (!supportsRtx && payloadType is RtxPayloadType) {
             logger.cdebug { "$id RTX payload type signaled, enabling RTX probing" }
-            _supportsRtx = true
+            supportsRtx = true
         }
-        if (!_supportsPli && payloadType.rtcpFeedbackSet.supportsPli()) {
+        if (!supportsPli && payloadType.rtcpFeedbackSet.supportsPli()) {
             logger.cdebug { "$id PLI support signaled for payload type $payloadType" }
-            _supportsPli = true
+            supportsPli = true
         }
     }
 
     override fun clearRtpPayloadTypes() {
         _rtpPayloadTypes.clear()
-        _supportsRtx = false
+        supportsRtx = false
         logger.cdebug { "$id RTX payload type removed, disabling RTX probing" }
-        _supportsPli = false
+        supportsPli = false
         logger.cdebug { "$id PLI payload type removed, disabling PLI support" }
     }
 
