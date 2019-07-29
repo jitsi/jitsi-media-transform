@@ -53,6 +53,9 @@ class RetransmissionSender(
         streamInformationStore.onRtpPayloadTypeEvent(rtxPayloadTypeStore.mapEventHandler)
     }
 
+    /**
+     * Transform an original RTP packet into an RTX-encapsulated form of that packet.
+     */
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
         numRetransmissionsRequested++

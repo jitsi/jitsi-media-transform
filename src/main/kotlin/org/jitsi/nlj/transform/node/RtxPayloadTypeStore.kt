@@ -68,6 +68,10 @@ class RtxPayloadTypeStore(
     fun isRtx(ptId: Int): Boolean =
         _associatedPayloadTypes.containsKey(ptId)
 
-    fun getOriginalPayloadType(ptId: Int): Int? =
-        _associatedPayloadTypes[ptId]
+    fun getOriginalPayloadType(ptId: Int): Int? {
+        return _associatedPayloadTypes.entries.asSequence()
+            .filter { it.value == ptId }
+            .map { it.key }
+            .firstOrNull()
+    }
 }
