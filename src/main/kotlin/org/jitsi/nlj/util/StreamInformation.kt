@@ -17,7 +17,6 @@
 package org.jitsi.nlj.util
 
 import org.jitsi.nlj.format.PayloadType
-import org.jitsi.nlj.format.supportsFir
 import org.jitsi.nlj.format.supportsPli
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
@@ -35,6 +34,8 @@ typealias RtpExtensionHandler = (Int?) -> Unit
 
 typealias RtpPayloadTypesChangedHandler = (Map<Byte, PayloadType>) -> Unit
 
+typealias SsrcAssociationHandler = (SsrcAssociation) -> Unit
+
 /**
  * Makes information about stream metadata (RTP extensions, payload types,
  * etc.) available and allows interested parties to add handlers for when certain
@@ -46,6 +47,8 @@ interface ReadOnlyStreamInformationStore {
 
     val rtpPayloadTypes: Map<Byte, PayloadType>
     fun onRtpPayloadTypesChanged(handler: RtpPayloadTypesChangedHandler)
+
+    fun onSsrcAssociationAdded(handler: SsrcAssociationHandler)
 
     val supportsPli: Boolean
     val supportsFir: Boolean
@@ -60,6 +63,8 @@ interface StreamInformationStore : ReadOnlyStreamInformationStore {
 
     fun addRtpPayloadType(payloadType: PayloadType)
     fun clearRtpPayloadTypes()
+
+    fun addSsrcAssociation(ssrcAssociation: SsrcAssociation)
 }
 
 class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
@@ -75,6 +80,10 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
     private val _rtpPayloadTypes: MutableMap<Byte, PayloadType> = ConcurrentHashMap()
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
+
+    private val ssrcAssociationsLock = Any()
+    private val ssrcAssociationHandlers = mutableListOf<SsrcAssociationHandler>()
+    private val ssrcAssociations = mutableListOf<SsrcAssociation>()
 
     override var supportsPli: Boolean = false
         private set
@@ -127,6 +136,20 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         synchronized(payloadTypesLock) {
             payloadTypeHandlers.add(handler)
             handler(_rtpPayloadTypes)
+        }
+    }
+
+    override fun addSsrcAssociation(ssrcAssociation: SsrcAssociation) {
+        synchronized(ssrcAssociationsLock) {
+            ssrcAssociations.add(ssrcAssociation)
+            ssrcAssociationHandlers.forEach { it(ssrcAssociation) }
+        }
+    }
+
+    override fun onSsrcAssociationAdded(handler: SsrcAssociationHandler) {
+        synchronized(ssrcAssociationsLock) {
+            ssrcAssociationHandlers.add(handler)
+            ssrcAssociations.forEach(handler)
         }
     }
 

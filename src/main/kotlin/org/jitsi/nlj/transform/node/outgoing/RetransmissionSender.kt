@@ -15,9 +15,7 @@
  */
 package org.jitsi.nlj.transform.node.outgoing
 
-import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.SsrcAssociationEvent
 import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.RtxPacket
 import org.jitsi.nlj.rtp.SsrcAssociationType
@@ -58,6 +56,13 @@ class RetransmissionSender(
                 .map {
                     origPtToRtxPayloadType[it.associatedPayloadType] = it
                 }
+        }
+        streamInformationStore.onSsrcAssociationAdded { ssrcAssociation ->
+            if (ssrcAssociation.type == SsrcAssociationType.RTX) {
+                logger.cdebug { "${hashCode()} associating RTX ssrc " +
+                    "${ssrcAssociation.secondarySsrc} with primary ${ssrcAssociation.primarySsrc}" }
+                associatedSsrcs[ssrcAssociation.primarySsrc] = ssrcAssociation.secondarySsrc
+            }
         }
     }
 
@@ -105,19 +110,6 @@ class RetransmissionSender(
         numRetransmittedPlainPackets++
         // No work needed
         return packetInfo
-    }
-
-    override fun handleEvent(event: Event) {
-        when (event) {
-            is SsrcAssociationEvent -> {
-                if (event.type == SsrcAssociationType.RTX) {
-                    logger.cdebug { "${hashCode()} associating RTX ssrc " +
-                            "${event.secondarySsrc} with primary ${event.primarySsrc}" }
-                    associatedSsrcs[event.primarySsrc] = event.secondarySsrc
-                }
-            }
-        }
-        super.handleEvent(event)
     }
 
     override fun getNodeStats(): NodeStatsBlock {

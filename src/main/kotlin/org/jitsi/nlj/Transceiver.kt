@@ -26,6 +26,7 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.stats.PacketIOActivity
 import org.jitsi.nlj.stats.TransceiverStats
 import org.jitsi.nlj.transform.NodeStatsProducer
+import org.jitsi.nlj.util.SsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
@@ -232,9 +233,7 @@ class Transceiver(
     // code care about one or the other, but currently there is no issue treating them the same.
     fun addSsrcAssociation(primarySsrc: Long, secondarySsrc: Long, type: SsrcAssociationType) {
         logger.cdebug { "Adding SSRC association: $primarySsrc <-> $secondarySsrc ($type)" }
-        val ssrcAssociationEvent = SsrcAssociationEvent(primarySsrc, secondarySsrc, type)
-        rtpReceiver.handleEvent(ssrcAssociationEvent)
-        rtpSender.handleEvent(ssrcAssociationEvent)
+        streamInformationStore.addSsrcAssociation(SsrcAssociation(primarySsrc, secondarySsrc, type))
     }
 
     fun setSrtpInformation(chosenSrtpProtectionProfile: Int, tlsRole: TlsRole, keyingMaterial: ByteArray) {
