@@ -25,21 +25,28 @@ class SsrcAssociationStore(
     private val name: String = "SSRC Associations"
 ) : NodeStatsProducer {
     private val ssrcAssociations: MutableList<SsrcAssociation> = CopyOnWriteArrayList()
+    /**
+     * The SSRC associations indexed by the primary SSRC.  Since an SSRC may have
+     * multiple secondary SSRC mappings, the primary SSRC maps to a list of its
+     * SSRC associations
+     */
+    private var ssrcAssociationsByPrimarySsrc = mapOf<Long, List<SsrcAssociation>>()
+    private var ssrcAssociationsBySecondarySsrc = mapOf<Long, SsrcAssociation>()
 
     fun addAssociation(ssrcAssociation: SsrcAssociation) {
         ssrcAssociations.add(ssrcAssociation)
+        rebuildMaps()
     }
 
-    // TODO: if either of these methods are too slow, we'll need
-    // to hold multiple data structures (one primary -> secondary
-    // and another secondary -> primary
-    fun getPrimarySsrc(secondarySsrc: Long): Long? {
-        return ssrcAssociations.find { it.secondarySsrc == secondarySsrc }?.primarySsrc
+    private fun rebuildMaps() {
+        ssrcAssociationsByPrimarySsrc = ssrcAssociations.groupBy(SsrcAssociation::primarySsrc)
+        ssrcAssociationsBySecondarySsrc = ssrcAssociations.associateBy(SsrcAssociation::secondarySsrc)
     }
 
-    fun getSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long? {
-        return ssrcAssociations.find { it.type == associationType && it.primarySsrc == primarySsrc }?.secondarySsrc
-    }
+    fun getPrimarySsrc(secondarySsrc: Long): Long? = ssrcAssociationsBySecondarySsrc[secondarySsrc]?.primarySsrc
+
+    fun getSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long? =
+        ssrcAssociationsByPrimarySsrc[primarySsrc]?.find { it.type == associationType }?.secondarySsrc
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock(name).apply {
         addString("SSRC associations", ssrcAssociations.toString())
