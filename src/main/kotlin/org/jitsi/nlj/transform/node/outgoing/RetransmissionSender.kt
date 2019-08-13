@@ -28,17 +28,12 @@ import org.jitsi.rtp.rtp.RtpPacket
 import java.util.concurrent.ConcurrentHashMap
 
 class RetransmissionSender(
-    streamInformationStore: ReadOnlyStreamInformationStore
+    private val streamInformationStore: ReadOnlyStreamInformationStore
 ) : TransformerNode("Retransmission sender") {
     /**
      * Maps an original payload type (Int) to its [RtxPayloadType]
      */
     private val origPtToRtxPayloadType: MutableMap<Int, RtxPayloadType> = ConcurrentHashMap<Int, RtxPayloadType>()
-    /**
-     * Map the original media ssrcs to their RTX stream ssrcs
-     */
-    private val associatedSsrcs: ConcurrentHashMap<Long, Long> = ConcurrentHashMap()
-
     /**
      * A map of rtx stream ssrc to the current sequence number for that stream
      */
@@ -57,13 +52,6 @@ class RetransmissionSender(
                     origPtToRtxPayloadType[it.associatedPayloadType] = it
                 }
         }
-        streamInformationStore.onSsrcAssociationAdded { ssrcAssociation ->
-            if (ssrcAssociation.type == SsrcAssociationType.RTX) {
-                logger.cdebug { "${hashCode()} associating RTX ssrc " +
-                    "${ssrcAssociation.secondarySsrc} with primary ${ssrcAssociation.primarySsrc}" }
-                associatedSsrcs[ssrcAssociation.primarySsrc] = ssrcAssociation.secondarySsrc
-            }
-        }
     }
 
     /**
@@ -75,7 +63,7 @@ class RetransmissionSender(
         // note(george) this instance gets notified about both remote/local ssrcs (see Transeiver.addSsrcAssociation)
         // so, in the case of firefox, we end up having rtx (associated) ssrcs but no rtx (associated) payload type.
         val rtxPt = origPtToRtxPayloadType[rtpPacket.payloadType.toPositiveInt()] ?: return retransmitPlain(packetInfo)
-        val rtxSsrc = associatedSsrcs[rtpPacket.ssrc] ?: return retransmitPlain(packetInfo)
+        val rtxSsrc = streamInformationStore.getSecondarySsrc(rtpPacket.ssrc, SsrcAssociationType.RTX) ?: return retransmitPlain(packetInfo)
 
         return retransmitRtx(packetInfo, rtxPt.pt.toPositiveInt(), rtxSsrc)
     }
@@ -118,7 +106,6 @@ class RetransmissionSender(
             addNumber("num_retransmissions_rtx_sent", numRetransmittedRtxPackets)
             addNumber("num_retransmissions_plain_sent", numRetransmittedPlainPackets)
             addString("rtx_payload_types(orig -> rtx)", this@RetransmissionSender.origPtToRtxPayloadType.toString())
-            addString("rtx_ssrc_associations(orig -> rtx)", associatedSsrcs.toString())
         }
     }
 }

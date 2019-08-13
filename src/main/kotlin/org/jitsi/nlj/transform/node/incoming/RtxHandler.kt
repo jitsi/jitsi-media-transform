@@ -18,7 +18,6 @@ package org.jitsi.nlj.transform.node.incoming
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.RtxPacket
-import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
@@ -34,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap
  * https://tools.ietf.org/html/rfc4588
  */
 class RtxHandler(
-    streamInformationStore: ReadOnlyStreamInformationStore
+    private val streamInformationStore: ReadOnlyStreamInformationStore
 ) : TransformerNode("RTX handler") {
     private var numPaddingPacketsReceived = 0
     private var numRtxPacketsReceived = 0
@@ -44,10 +43,6 @@ class RtxHandler(
      * instance quickly via the Int RTX payload type in an incoming RTX packet.
      */
     private val rtxPtToRtxPayloadType = ConcurrentHashMap<Int, RtxPayloadType>()
-    /**
-     * Map the RTX stream ssrcs to their corresponding media ssrcs
-     */
-    private val associatedSsrcs: ConcurrentHashMap<Long, Long> = ConcurrentHashMap()
 
     init {
         streamInformationStore.onRtpPayloadTypesChanged { currentPayloadTypes ->
@@ -58,19 +53,12 @@ class RtxHandler(
                     rtxPtToRtxPayloadType[it.pt.toPositiveInt()] = it
                 }
         }
-        streamInformationStore.onSsrcAssociationAdded { ssrcAssociation ->
-            if (ssrcAssociation.type == SsrcAssociationType.RTX) {
-                logger.cdebug { "Associating RTX ssrc ${ssrcAssociation.secondarySsrc} " +
-                    "with primary ${ssrcAssociation.primarySsrc}" }
-                associatedSsrcs[ssrcAssociation.secondarySsrc] = ssrcAssociation.primarySsrc
-            }
-        }
     }
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val rtxPayloadType = rtxPtToRtxPayloadType[rtpPacket.payloadType.toPositiveInt()] ?: return packetInfo
-        val originalSsrc = associatedSsrcs[rtpPacket.ssrc] ?: return packetInfo
+        val originalSsrc = streamInformationStore.getPrimarySsrc(rtpPacket.ssrc) ?: return packetInfo
         // We do this check only after verifying we determine it's an RTX packet by finding
         // the associated payload type and SSRC above
         if (rtpPacket.payloadLength - rtpPacket.paddingSize < 2) {
@@ -99,7 +87,6 @@ class RtxHandler(
             addNumber("num_rtx_packets_received", numRtxPacketsReceived)
             addNumber("num_padding_packets_received", numPaddingPacketsReceived)
             addString("rtx_payload_types", rtxPtToRtxPayloadType.values.toString())
-            addString("rtx_ssrc_associations(rtx -> orig)", associatedSsrcs.toString())
         }
     }
 

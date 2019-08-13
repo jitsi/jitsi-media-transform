@@ -20,6 +20,7 @@ import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.format.supportsPli
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
+import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
 import java.util.concurrent.ConcurrentHashMap
@@ -34,8 +35,6 @@ typealias RtpExtensionHandler = (Int?) -> Unit
 
 typealias RtpPayloadTypesChangedHandler = (Map<Byte, PayloadType>) -> Unit
 
-typealias SsrcAssociationHandler = (SsrcAssociation) -> Unit
-
 /**
  * Makes information about stream metadata (RTP extensions, payload types,
  * etc.) available and allows interested parties to add handlers for when certain
@@ -48,7 +47,8 @@ interface ReadOnlyStreamInformationStore {
     val rtpPayloadTypes: Map<Byte, PayloadType>
     fun onRtpPayloadTypesChanged(handler: RtpPayloadTypesChangedHandler)
 
-    fun onSsrcAssociationAdded(handler: SsrcAssociationHandler)
+    fun getPrimarySsrc(secondarySsrc: Long): Long?
+    fun getSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long?
 
     val supportsPli: Boolean
     val supportsFir: Boolean
@@ -81,9 +81,7 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
     override val rtpPayloadTypes: Map<Byte, PayloadType>
         get() = _rtpPayloadTypes
 
-    private val ssrcAssociationsLock = Any()
-    private val ssrcAssociationHandlers = mutableListOf<SsrcAssociationHandler>()
-    private val ssrcAssociations = mutableListOf<SsrcAssociation>()
+    private val ssrcAssociations = SsrcAssociationStore()
 
     override var supportsPli: Boolean = false
         private set
@@ -139,19 +137,14 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         }
     }
 
-    override fun addSsrcAssociation(ssrcAssociation: SsrcAssociation) {
-        synchronized(ssrcAssociationsLock) {
-            ssrcAssociations.add(ssrcAssociation)
-            ssrcAssociationHandlers.forEach { it(ssrcAssociation) }
-        }
-    }
+    override fun getPrimarySsrc(secondarySsrc: Long): Long? =
+        ssrcAssociations.getPrimarySsrc(secondarySsrc)
 
-    override fun onSsrcAssociationAdded(handler: SsrcAssociationHandler) {
-        synchronized(ssrcAssociationsLock) {
-            ssrcAssociationHandlers.add(handler)
-            ssrcAssociations.forEach(handler)
-        }
-    }
+    override fun getSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long? =
+        ssrcAssociations.getSecondarySsrc(primarySsrc, associationType)
+
+    override fun addSsrcAssociation(ssrcAssociation: SsrcAssociation) =
+        ssrcAssociations.addAssociation(ssrcAssociation)
 
     override fun getNodeStats(): NodeStatsBlock {
         return NodeStatsBlock("Stream Information Store").apply {
@@ -161,6 +154,7 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
             addBlock(NodeStatsBlock("RTP Payload Types").apply {
                 rtpPayloadTypes.forEach { addString(it.key.toString(), it.value.toString()) }
             })
+            addBlock(ssrcAssociations.getNodeStats())
             addBoolean("supports_pli", supportsPli)
             addBoolean("supports_fir", supportsFir)
         }

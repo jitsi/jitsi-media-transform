@@ -232,7 +232,7 @@ class Transceiver(
     // TODO(brian): we may want to handle local and remote ssrc associations differently, as different parts of the
     // code care about one or the other, but currently there is no issue treating them the same.
     fun addSsrcAssociation(primarySsrc: Long, secondarySsrc: Long, type: SsrcAssociationType) {
-        logger.cdebug { "Adding SSRC association: $primarySsrc <-> $secondarySsrc ($type)" }
+        logger.cdebug { "Adding SSRC association: $secondarySsrc -> $primarySsrc ($type)" }
         streamInformationStore.addSsrcAssociation(SsrcAssociation(primarySsrc, secondarySsrc, type))
     }
 
