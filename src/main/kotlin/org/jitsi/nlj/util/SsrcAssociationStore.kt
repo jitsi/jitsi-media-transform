@@ -48,6 +48,8 @@ class SsrcAssociationStore(
     fun getSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long? =
         ssrcAssociationsByPrimarySsrc[primarySsrc]?.find { it.type == associationType }?.secondarySsrc
 
+    fun isPrimarySsrc(ssrc: Long): Boolean = ssrcAssociationsByPrimarySsrc.containsKey(ssrc)
+
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock(name).apply {
         addString("SSRC associations", ssrcAssociations.toString())
     }
