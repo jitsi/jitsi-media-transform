@@ -22,7 +22,7 @@ import org.jitsi.nlj.SetLocalSsrcEvent
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
-import org.jitsi.nlj.util.SsrcAssociation
+import org.jitsi.nlj.util.RemoteSsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.test_utils.SourceAssociation
 import org.jitsi.test_utils.SrtpData
@@ -60,7 +60,7 @@ class SenderFactory {
             }
             ssrcAssociations.forEach {
                 streamInformationStore.addSsrcAssociation(
-                    SsrcAssociation(it.primarySsrc, it.secondarySsrc, it.associationType)
+                    RemoteSsrcAssociation(it.primarySsrc, it.secondarySsrc, it.associationType)
                 )
             }
 

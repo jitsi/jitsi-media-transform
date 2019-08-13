@@ -63,7 +63,7 @@ class RetransmissionSender(
         // note(george) this instance gets notified about both remote/local ssrcs (see Transeiver.addSsrcAssociation)
         // so, in the case of firefox, we end up having rtx (associated) ssrcs but no rtx (associated) payload type.
         val rtxPt = origPtToRtxPayloadType[rtpPacket.payloadType.toPositiveInt()] ?: return retransmitPlain(packetInfo)
-        val rtxSsrc = streamInformationStore.getSecondarySsrc(rtpPacket.ssrc, SsrcAssociationType.RTX) ?: return retransmitPlain(packetInfo)
+        val rtxSsrc = streamInformationStore.getRemoteSecondarySsrc(rtpPacket.ssrc, SsrcAssociationType.RTX) ?: return retransmitPlain(packetInfo)
 
         return retransmitRtx(packetInfo, rtxPt.pt.toPositiveInt(), rtxSsrc)
     }

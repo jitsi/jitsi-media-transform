@@ -58,7 +58,7 @@ class RtxHandler(
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val rtxPayloadType = rtxPtToRtxPayloadType[rtpPacket.payloadType.toPositiveInt()] ?: return packetInfo
-        val originalSsrc = streamInformationStore.getPrimarySsrc(rtpPacket.ssrc) ?: return packetInfo
+        val originalSsrc = streamInformationStore.getLocalPrimarySsrc(rtpPacket.ssrc) ?: return packetInfo
         // We do this check only after verifying we determine it's an RTX packet by finding
         // the associated payload type and SSRC above
         if (rtpPacket.payloadLength - rtpPacket.paddingSize < 2) {

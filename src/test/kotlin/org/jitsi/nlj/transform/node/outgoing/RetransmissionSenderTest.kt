@@ -26,7 +26,7 @@ import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
-import org.jitsi.nlj.util.SsrcAssociation
+import org.jitsi.nlj.util.RemoteSsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.rtp.rtp.RtpPacket
 
@@ -70,7 +70,7 @@ class RetransmissionSenderTest : ShouldSpec() {
             RtxPayloadType(rtxPayloadType.toByte(), mapOf("apt" to originalPayloadType.toString()))
         )
         streamInformationStore.addSsrcAssociation(
-            SsrcAssociation(originalSsrc, rtxSsrc, SsrcAssociationType.RTX)
+            RemoteSsrcAssociation(originalSsrc, rtxSsrc, SsrcAssociationType.RTX)
         )
     }
 
