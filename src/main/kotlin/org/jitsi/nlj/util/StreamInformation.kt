@@ -51,6 +51,7 @@ interface ReadOnlyStreamInformationStore {
     fun getLocalPrimarySsrc(secondarySsrc: Long): Long?
     fun getRemoteSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long?
 
+    val receiveSsrcs: Set<Long>
     /**
      * A list of all primary video SSRCs for which the endpoint associated
      * with this stream information store sends video (does not include
@@ -95,9 +96,11 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
     private val localSsrcAssociations = SsrcAssociationStore("Local SSRC Associations")
     private val remoteSsrcAssociations = SsrcAssociationStore("Remote SSRC Associations")
 
-    private val receiveSsrcs: MutableMap<MediaType, MutableSet<Long>> = ConcurrentHashMap()
+    private val _receiveSsrcs: MutableMap<MediaType, MutableSet<Long>> = ConcurrentHashMap()
+    override val receiveSsrcs: Set<Long>
+        get() = _receiveSsrcs.values.flatten().toSet()
     override val videoSsrcs: List<Long>
-        get() = receiveSsrcs[MediaType.VIDEO]?.filter { localSsrcAssociations.isPrimarySsrc(it) } ?: emptyList()
+        get() = _receiveSsrcs[MediaType.VIDEO]?.filter { localSsrcAssociations.isPrimarySsrc(it) } ?: emptyList()
 
     override var supportsPli: Boolean = false
         private set
@@ -170,11 +173,11 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
     }
 
     override fun addReceiveSsrc(ssrc: Long, mediaType: MediaType) {
-        receiveSsrcs.getOrPut(mediaType) { mutableSetOf() }.add(ssrc)
+        _receiveSsrcs.getOrPut(mediaType) { mutableSetOf() }.add(ssrc)
     }
 
     override fun removeReceiveSsrc(ssrc: Long) {
-        receiveSsrcs.values.forEach { it.remove(ssrc) }
+        _receiveSsrcs.values.forEach { it.remove(ssrc) }
     }
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("Stream Information Store").apply {
@@ -186,7 +189,7 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         })
         addBlock(localSsrcAssociations.getNodeStats())
         addBlock(remoteSsrcAssociations.getNodeStats())
-        addString("receive_ssrc", receiveSsrcs.toString())
+        addString("receive_ssrcs", _receiveSsrcs.toString())
         addString("primary_video_ssrcs", videoSsrcs.toString())
         addBoolean("supports_pli", supportsPli)
         addBoolean("supports_fir", supportsFir)
