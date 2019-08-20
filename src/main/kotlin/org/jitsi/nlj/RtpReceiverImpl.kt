@@ -81,7 +81,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     streamInformationStore: ReadOnlyStreamInformationStore,
     logLevelDelegate: Logger? = null
 ) : RtpReceiver() {
-    private val logContext = LogContext("$id rx")
+    private val logContext = LogContext("ep $id RX")
     private val logger = getLoggerWithContext(this.javaClass, logLevelDelegate, logContext)
     private var running: Boolean = true
     private val inputTreeRoot: Node
