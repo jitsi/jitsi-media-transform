@@ -26,12 +26,22 @@ abstract class SsrcAssociation(
     override fun toString(): String = "$secondarySsrc -> $primarySsrc ($type)"
 }
 
+/**
+ * A [LocalSsrcAssociation] is an SSRC association which belongs to
+ * the endpoint itself; i.e. the processor of a [LocalSsrcAssociation]
+ * is also the 'owner' of the SSRCs signaled in the association.
+ */
 class LocalSsrcAssociation(
     primarySsrc: Long,
     secondarySsrc: Long,
     type: SsrcAssociationType
 ) : SsrcAssociation(primarySsrc, secondarySsrc, type)
 
+/**
+ * A [RemoteSsrcAssociation] is an SSRC association which belongs to
+ * another endpoint; i.e. the processor of a [RemoteSsrcAssociation]
+ * does not 'own' the SSRCs signaled in the association.
+ */
 class RemoteSsrcAssociation(
     primarySsrc: Long,
     secondarySsrc: Long,
