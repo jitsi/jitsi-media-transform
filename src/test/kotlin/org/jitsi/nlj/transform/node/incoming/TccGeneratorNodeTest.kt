@@ -37,7 +37,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
         super.beforeSpec(spec)
         doNothing().whenever(streamInformationStore).onRtpExtensionMapping(
                 eq(RtpExtensionType.TRANSPORT_CC), setTccExtId.capture())
-        tccGenerator = TccGeneratorNode(onTccReady, streamInformationStore, clock)
+        tccGenerator = TccGeneratorNode("id", onTccReady, streamInformationStore, clock)
         setTccExtId.firstValue(tccExtensionId)
     }
 

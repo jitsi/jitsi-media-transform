@@ -35,6 +35,7 @@ import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 
 class RtcpTermination(
+    private val id: String,
     private val rtcpEventNotifier: RtcpEventNotifier
 ) : TransformerNode("RTCP termination") {
     private var packetReceiveCounts = mutableMapOf<String, Int>()
@@ -68,7 +69,7 @@ class RtcpTermination(
                     // notifyRtcpReceived below
                 }
                 else -> {
-                    logger.cinfo { "TODO: not yet handling RTCP packet of type ${rtcpPacket.javaClass}" }
+                    logger.cinfo { "TODO: $id not yet handling RTCP packet of type ${rtcpPacket.javaClass}" }
                 }
             }
             // TODO: keep an eye on if anything in here takes a while it could slow the packet pipeline down
