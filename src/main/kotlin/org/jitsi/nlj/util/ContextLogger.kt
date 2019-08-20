@@ -20,9 +20,10 @@ import org.jitsi.utils.logging.Logger
 
 class ContextLogger(
     name: String,
+    levelDelegate: Logger? = null,
     private val context: LogContext
 ) {
-    private val logger = Logger.getLogger(name)
+    private val logger = getLogger(name, levelDelegate)
 
     val isInfoEnabled: Boolean
         get() = logger.isInfoEnabled
