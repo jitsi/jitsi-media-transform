@@ -43,11 +43,11 @@ import org.jitsi.nlj.transform.node.incoming.VideoParser
 import org.jitsi.nlj.transform.node.incoming.Vp8Parser
 import org.jitsi.nlj.transform.packetPath
 import org.jitsi.nlj.transform.pipeline
+import org.jitsi.nlj.util.LogContext
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
-import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.getLogger
+import org.jitsi.nlj.util.getLoggerWithContext
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.util.RTCPUtils
 import org.jitsi.utils.logging.Logger
@@ -81,14 +81,15 @@ class RtpReceiverImpl @JvmOverloads constructor(
     streamInformationStore: ReadOnlyStreamInformationStore,
     logLevelDelegate: Logger? = null
 ) : RtpReceiver() {
-    private val logger = getLogger(classLogger, logLevelDelegate)
+    private val logContext = LogContext("$id rx")
+    private val logger = getLoggerWithContext(this.javaClass, logLevelDelegate, logContext)
     private var running: Boolean = true
     private val inputTreeRoot: Node
     private val incomingPacketQueue =
             PacketInfoQueue("rtp-receiver-incoming-packet-queue", executor, this::handleIncomingPacket)
     private val srtpDecryptWrapper = SrtpTransformerNode("SRTP Decrypt node")
     private val srtcpDecryptWrapper = SrtpTransformerNode("SRTCP Decrypt node")
-    private val tccGenerator = TccGeneratorNode(id, rtcpSender, streamInformationStore)
+    private val tccGenerator = TccGeneratorNode(id, rtcpSender, streamInformationStore, logContext = logContext)
     private val audioLevelReader = AudioLevelReader(streamInformationStore)
     private val silenceDiscarder = SilenceDiscarder(true)
     private val statsTracker = IncomingStatisticsTracker(streamInformationStore)
