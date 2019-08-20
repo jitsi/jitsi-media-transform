@@ -18,8 +18,11 @@ package org.jitsi.nlj.util
 
 import org.jitsi.utils.logging.Logger
 
-class ContextLogger(private val context: String) {
-    private val logger = Logger.getLogger(context)
+class ContextLogger(
+    name: String,
+    private val context: LogContext
+) {
+    private val logger = Logger.getLogger(name)
 
     val isInfoEnabled: Boolean
         get() = logger.isInfoEnabled
@@ -33,19 +36,15 @@ class ContextLogger(private val context: String) {
     val isTraceEnabled: Boolean
         get() = logger.isTraceEnabled
 
-    fun createSubcontext(context: String): ContextLogger {
-        return ContextLogger("${this.context} $context")
-    }
+    fun error(msg: String) = logger.error("$context $msg")
 
-    fun error(msg: String) = logger.error(msg)
+    fun warn(msg: String) = logger.warn("$context $msg")
 
-    fun warn(msg: String) = logger.warn(msg)
+    fun info(msg: String) = logger.info("$context $msg")
 
-    fun info(msg: String) = logger.info(msg)
+    fun debug(msg: String) = logger.debug("$context $msg")
 
-    fun debug(msg: String) = logger.debug(msg)
-
-    fun trace(msg: String) = logger.trace(msg)
+    fun trace(msg: String) = logger.trace("$context $msg")
 
     inline fun cinfo(msg: () -> String) {
         if (isInfoEnabled) {
@@ -73,5 +72,26 @@ class ContextLogger(private val context: String) {
         if (isTraceEnabled) {
             trace(msg())
         }
+    }
+}
+
+/**
+ * A [LogContext] contains information which will be logged with every
+ * statement.  For now it just includes a prefix, but could be extended
+ * to include values of variables contained in a map.
+ */
+data class LogContext(
+    val prefix: String
+) {
+    override fun toString(): String = prefix
+
+    fun createSubContext(newContext: LogContext) =
+        LogContext("$prefix ${newContext.prefix}")
+
+    fun createSubContext(newPrefix: String) =
+        LogContext("$prefix $newPrefix")
+
+    companion object {
+        val EMPTY = LogContext("")
     }
 }
