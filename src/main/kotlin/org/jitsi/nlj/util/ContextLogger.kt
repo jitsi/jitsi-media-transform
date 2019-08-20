@@ -84,13 +84,11 @@ class ContextLogger(
 data class LogContext(
     val prefix: String
 ) {
-    override fun toString(): String = prefix
-
-    fun createSubContext(newContext: LogContext) =
-        LogContext("$prefix ${newContext.prefix}")
+    private val formattedPrefix = "[$prefix]"
+    override fun toString(): String = formattedPrefix
 
     fun createSubContext(newPrefix: String) =
-        LogContext("$prefix $newPrefix")
+        LogContext("$prefix-$newPrefix")
 
     companion object {
         val EMPTY = LogContext("")
