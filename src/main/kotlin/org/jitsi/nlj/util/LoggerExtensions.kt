@@ -51,7 +51,11 @@ fun <T : Any> getLogger(forClass: Class<T>): Logger {
 }
 
 fun <T : Any> getLoggerWithContext(forClass: Class<T>, context: LogContext): ContextLogger {
-    return ContextLogger(forClass.name, context)
+    return ContextLogger(forClass.name, context = context)
+}
+
+fun <T : Any> getLoggerWithContext(forClass: Class<T>, levelDelegate: Logger?, context: LogContext): ContextLogger {
+    return ContextLogger(forClass.name, levelDelegate, context)
 }
 
 /**
@@ -62,6 +66,14 @@ fun <T : Any> getLogger(forClass: Class<T>, levelDelegate: Logger?): Logger {
         getLogger(getLogger(forClass), levelDelegate)
     } else {
         getLogger(forClass)
+    }
+}
+
+fun getLogger(name: String, levelDelegate: Logger?): Logger {
+    return if (levelDelegate != null) {
+        getLogger(Logger.getLogger(name), levelDelegate)
+    } else {
+        Logger.getLogger(name)
     }
 }
 
