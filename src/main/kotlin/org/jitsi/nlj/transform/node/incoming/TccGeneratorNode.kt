@@ -23,6 +23,7 @@ import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
+import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.isOlderThan
 import org.jitsi.nlj.util.milliseconds
 import org.jitsi.rtp.rtcp.RtcpPacket
@@ -54,6 +55,7 @@ private val NEVER = Instant.MIN
  * a TCC packet to send transmit to the sender.
  */
 class TccGeneratorNode(
+    private val id: String,
     private val onTccPacketReady: (RtcpPacket) -> Unit = {},
     streamInformation: ReadOnlyStreamInformationStore,
     private val clock: Clock = Clock.systemDefaultZone()
@@ -118,6 +120,8 @@ class TccGeneratorNode(
             mediaSourceSsrc = mediaSsrcs.firstOrNull() ?: -1L,
             feedbackPacketSeqNum = currTccSeqNum++
         )
+        logger.cdebug { "$id building TCC packet with media ssrc ${tccBuilder.mediaSourceSsrc} and" +
+            " seq num ${tccBuilder.feedbackPacketSeqNum}" }
         synchronized(lock) {
             // windowStartSeq is the first sequence number to include in the current feedback, but we may not have
             // received it so the base time shall be the time of the first received packet which will be included
@@ -139,11 +143,14 @@ class TccGeneratorNode(
             windowStartSeq = nextSequenceNumber
         }
 
+        logger.cdebug { "$id built TCC packet with ${tccBuilder.num_seq_no_} packets represented" }
+
         return tccBuilder.build()
     }
 
     private fun sendTcc(tccPacket: RtcpFbTccPacket) {
         onTccPacketReady(tccPacket)
+        logger.cdebug { "$id sent TCC packet with seq num ${tccPacket.feedbackSeqNum}" }
         numTccSent++
         lastTccSentTime = clock.instant()
         tccFeedbackBitrate.update(tccPacket.length, clock.millis())
