@@ -164,14 +164,11 @@ class Transceiver(
     fun addReceiveSsrc(ssrc: Long, mediaType: MediaType) {
         logger.cdebug { "${hashCode()} adding receive ssrc $ssrc of type $mediaType" }
         streamInformationStore.addReceiveSsrc(ssrc, mediaType)
-        rtpReceiver.handleEvent(ReceiveSsrcAddedEvent(ssrc))
-        // TODO: fire events to rtp sender as well
     }
 
     fun removeReceiveSsrc(ssrc: Long) {
         logger.cinfo { "Transceiver ${hashCode()} removing receive ssrc $ssrc" }
         streamInformationStore.removeReceiveSsrc(ssrc)
-        rtpReceiver.handleEvent(ReceiveSsrcRemovedEvent(ssrc))
     }
 
     /**
