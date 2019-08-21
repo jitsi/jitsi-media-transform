@@ -96,22 +96,11 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
     private val localSsrcAssociations = SsrcAssociationStore("Local SSRC Associations")
     private val remoteSsrcAssociations = SsrcAssociationStore("Remote SSRC Associations")
 
-    private val _receiveSsrcs: MutableMap<MediaType, MutableSet<Long>> = ConcurrentHashMap()
+    private val receiveSsrcStore = ReceiveSsrcStore(localSsrcAssociations)
     override val receiveSsrcs: Set<Long>
-        get() = _receiveSsrcs.values.flatten().toSet()
+        get() = receiveSsrcStore.receiveSsrcs
     override val videoSsrcs: Set<Long>
-        get() = _receiveSsrcs[MediaType.VIDEO]?.filter { localSsrcAssociations.isPrimarySsrc(it) }?.toSet() ?: emptySet()
-    // TODO(brian): I worry a bit about the performance of this.
-    val mediaSsrcs: Set<Long>
-        get() {
-            return _receiveSsrcs.entries
-                .asSequence()
-                .filter { it.key.isMedia() }
-                .map { it.value }
-                .flatten()
-                .filter { localSsrcAssociations.isPrimarySsrc(it) }
-                .toSet()
-        }
+        get() = receiveSsrcStore.primaryVideoSsrcs
 
     override var supportsPli: Boolean = false
         private set
@@ -183,13 +172,11 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         }
     }
 
-    override fun addReceiveSsrc(ssrc: Long, mediaType: MediaType) {
-        _receiveSsrcs.getOrPut(mediaType) { mutableSetOf() }.add(ssrc)
-    }
+    override fun addReceiveSsrc(ssrc: Long, mediaType: MediaType) =
+        receiveSsrcStore.addReceiveSsrc(ssrc, mediaType)
 
-    override fun removeReceiveSsrc(ssrc: Long) {
-        _receiveSsrcs.values.forEach { it.remove(ssrc) }
-    }
+    override fun removeReceiveSsrc(ssrc: Long) =
+        receiveSsrcStore.removeReceiveSsrc(ssrc)
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("Stream Information Store").apply {
         addBlock(NodeStatsBlock("RTP Extensions").apply {
@@ -200,8 +187,7 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         })
         addBlock(localSsrcAssociations.getNodeStats())
         addBlock(remoteSsrcAssociations.getNodeStats())
-        addString("receive_ssrcs", _receiveSsrcs.toString())
-        addString("primary_video_ssrcs", videoSsrcs.toString())
+        addBlock(receiveSsrcStore.getNodeStats())
         addBoolean("supports_pli", supportsPli)
         addBoolean("supports_fir", supportsFir)
     }
