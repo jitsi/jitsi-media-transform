@@ -57,7 +57,7 @@ interface ReadOnlyStreamInformationStore {
      * with this stream information store sends video (does not include
      * RTX)
      */
-    val videoSsrcs: List<Long>
+    val videoSsrcs: Set<Long>
 
     val supportsPli: Boolean
     val supportsFir: Boolean
@@ -99,8 +99,19 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
     private val _receiveSsrcs: MutableMap<MediaType, MutableSet<Long>> = ConcurrentHashMap()
     override val receiveSsrcs: Set<Long>
         get() = _receiveSsrcs.values.flatten().toSet()
-    override val videoSsrcs: List<Long>
-        get() = _receiveSsrcs[MediaType.VIDEO]?.filter { localSsrcAssociations.isPrimarySsrc(it) } ?: emptyList()
+    override val videoSsrcs: Set<Long>
+        get() = _receiveSsrcs[MediaType.VIDEO]?.filter { localSsrcAssociations.isPrimarySsrc(it) }?.toSet() ?: emptySet()
+    // TODO(brian): I worry a bit about the performance of this.
+    val mediaSsrcs: Set<Long>
+        get() {
+            return _receiveSsrcs.entries
+                .asSequence()
+                .filter { it.key.isMedia() }
+                .map { it.value }
+                .flatten()
+                .filter { localSsrcAssociations.isPrimarySsrc(it) }
+                .toSet()
+        }
 
     override var supportsPli: Boolean = false
         private set
@@ -194,4 +205,8 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         addBoolean("supports_pli", supportsPli)
         addBoolean("supports_fir", supportsFir)
     }
+}
+
+private fun MediaType.isMedia(): Boolean {
+    return this == MediaType.VIDEO || this == MediaType.AUDIO
 }
