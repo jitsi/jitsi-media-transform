@@ -51,13 +51,24 @@ interface ReadOnlyStreamInformationStore {
     fun getLocalPrimarySsrc(secondarySsrc: Long): Long?
     fun getRemoteSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long?
 
+    /**
+     * All signaled receive SSRCs
+     */
     val receiveSsrcs: Set<Long>
+
+    /**
+     * A list of all primary media (audio and video) SSRCs for which the
+     * endpoint associated with this stream information store sends video
+     * (does not include things like RTX)
+     */
+    val primaryMediaSsrcs: Set<Long>
+
     /**
      * A list of all primary video SSRCs for which the endpoint associated
      * with this stream information store sends video (does not include
      * RTX)
      */
-    val videoSsrcs: Set<Long>
+    val primaryVideoSsrcs: Set<Long>
 
     val supportsPli: Boolean
     val supportsFir: Boolean
@@ -99,7 +110,9 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
     private val receiveSsrcStore = ReceiveSsrcStore(localSsrcAssociations)
     override val receiveSsrcs: Set<Long>
         get() = receiveSsrcStore.receiveSsrcs
-    override val videoSsrcs: Set<Long>
+    override val primaryMediaSsrcs: Set<Long>
+        get() = receiveSsrcStore.primaryMediaSsrcs
+    override val primaryVideoSsrcs: Set<Long>
         get() = receiveSsrcStore.primaryVideoSsrcs
 
     override var supportsPli: Boolean = false
