@@ -141,6 +141,10 @@ class SrtpUtil {
                 srtpProfileInformation.cipherSaltLength
             )
 
+            /* To support RetransmissionSender.retransmitPlain, we need to allow send-side SRTP replay. */
+            /* TODO: enable this only in cases where we actually need to use retransmitPlain? */
+            srtpPolicy.isSendReplayEnabled = true
+
             val clientSrtpContextFactory = SrtpContextFactory(
                 tlsRole == TlsRole.CLIENT,
                 clientWriteSrtpMasterKey,
