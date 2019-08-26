@@ -39,7 +39,7 @@ class SsrcAssociationStore(
 
     /**
      * Each time an association is added, we want to invoke the handlers
-     * and each time a handler is added, want to invoke it will all existing
+     * and each time a handler is added, want to invoke it with all existing
      * associations.  In order to make each of those operations a single,
      * atomic operation, we use this lock to synchronize them.
      */
