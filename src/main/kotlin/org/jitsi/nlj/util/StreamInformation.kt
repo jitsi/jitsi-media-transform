@@ -205,7 +205,3 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         addBoolean("supports_fir", supportsFir)
     }
 }
-
-private fun MediaType.isMedia(): Boolean {
-    return this == MediaType.VIDEO || this == MediaType.AUDIO
-}
