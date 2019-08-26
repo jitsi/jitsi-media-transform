@@ -26,11 +26,10 @@ import org.jitsi.nlj.stats.PacketIOActivity
 import org.jitsi.nlj.stats.TransceiverStats
 import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.LocalSsrcAssociation
+import org.jitsi.nlj.util.LogContext
 import org.jitsi.nlj.util.SsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
-import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.cinfo
-import org.jitsi.nlj.util.getLogger
+import org.jitsi.nlj.util.getLoggerWithContext
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.concurrent.RecurringRunnableExecutor
 import org.jitsi.utils.logging.DiagnosticContext
@@ -68,7 +67,9 @@ class Transceiver(
     diagnosticContext: DiagnosticContext,
     logLevelDelegate: Logger? = null
 ) : Stoppable, NodeStatsProducer {
-    private val logger = getLogger(this.javaClass, logLevelDelegate)
+    private val logContext = LogContext("ep $id")
+    // private val logger = getLogger(this.javaClass, logLevelDelegate)
+    private val logger = getLoggerWithContext(this.javaClass, logLevelDelegate, logContext)
     val packetIOActivity = PacketIOActivity()
     private val endpointConnectionStats = EndpointConnectionStats()
     private val streamInformationStore = StreamInformationStoreImpl()
@@ -107,6 +108,7 @@ class Transceiver(
             backgroundExecutor,
             { rtpSender.getPacketStreamStats().bitrate },
             streamInformationStore,
+            logContext,
             logLevelDelegate
         )
 

@@ -79,9 +79,10 @@ class RtpReceiverImpl @JvmOverloads constructor(
      */
     getSendBitrate: () -> Long,
     streamInformationStore: ReadOnlyStreamInformationStore,
+    parentLogContext: LogContext = LogContext.EMPTY,
     logLevelDelegate: Logger? = null
 ) : RtpReceiver() {
-    private val logContext = LogContext("ep $id RX")
+    private val logContext = parentLogContext.createSubContext("RX")
     private val logger = getLoggerWithContext(this.javaClass, logLevelDelegate, logContext)
     private var running: Boolean = true
     private val inputTreeRoot: Node
@@ -98,7 +99,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val rtcpTermination = RtcpTermination(id, rtcpEventNotifier)
 
     companion object {
-        private val classLogger: Logger = Logger.getLogger(this::class.java)
         val queueErrorCounter = CountingErrorHandler()
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP receiver incoming queue"
@@ -126,7 +126,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     }
 
     init {
-        logger.cdebug { "Receiver ${this.hashCode()} using executor ${executor.hashCode()}" }
+        logger.cdebug { "using executor ${executor.hashCode()}" }
         rtcpEventNotifier.addRtcpEventListener(rtcpRrGenerator)
 
         incomingPacketQueue.setErrorHandler(queueErrorCounter)
