@@ -66,7 +66,6 @@ class TccGeneratorNode(
         streamInformation.onRtpExtensionMapping(TRANSPORT_CC) {
             tccExtensionId = it
         }
-        println("tcc genereator logger level is ${logger.level}")
     }
 
     override fun observe(packetInfo: PacketInfo) {
