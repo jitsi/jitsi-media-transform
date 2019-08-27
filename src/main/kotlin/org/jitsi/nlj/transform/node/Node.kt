@@ -25,11 +25,11 @@ import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.transform.NodeVisitor
 import org.jitsi.nlj.transform.node.debug.PayloadVerificationPlugin
 import org.jitsi.nlj.util.BufferPool
-import org.jitsi.nlj.util.LogContext
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.addMbps
 import org.jitsi.nlj.util.addRatio
-import org.jitsi.nlj.util.getLoggerWithContext
+import org.jitsi.nlj.util.getLogger
+import org.jitsi.utils.logging2.Logger
 import org.json.simple.JSONObject
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -44,10 +44,13 @@ import kotlin.streams.toList
  * 2) Adding and removing parent nodes
  * 3) Propagating [visit] calls
  *
+ * Note that the [logger] param passed here is the logger which will
+ * be used directly (not a parent logger from which a child logger
+ * will be created).
  */
 sealed class Node(
     var name: String,
-    val logContext: LogContext = LogContext.EMPTY
+    logger: Logger? = null
 ) : PacketHandler, EventHandler, NodeStatsProducer, Stoppable {
 
     private var nextNode: Node? = null
@@ -56,7 +59,7 @@ sealed class Node(
     protected val nodeEntryString = "Entered node $name"
     protected val nodeExitString = "Exited node $name"
 
-    protected val logger = getLoggerWithContext(this.javaClass, logContext)
+    protected val logger: Logger = logger ?: getLogger(this::class)
 
     open fun visit(visitor: NodeVisitor) {
         visitor.visit(this)
@@ -150,8 +153,8 @@ sealed class Node(
  */
 sealed class StatsKeepingNode(
     name: String,
-    logContext: LogContext = LogContext.EMPTY
-) : Node(name, logContext) {
+    logger: Logger? = null
+) : Node(name, logger) {
     /**
      * The time at which processing of the currently processed packet started (in nanos).
      */
@@ -331,8 +334,8 @@ sealed class StatsKeepingNode(
  */
 abstract class TransformerNode(
     name: String,
-    logContext: LogContext = LogContext.EMPTY
-) : StatsKeepingNode(name, logContext) {
+    logger: Logger? = null
+) : StatsKeepingNode(name, logger) {
 
     protected abstract fun transform(packetInfo: PacketInfo): PacketInfo?
 
@@ -379,8 +382,8 @@ abstract class PredicateFilterNode(
  */
 abstract class ObserverNode(
     name: String,
-    logContext: LogContext = LogContext.EMPTY
-) : TransformerNode(name, logContext) {
+    logger: Logger? = null
+) : TransformerNode(name, logger) {
 
     protected abstract fun observe(packetInfo: PacketInfo)
 

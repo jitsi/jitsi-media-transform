@@ -50,14 +50,6 @@ fun <T : Any> getLogger(forClass: Class<T>): Logger {
     return Logger.getLogger(forClass.name)
 }
 
-fun <T : Any> getLoggerWithContext(forClass: Class<T>, context: LogContext): ContextLogger {
-    return ContextLogger(forClass.name, context = context)
-}
-
-fun <T : Any> getLoggerWithContext(forClass: Class<T>, levelDelegate: Logger?, context: LogContext): ContextLogger {
-    return ContextLogger(forClass.name, levelDelegate, context)
-}
-
 /**
  * Create a new logger which delegates its level to another logger
  */

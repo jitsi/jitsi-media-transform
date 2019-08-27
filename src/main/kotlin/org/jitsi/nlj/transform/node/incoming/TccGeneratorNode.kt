@@ -19,9 +19,9 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
-import org.jitsi.nlj.util.LogContext
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
+import org.jitsi.nlj.util.createChildOrNewLogger
 import org.jitsi.nlj.util.milliseconds
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
@@ -30,6 +30,7 @@ import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
 import org.jitsi.rtp.util.RtpUtils
 import org.jitsi.rtp.util.isOlderThan
+import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.stats.RateStatistics
 import java.time.Clock
 import java.time.Duration
@@ -43,12 +44,11 @@ private val NEVER = Instant.MIN
  * a TCC packet to send transmit to the sender.
  */
 class TccGeneratorNode(
-    private val id: String,
     private val onTccPacketReady: (RtcpPacket) -> Unit = {},
     private val streamInformation: ReadOnlyStreamInformationStore,
-    private val clock: Clock = Clock.systemDefaultZone(),
-    logContext: LogContext = LogContext.EMPTY
-) : ObserverNode("TCC generator", logContext.createSubContext("TCC Generator")) {
+    parentLogger: Logger? = null,
+    private val clock: Clock = Clock.systemDefaultZone()
+) : ObserverNode("TCC generator", parentLogger.createChildOrNewLogger(this::class)) {
     private var tccExtensionId: Int? = null
     private var currTccSeqNum: Int = 0
     private var lastTccSentTime: Instant = NEVER

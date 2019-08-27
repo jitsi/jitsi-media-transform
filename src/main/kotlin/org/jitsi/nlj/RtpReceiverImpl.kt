@@ -43,14 +43,14 @@ import org.jitsi.nlj.transform.node.incoming.VideoParser
 import org.jitsi.nlj.transform.node.incoming.Vp8Parser
 import org.jitsi.nlj.transform.packetPath
 import org.jitsi.nlj.transform.pipeline
-import org.jitsi.nlj.util.LogContext
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
-import org.jitsi.nlj.util.getLoggerWithContext
+import org.jitsi.nlj.util.cdebug
+import org.jitsi.nlj.util.createChildOrNewLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.util.RTCPUtils
-import org.jitsi.utils.logging.Logger
+import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -79,18 +79,16 @@ class RtpReceiverImpl @JvmOverloads constructor(
      */
     getSendBitrate: () -> Long,
     streamInformationStore: ReadOnlyStreamInformationStore,
-    parentLogContext: LogContext = LogContext.EMPTY,
-    logLevelDelegate: Logger? = null
+    parentLogger: Logger? = null
 ) : RtpReceiver() {
-    private val logContext = parentLogContext.createSubContext("RX")
-    private val logger = getLoggerWithContext(this.javaClass, logLevelDelegate, logContext)
+    private val logger = parentLogger.createChildOrNewLogger(this::class)
     private var running: Boolean = true
     private val inputTreeRoot: Node
     private val incomingPacketQueue =
             PacketInfoQueue("rtp-receiver-incoming-packet-queue", executor, this::handleIncomingPacket)
     private val srtpDecryptWrapper = SrtpTransformerNode("SRTP Decrypt node")
     private val srtcpDecryptWrapper = SrtpTransformerNode("SRTCP Decrypt node")
-    private val tccGenerator = TccGeneratorNode(id, rtcpSender, streamInformationStore, logContext = logContext)
+    private val tccGenerator = TccGeneratorNode(rtcpSender, streamInformationStore, logger)
     private val audioLevelReader = AudioLevelReader(streamInformationStore)
     private val silenceDiscarder = SilenceDiscarder(true)
     private val statsTracker = IncomingStatisticsTracker(streamInformationStore)

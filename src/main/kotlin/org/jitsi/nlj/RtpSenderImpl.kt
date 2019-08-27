@@ -39,11 +39,11 @@ import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.StreamInformationStore
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.getLogger
+import org.jitsi.nlj.util.createChildOrNewLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext
-import org.jitsi.utils.logging.Logger
+import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import java.util.concurrent.ExecutorService
@@ -65,10 +65,10 @@ class RtpSenderImpl(
      */
     val backgroundExecutor: ScheduledExecutorService,
     private val streamInformationStore: StreamInformationStore,
-    logLevelDelegate: Logger? = null,
+    parentLogger: Logger? = null,
     diagnosticContext: DiagnosticContext = DiagnosticContext()
 ) : RtpSender() {
-    protected val logger = getLogger(classLogger, logLevelDelegate)
+    protected val logger = parentLogger.createChildOrNewLogger(this::class)
     private val outgoingRtpRoot: Node
     private val outgoingRtxRoot: Node
     private val outgoingRtcpRoot: Node
@@ -245,7 +245,6 @@ class RtpSenderImpl(
     }
 
     companion object {
-        private val classLogger: Logger = Logger.getLogger(this::class.java)
         val queueErrorCounter = CountingErrorHandler()
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
