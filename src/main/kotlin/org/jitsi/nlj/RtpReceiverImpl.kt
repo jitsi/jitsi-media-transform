@@ -94,7 +94,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val statsTracker = IncomingStatisticsTracker(streamInformationStore)
     private val packetStreamStats = PacketStreamStatsNode()
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker)
-    private val rtcpTermination = RtcpTermination(id, rtcpEventNotifier)
+    private val rtcpTermination = RtcpTermination(rtcpEventNotifier)
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
