@@ -68,7 +68,7 @@ class RtpSenderImpl(
     parentLogger: Logger? = null,
     diagnosticContext: DiagnosticContext = DiagnosticContext()
 ) : RtpSender() {
-    protected val logger = parentLogger.createChildOrNewLogger(this::class)
+    protected val logger = parentLogger.createChildOrNewLogger(RtpSenderImpl::class)
     private val outgoingRtpRoot: Node
     private val outgoingRtxRoot: Node
     private val outgoingRtcpRoot: Node

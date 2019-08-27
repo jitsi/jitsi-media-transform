@@ -48,7 +48,7 @@ class TccGeneratorNode(
     private val streamInformation: ReadOnlyStreamInformationStore,
     parentLogger: Logger? = null,
     private val clock: Clock = Clock.systemDefaultZone()
-) : ObserverNode("TCC generator", parentLogger.createChildOrNewLogger(this::class)) {
+) : ObserverNode("TCC generator", parentLogger.createChildOrNewLogger(TccGeneratorNode::class)) {
     private var tccExtensionId: Int? = null
     private var currTccSeqNum: Int = 0
     private var lastTccSentTime: Instant = NEVER
@@ -66,6 +66,7 @@ class TccGeneratorNode(
         streamInformation.onRtpExtensionMapping(TRANSPORT_CC) {
             tccExtensionId = it
         }
+        println("tcc genereator logger level is ${logger.level}")
     }
 
     override fun observe(packetInfo: PacketInfo) {

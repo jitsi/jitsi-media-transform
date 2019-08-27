@@ -68,7 +68,7 @@ class Transceiver(
     diagnosticContext: DiagnosticContext,
     parentLogger: Logger? = null
 ) : Stoppable, NodeStatsProducer {
-    private val logger = parentLogger.createChildOrNewLogger(this::class)
+    private val logger = parentLogger.createChildOrNewLogger(Transceiver::class)
     val packetIOActivity = PacketIOActivity()
     private val endpointConnectionStats = EndpointConnectionStats()
     private val streamInformationStore = StreamInformationStoreImpl()

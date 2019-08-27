@@ -81,7 +81,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     streamInformationStore: ReadOnlyStreamInformationStore,
     parentLogger: Logger? = null
 ) : RtpReceiver() {
-    private val logger = parentLogger.createChildOrNewLogger(this::class)
+    private val logger = parentLogger.createChildOrNewLogger(RtpReceiverImpl::class)
     private var running: Boolean = true
     private val inputTreeRoot: Node
     private val incomingPacketQueue =
