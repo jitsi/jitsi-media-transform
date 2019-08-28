@@ -41,7 +41,7 @@ import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.extensions.toHex
 import org.jitsi.utils.logging2.Logger
 import java.nio.ByteBuffer
@@ -56,10 +56,10 @@ class TlsClientImpl(
      * The function to call when the server certificateInfo is available.
      */
     private val notifyServerCertificate: (Certificate?) -> Unit,
-    parentLogger: Logger? = null
+    parentLogger: Logger
 ) : DefaultTlsClient(BC_TLS_CRYPTO) {
 
-    private val logger = parentLogger.createChildOrNewLogger(TlsClientImpl::class)
+    private val logger = parentLogger.createChildLogger(TlsClientImpl::class)
 
     private var session: TlsSession? = null
 

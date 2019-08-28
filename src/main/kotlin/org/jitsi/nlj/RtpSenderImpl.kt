@@ -39,7 +39,7 @@ import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.StreamInformationStore
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext
@@ -65,10 +65,10 @@ class RtpSenderImpl(
      */
     val backgroundExecutor: ScheduledExecutorService,
     private val streamInformationStore: StreamInformationStore,
-    parentLogger: Logger? = null,
+    parentLogger: Logger,
     diagnosticContext: DiagnosticContext = DiagnosticContext()
 ) : RtpSender() {
-    protected val logger = parentLogger.createChildOrNewLogger(RtpSenderImpl::class)
+    protected val logger = parentLogger.createChildLogger(RtpSenderImpl::class)
     private val outgoingRtpRoot: Node
     private val outgoingRtxRoot: Node
     private val outgoingRtcpRoot: Node
@@ -90,7 +90,7 @@ class RtpSenderImpl(
     private val statsTracker = OutgoingStatisticsTracker()
     private val packetStreamStats = PacketStreamStatsNode()
     private val rtcpSrUpdater = RtcpSrUpdater(statsTracker)
-    private val keyframeRequester = KeyframeRequester(streamInformationStore)
+    private val keyframeRequester = KeyframeRequester(streamInformationStore, logger)
     private val probingDataSender: ProbingDataSender
 
     private val nackHandler: NackHandler
@@ -119,12 +119,12 @@ class RtpSenderImpl(
         }
 
         outgoingRtxRoot = pipeline {
-            node(RetransmissionSender(streamInformationStore))
+            node(RetransmissionSender(streamInformationStore, logger))
             // We want RTX packets to hook into the main RTP pipeline starting at AbsSendTime
             node(absSendTime)
         }
 
-        nackHandler = NackHandler(outgoingPacketCache.getPacketCache(), outgoingRtxRoot)
+        nackHandler = NackHandler(outgoingPacketCache.getPacketCache(), outgoingRtxRoot, logger)
         rtcpEventNotifier.addRtcpEventListener(nackHandler)
 
         // TODO: are we setting outgoing rtcp sequence numbers correctly? just add a simple node here to rewrite them
@@ -151,7 +151,8 @@ class RtpSenderImpl(
 
         probingDataSender = ProbingDataSender(
             outgoingPacketCache.getPacketCache(), outgoingRtxRoot, absSendTime, diagnosticContext,
-            streamInformationStore
+            streamInformationStore,
+            logger
         )
     }
 

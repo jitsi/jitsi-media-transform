@@ -28,8 +28,6 @@ import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.addMbps
 import org.jitsi.nlj.util.addRatio
-import org.jitsi.nlj.util.getLogger
-import org.jitsi.utils.logging2.Logger
 import org.json.simple.JSONObject
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -49,8 +47,7 @@ import kotlin.streams.toList
  * will be created).
  */
 sealed class Node(
-    var name: String,
-    logger: Logger? = null
+    var name: String
 ) : PacketHandler, EventHandler, NodeStatsProducer, Stoppable {
 
     private var nextNode: Node? = null
@@ -58,8 +55,6 @@ sealed class Node(
     // Create these once here so we don't allocate a new string every time
     protected val nodeEntryString = "Entered node $name"
     protected val nodeExitString = "Exited node $name"
-
-    protected val logger: Logger = logger ?: getLogger(this::class)
 
     open fun visit(visitor: NodeVisitor) {
         visitor.visit(this)
@@ -151,10 +146,7 @@ sealed class Node(
  * packet to any children. The intention is for this class to not be subclassed directly, except from classes defined
  * in this file (but making it 'private' doesn't seem possible).
  */
-sealed class StatsKeepingNode(
-    name: String,
-    logger: Logger? = null
-) : Node(name, logger) {
+sealed class StatsKeepingNode(name: String) : Node(name) {
     /**
      * The time at which processing of the currently processed packet started (in nanos).
      */
@@ -332,10 +324,7 @@ sealed class StatsKeepingNode(
 /**
  * A [Node] which transforms a single packet, possibly dropping it (by returning null).
  */
-abstract class TransformerNode(
-    name: String,
-    logger: Logger? = null
-) : StatsKeepingNode(name, logger) {
+abstract class TransformerNode(name: String) : StatsKeepingNode(name) {
 
     protected abstract fun transform(packetInfo: PacketInfo): PacketInfo?
 
@@ -351,9 +340,7 @@ abstract class TransformerNode(
 /**
  * A [Node] which drops some of the packets (the ones which are not accepted).
  */
-abstract class FilterNode(
-    name: String
-) : TransformerNode(name) {
+abstract class FilterNode(name: String) : TransformerNode(name) {
 
     protected abstract fun accept(packetInfo: PacketInfo): Boolean
 
@@ -380,10 +367,7 @@ abstract class PredicateFilterNode(
 /**
  * A [Node] which observes packets, but makes no modifications.
  */
-abstract class ObserverNode(
-    name: String,
-    logger: Logger? = null
-) : TransformerNode(name, logger) {
+abstract class ObserverNode(name: String) : TransformerNode(name) {
 
     protected abstract fun observe(packetInfo: PacketInfo)
 
@@ -396,9 +380,7 @@ abstract class ObserverNode(
 /**
  * A node which consumes all packets (i.e. does something with them, but does not forward them to another node).
  */
-abstract class ConsumerNode(
-    name: String
-) : TransformerNode(name) {
+abstract class ConsumerNode(name: String) : TransformerNode(name) {
 
     protected abstract fun consume(packetInfo: PacketInfo)
 
@@ -416,9 +398,7 @@ abstract class ConsumerNode(
 /**
  * A [Node] which transforms a single packet into a list of packets.
  */
-abstract class MultipleOutputTransformerNode(
-    name: String
-) : StatsKeepingNode(name) {
+abstract class MultipleOutputTransformerNode(name: String) : StatsKeepingNode(name) {
 
     protected abstract fun transform(packetInfo: PacketInfo): List<PacketInfo>
 

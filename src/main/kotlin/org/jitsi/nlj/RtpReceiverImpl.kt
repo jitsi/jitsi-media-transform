@@ -47,7 +47,7 @@ import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.util.RTCPUtils
 import org.jitsi.utils.logging2.Logger
@@ -79,9 +79,9 @@ class RtpReceiverImpl @JvmOverloads constructor(
      */
     getSendBitrate: () -> Long,
     streamInformationStore: ReadOnlyStreamInformationStore,
-    parentLogger: Logger? = null
+    parentLogger: Logger
 ) : RtpReceiver() {
-    private val logger = parentLogger.createChildOrNewLogger(RtpReceiverImpl::class)
+    private val logger = parentLogger.createChildLogger(RtpReceiverImpl::class)
     private var running: Boolean = true
     private val inputTreeRoot: Node
     private val incomingPacketQueue =
@@ -94,7 +94,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val statsTracker = IncomingStatisticsTracker(streamInformationStore)
     private val packetStreamStats = PacketStreamStatsNode()
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker)
-    private val rtcpTermination = RtcpTermination(rtcpEventNotifier)
+    private val rtcpTermination = RtcpTermination(rtcpEventNotifier, logger)
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
@@ -136,7 +136,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                     name = "SRTP path"
                     predicate = PacketPredicate { !RTCPUtils.isRtcp(it.buffer, it.offset, it.length) }
                     path = pipeline {
-                        node(RtpParser(streamInformationStore))
+                        node(RtpParser(streamInformationStore, logger))
                         node(tccGenerator)
                         // TODO: temporarily putting the audioLevelReader node here such that we can determine whether
                         // or not a packet should be discarded before doing SRTP. audioLevelReader has been moved here
@@ -161,12 +161,12 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 name = "Video path"
                                 predicate = PacketPredicate { it is VideoRtpPacket }
                                 path = pipeline {
-                                    node(RtxHandler(streamInformationStore))
+                                    node(RtxHandler(streamInformationStore, logger))
                                     node(PaddingTermination())
-                                    node(VideoParser(streamInformationStore))
-                                    node(Vp8Parser())
-                                    node(VideoBitrateCalculator())
-                                    node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor))
+                                    node(VideoParser(streamInformationStore, logger))
+                                    node(Vp8Parser(logger))
+                                    node(VideoBitrateCalculator(logger))
+                                    node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
                                     node(packetHandlerWrapper)
                                 }
                             }

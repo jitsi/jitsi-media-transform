@@ -17,7 +17,7 @@
 package org.jitsi.nlj.rtcp
 
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.nlj.util.cwarn
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacketBuilder
@@ -38,10 +38,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 class RetransmissionRequester(
     private val rtcpSender: (RtcpPacket) -> Unit,
     private val scheduler: ScheduledExecutorService,
-    parentLogger: Logger? = null,
+    parentLogger: Logger,
     private val clock: Clock = Clock.systemUTC()
 ) {
-    private val logger = parentLogger.createChildOrNewLogger(RetransmissionRequester::class)
+    private val logger = parentLogger.createChildLogger(RetransmissionRequester::class)
     private val streamPacketRequesters: MutableMap<Long, StreamPacketRequester> = HashMap()
 
     fun packetReceived(ssrc: Long, seqNum: Int) {
@@ -68,7 +68,7 @@ class RetransmissionRequester(
         private val scheduler: ScheduledExecutorService,
         private val clock: Clock,
         private val rtcpSender: (RtcpPacket) -> Unit,
-        parentLogger: Logger? = null,
+        parentLogger: Logger,
         private val maxMissingSeqNums: Int = 100
     ) {
         companion object {
@@ -76,7 +76,7 @@ class RetransmissionRequester(
         }
         private var running: AtomicBoolean = AtomicBoolean(true)
         private val logger =
-            parentLogger.createChildOrNewLogger(StreamPacketRequester::class, context = mapOf("ssrc" to ssrc.toString()))
+            parentLogger.createChildLogger(StreamPacketRequester::class, context = mapOf("ssrc" to ssrc.toString()))
         private var highestReceivedSeqNum = -1
         private val requests: MutableMap<Int, PacketRetransmissionRequest> = HashMap()
         private val taskHandleLock = Any()

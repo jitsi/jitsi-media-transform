@@ -18,7 +18,7 @@ package org.jitsi.nlj.stats
 
 import org.jitsi.nlj.rtcp.RtcpListener
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpReportBlock
 import org.jitsi.rtp.rtcp.RtcpRrPacket
@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  * Tracks stats which are not necessarily tied to send or receive but the endpoint overall
  */
 class EndpointConnectionStats(
-    parentLogger: Logger? = null
+    parentLogger: Logger
 ) : RtcpListener {
     interface EndpointConnectionStatsListener {
         fun onRttUpdate(newRtt: Double)
@@ -44,7 +44,7 @@ class EndpointConnectionStats(
     // Maps the compacted NTP timestamp found in an SR SenderInfo to the clock time (in milliseconds)
     //  at which it was transmitted
     private val srSentTimes: MutableMap<Long, Long> = ConcurrentHashMap()
-    private val logger = parentLogger.createChildOrNewLogger(EndpointConnectionStats::class)
+    private val logger = parentLogger.createChildLogger(EndpointConnectionStats::class)
 
     /**
      * The calculated RTT, in milliseconds, between the bridge and the endpoint

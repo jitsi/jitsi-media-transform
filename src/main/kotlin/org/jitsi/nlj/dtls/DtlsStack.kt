@@ -25,7 +25,7 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.utils.logging2.Logger
 import java.time.Duration
@@ -60,9 +60,9 @@ import java.util.concurrent.TimeUnit
  *
  */
 class DtlsStack(
-    parentLogger: Logger? = null
+    parentLogger: Logger
 ) : ProtocolStack, DatagramTransport, NodeStatsProducer {
-    private val logger = parentLogger.createChildOrNewLogger(DtlsStack::class)
+    private val logger = parentLogger.createChildLogger(DtlsStack::class)
     private val roleSet = CompletableFuture<Unit>()
 
     /**
@@ -134,12 +134,24 @@ class DtlsStack(
     }
 
     fun actAsServer() {
-        role = DtlsServer(this, certificateInfo, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        role = DtlsServer(
+            this,
+            certificateInfo,
+            handshakeCompleteHandler,
+            this::verifyAndValidateRemoteCertificate,
+            logger
+        )
         roleSet.complete(Unit)
     }
 
     fun actAsClient() {
-        role = DtlsClient(this, certificateInfo, handshakeCompleteHandler, this::verifyAndValidateRemoteCertificate)
+        role = DtlsClient(
+            this,
+            certificateInfo,
+            handshakeCompleteHandler,
+            this::verifyAndValidateRemoteCertificate,
+            logger
+        )
         roleSet.complete(Unit)
     }
 

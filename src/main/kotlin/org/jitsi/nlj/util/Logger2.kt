@@ -56,17 +56,13 @@ fun <T : Any> getLogger(
     minLevel: Level = Level.ALL,
     context: Map<String, String> = emptyMap()
 ): Logger {
-    return LoggerImpl(forClass.java.name, minLevel, LogContext(context))
+    return getLogger(forClass.java.name, minLevel, context)
 }
 
-/**
- * If [this] Logger is non-null, create a child logger from it.  Otherwise create
- * a new logger.
- */
-fun <T : Any> Logger?.createChildOrNewLogger(
-    forClass: KClass<T>,
+fun getLogger(
+    name: String,
     minLevel: Level = Level.ALL,
     context: Map<String, String> = emptyMap()
 ): Logger {
-    return this?.createChildLogger(forClass, context) ?: getLogger(forClass, minLevel, context)
+    return LoggerImpl(name, minLevel, LogContext(context))
 }

@@ -21,7 +21,7 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.nlj.util.milliseconds
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
@@ -46,9 +46,10 @@ private val NEVER = Instant.MIN
 class TccGeneratorNode(
     private val onTccPacketReady: (RtcpPacket) -> Unit = {},
     private val streamInformation: ReadOnlyStreamInformationStore,
-    parentLogger: Logger? = null,
+    parentLogger: Logger,
     private val clock: Clock = Clock.systemDefaultZone()
-) : ObserverNode("TCC generator", parentLogger.createChildOrNewLogger(TccGeneratorNode::class)) {
+) : ObserverNode("TCC generator") {
+    private val logger = parentLogger.createChildLogger(TccGeneratorNode::class)
     private var tccExtensionId: Int? = null
     private var currTccSeqNum: Int = 0
     private var lastTccSentTime: Instant = NEVER

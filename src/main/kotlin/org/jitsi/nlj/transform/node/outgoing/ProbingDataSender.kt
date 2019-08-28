@@ -29,7 +29,7 @@ import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.PacketCache
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.createChildOrNewLogger
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.extensions.unsigned.toPositiveInt
 import org.jitsi.rtp.rtp.RtpHeader
 import org.jitsi.utils.MediaType
@@ -51,11 +51,11 @@ class ProbingDataSender(
     private val garbageDataSender: PacketHandler,
     private val diagnosticContext: DiagnosticContext,
     streamInformationStore: ReadOnlyStreamInformationStore,
-    parentLogger: Logger? = null
+    parentLogger: Logger
 ) : EventHandler, NodeStatsProducer {
 
     private val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
-    private val logger = parentLogger.createChildOrNewLogger(ProbingDataSender::class)
+    private val logger = parentLogger.createChildLogger(ProbingDataSender::class)
 
     private var rtxSupported = false
     private val videoPayloadTypes = mutableSetOf<VideoPayloadType>()
