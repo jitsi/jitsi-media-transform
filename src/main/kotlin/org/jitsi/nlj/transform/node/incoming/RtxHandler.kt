@@ -25,6 +25,7 @@ import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.extensions.unsigned.toPositiveInt
 import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.utils.logging2.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -34,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class RtxHandler(
     private val streamInformationStore: ReadOnlyStreamInformationStore,
-    parentLogger: org.jitsi.utils.logging2.Logger
+    parentLogger: Logger
 ) : TransformerNode("RTX handler") {
     private val logger = parentLogger.createChildLogger(RtxHandler::class)
     private var numPaddingPacketsReceived = 0
