@@ -46,7 +46,7 @@ import kotlin.math.min
  * on what the client supports
  * 3) Aggregation.  This class will pace outgoing requests such that we don't spam the sender
  */
-class KeyframeRequester(
+class KeyframeRequester @JvmOverloads constructor(
     private val streamInformationStore: ReadOnlyStreamInformationStore,
     parentLogger: Logger,
     private val clock: Clock = Clock.systemDefaultZone()
