@@ -31,6 +31,7 @@ import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.resources.node.onOutput
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
+import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.test_utils.FakeClock
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.RtpExtensionHandler
@@ -52,6 +53,14 @@ class KeyframeRequesterTest : ShouldSpec() {
         override fun onRtpPayloadTypesChanged(handler: RtpPayloadTypesChangedHandler) {
             // no-op
         }
+
+        override val primaryMediaSsrcs: Set<Long> = setOf(123L, 456L, 789L)
+        override val primaryVideoSsrcs: Set<Long> = setOf(123L, 456L)
+        override val receiveSsrcs: Set<Long> = setOf(123L, 456L, 789L, 321L, 654L)
+
+        override fun getLocalPrimarySsrc(secondarySsrc: Long): Long? = null
+
+        override fun getRemoteSecondarySsrc(primarySsrc: Long, associationType: SsrcAssociationType): Long? = null
     }
     private val logger = StdoutLogger()
     private val clock: FakeClock = spy()
@@ -63,6 +72,16 @@ class KeyframeRequesterTest : ShouldSpec() {
         keyframeRequester.onOutput { sentKeyframeRequests.add(it) }
 
         "requesting a keyframe" {
+            "without a specific SSRC" {
+                keyframeRequester.requestKeyframe()
+                should("result in a sent PLI request with the first video SSRC") {
+                    sentKeyframeRequests shouldHaveSize 1
+                    val packet = sentKeyframeRequests.last().packet
+                    packet.shouldBeInstanceOf<RtcpFbPliPacket>()
+                    packet as RtcpFbPliPacket
+                    packet.mediaSourceSsrc shouldBe 123L
+                }
+            }
             "when PLI is supported" {
                 keyframeRequester.requestKeyframe(123L)
                 should("result in a sent PLI request") {

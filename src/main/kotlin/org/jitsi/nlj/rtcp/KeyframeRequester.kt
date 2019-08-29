@@ -136,14 +136,19 @@ class KeyframeRequester(
         }
     }
 
-    fun requestKeyframe(mediaSsrc: Long) {
+    fun requestKeyframe(mediaSsrc: Long? = null) {
+        val ssrc = mediaSsrc ?: streamInformationStore.primaryMediaSsrcs.firstOrNull() ?: run {
+            numApiRequestsDropped++
+            logger.cdebug { "No video SSRC found to request keyframe" }
+            return
+        }
         numApiRequests++
-        if (!canSendKeyframeRequest(mediaSsrc, clock.instant())) {
+        if (!canSendKeyframeRequest(ssrc, clock.instant())) {
             numApiRequestsDropped++
             return
         }
 
-        doRequestKeyframe(mediaSsrc)
+        doRequestKeyframe(ssrc)
     }
 
     private fun doRequestKeyframe(mediaSsrc: Long) {
