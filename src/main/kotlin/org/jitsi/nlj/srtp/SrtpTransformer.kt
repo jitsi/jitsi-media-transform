@@ -103,7 +103,7 @@ abstract class SrtpTransformer(
             contextFactory.deriveContext(ssrc.toInt(), 0) ?: null
 
     override fun getContext(packetInfo: PacketInfo): SrtpCryptoContext? {
-        val rtpPacket: RtpPacket = packetInfo.packet as? RtpPacket  ?: run {
+        val rtpPacket: RtpPacket = packetInfo.packet as? RtpPacket ?: run {
             logger.cwarn { "Can not handle non-RTP packet: ${packetInfo.packet.javaClass}" }
             return null
         }
@@ -136,8 +136,8 @@ abstract class SrtcpTransformer(
  */
 class SrtcpDecryptTransformer(
     contextFactory: SrtpContextFactory,
-    parentLogger: Logger) : SrtcpTransformer(contextFactory, parentLogger) {
-
+    parentLogger: Logger
+) : SrtcpTransformer(contextFactory, parentLogger) {
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): Boolean {
         context.reverseTransformPacket(packetInfo.packet)
         packetInfo.resetPayloadVerification()
