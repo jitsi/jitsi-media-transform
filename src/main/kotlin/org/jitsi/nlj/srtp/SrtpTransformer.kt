@@ -34,9 +34,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 abstract class AbstractSrtpTransformer<CryptoContextType : BaseSrtpCryptoContext>(
     protected val contextFactory: SrtpContextFactory,
-    parentLogger: Logger
+    protected val logger: Logger
 ) {
-    private val logger = parentLogger.createChildLogger(AbstractSrtpTransformer::class)
     /**
      * All the known SSRC's corresponding SrtpCryptoContexts
      */
@@ -95,9 +94,8 @@ abstract class AbstractSrtpTransformer<CryptoContextType : BaseSrtpCryptoContext
  */
 abstract class SrtpTransformer(
     contextFactory: SrtpContextFactory,
-    parentLogger: Logger
-) : AbstractSrtpTransformer<SrtpCryptoContext>(contextFactory, parentLogger) {
-    private val logger = parentLogger.createChildLogger(SrtpTransformer::class)
+    logger: Logger
+) : AbstractSrtpTransformer<SrtpCryptoContext>(contextFactory, logger) {
 
     override fun deriveContext(ssrc: Long, index: Long): SrtpCryptoContext? =
             contextFactory.deriveContext(ssrc.toInt(), 0) ?: null
@@ -116,8 +114,8 @@ abstract class SrtpTransformer(
  */
 abstract class SrtcpTransformer(
     contextFactory: SrtpContextFactory,
-    parentLogger: Logger
-) : AbstractSrtpTransformer<SrtcpCryptoContext>(contextFactory, parentLogger) {
+    logger: Logger
+) : AbstractSrtpTransformer<SrtcpCryptoContext>(contextFactory, logger) {
 
     override fun deriveContext(ssrc: Long, index: Long): SrtcpCryptoContext? =
             contextFactory.deriveControlContext(ssrc.toInt()) ?: null
@@ -137,7 +135,7 @@ abstract class SrtcpTransformer(
 class SrtcpDecryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtcpTransformer(contextFactory, parentLogger) {
+) : SrtcpTransformer(contextFactory, parentLogger.createChildLogger(SrtcpDecryptTransformer::class)) {
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): Boolean {
         context.reverseTransformPacket(packetInfo.packet)
         packetInfo.resetPayloadVerification()
@@ -152,7 +150,7 @@ class SrtcpDecryptTransformer(
 class SrtcpEncryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtcpTransformer(contextFactory, parentLogger) {
+) : SrtcpTransformer(contextFactory, parentLogger.createChildLogger(SrtcpEncryptTransformer::class)) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): Boolean {
         context.transformPacket(packetInfo.packet)
@@ -175,7 +173,7 @@ class SrtcpEncryptTransformer(
 class SrtpDecryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtpTransformer(contextFactory, parentLogger) {
+) : SrtpTransformer(contextFactory, parentLogger.createChildLogger(SrtpDecryptTransformer::class)) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): Boolean {
         // For silence packets we update the ROC (if authentication passes), but don't decrypt
@@ -191,7 +189,7 @@ class SrtpDecryptTransformer(
 class SrtpEncryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtpTransformer(contextFactory, parentLogger) {
+) : SrtpTransformer(contextFactory, parentLogger.createChildLogger(SrtpEncryptTransformer::class)) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): Boolean {
         return context.transformPacket(packetInfo.packetAs()).apply {
