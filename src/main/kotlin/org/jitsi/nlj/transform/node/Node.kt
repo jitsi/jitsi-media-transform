@@ -41,10 +41,6 @@ import kotlin.streams.toList
  * 1) Attaching the next node in the chain
  * 2) Adding and removing parent nodes
  * 3) Propagating [visit] calls
- *
- * Note that the [logger] param passed here is the logger which will
- * be used directly (not a parent logger from which a child logger
- * will be created).
  */
 sealed class Node(
     var name: String
