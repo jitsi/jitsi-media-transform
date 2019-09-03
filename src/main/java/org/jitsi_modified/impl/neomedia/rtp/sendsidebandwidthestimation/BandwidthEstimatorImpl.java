@@ -16,7 +16,7 @@
 package org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.neomedia.rtp.remotebitrateestimator.*;
+import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.*;
 import org.jitsi.rtp.rtcp.*;
 
 import org.jitsi.service.configuration.*;
@@ -244,7 +244,7 @@ public class BandwidthEstimatorImpl
 
     /**
      * This is hooked up to the
-     * {@link org.jitsi.service.neomedia.rtp.RemoteBitrateEstimator} in
+     * {@link org.jitsi_modified.service.neomedia.rtp.RemoteBitrateEstimator} in
      * {@link org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine}, which
      * performs the delay-based estimation (also referred to as
      * "receiver estimate").

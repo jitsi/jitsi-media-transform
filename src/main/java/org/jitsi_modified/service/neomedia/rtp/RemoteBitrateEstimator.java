@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.service.neomedia.rtp;
-
-import org.jitsi.service.neomedia.*;
+package org.jitsi_modified.service.neomedia.rtp;
 
 import java.util.*;
 
@@ -26,7 +24,6 @@ import java.util.*;
  * @author Lyubomir Marinov
  */
 public interface RemoteBitrateEstimator
-    extends CallStatsObserver
 {
     /**
      * webrtc/modules/remote_bitrate_estimator/include/bwe_defines.h

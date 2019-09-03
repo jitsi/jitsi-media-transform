@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.neomedia.rtp.remotebitrateestimator;
+package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
-import org.jitsi.service.neomedia.rtp.*;
+import org.jitsi_modified.service.neomedia.rtp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging.*;
 
