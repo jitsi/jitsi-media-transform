@@ -186,7 +186,7 @@ class KeyframeRequester @JvmOverloads constructor(
 
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
-            addNumber("wait_interval_ms", waitInterval.toMillis())
+            addString("wait_interval_ms", waitInterval.toMillis().toString())
             addNumber("num_api_requests", numApiRequests)
             addNumber("num_api_requests_dropped", numApiRequestsDropped)
             addNumber("num_firs_dropped", numFirsDropped)
