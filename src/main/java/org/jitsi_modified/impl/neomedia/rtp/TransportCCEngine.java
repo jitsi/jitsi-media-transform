@@ -85,7 +85,7 @@ public class TransportCCEngine
      * Local time to map to the reference time of the remote clock. This is used
      * to rebase the arrival times in the TCC packets to a meaningful time base
      * (that of the sender). This is technically not necessary and it's done for
-     * convinience.
+     * convenience.
      */
     private long localReferenceTimeMs = -1;
 
