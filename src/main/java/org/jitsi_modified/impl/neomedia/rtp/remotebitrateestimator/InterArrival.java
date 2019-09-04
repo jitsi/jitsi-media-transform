@@ -17,7 +17,8 @@ package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
 import org.jitsi.utils.TimestampUtils;
 import org.jetbrains.annotations.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging.DiagnosticContext;
+import org.jitsi.utils.logging2.*;
 
 /**
  * Helper class to compute the inter-arrival time delta and the size delta
@@ -35,7 +36,7 @@ class InterArrival
 {
     private static final int kBurstDeltaThresholdMs  = 5;
 
-    private static final Logger logger = Logger.getLogger(InterArrival.class);
+    private final Logger logger;
 
     /**
      * webrtc/modules/include/module_common_types.h
@@ -81,13 +82,15 @@ class InterArrival
             long timestampGroupLengthTicks,
             double timestampToMsCoeff,
             boolean enableBurstGrouping,
-            @NotNull DiagnosticContext diagnosticContext)
+            @NotNull DiagnosticContext diagnosticContext,
+            @NotNull Logger parentLogger)
     {
         kTimestampGroupLengthTicks = timestampGroupLengthTicks;
         this.timestampToMsCoeff = timestampToMsCoeff;
         burstGrouping = enableBurstGrouping;
         numConsecutiveReorderedPackets = 0;
         this.diagnosticContext = diagnosticContext;
+        this.logger = parentLogger.createChildLogger(getClass().getName());
     }
 
     private boolean belongsToBurst(long arrivalTimeMs, long timestamp)

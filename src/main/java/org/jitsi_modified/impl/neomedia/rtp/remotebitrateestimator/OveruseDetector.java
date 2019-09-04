@@ -16,7 +16,8 @@
 package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging.DiagnosticContext;
+import org.jitsi.utils.logging2.*;
 
 /**
  * webrtc/modules/remote_bitrate_estimator/overuse_detector.cc
@@ -26,8 +27,7 @@ import org.jitsi.utils.logging.*;
  */
 class OveruseDetector
 {
-    private static final Logger logger
-        = Logger.getLogger(OveruseDetector.class);
+    private final Logger logger;
 
     private static final double kMaxAdaptOffsetMs = 15.0;
 
@@ -57,12 +57,14 @@ class OveruseDetector
 
     public OveruseDetector(
             OverUseDetectorOptions options,
-            @NotNull DiagnosticContext diagnosticContext)
+            @NotNull DiagnosticContext diagnosticContext,
+            @NotNull Logger parentLogger)
     {
         if (options == null)
             throw new NullPointerException("options");
 
         threshold = options.initialThreshold;
+        logger = parentLogger.createChildLogger(getClass().getName());
         this.diagnosticContext = diagnosticContext;
 
         if (inExperiment)

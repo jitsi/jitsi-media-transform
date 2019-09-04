@@ -16,7 +16,8 @@
 package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging.DiagnosticContext;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 
@@ -29,12 +30,11 @@ import java.util.*;
 class OveruseEstimator
 {
     /**
-     * The <tt>Logger</tt> used by the
-     * <tt>RemoteBitrateEstimatorAbsSendTime</tt> class and its instances for
+     * The <tt>Logger</tt> used by
+     * <tt>OveruseEstimator</tt> instances for
      * logging output.
      */
-    private static final Logger logger
-        = Logger.getLogger(OveruseEstimator.class);
+    private final Logger logger;
 
     private static final int kDeltaCounterMax = 1000;
 
@@ -115,8 +115,10 @@ class OveruseEstimator
 
     public OveruseEstimator(
             OverUseDetectorOptions options,
-            @NotNull DiagnosticContext diagnosticContext)
+            @NotNull DiagnosticContext diagnosticContext,
+            @NotNull Logger parentLogger)
     {
+        logger = parentLogger.createChildLogger(getClass().getName());
         this.diagnosticContext = diagnosticContext;
         slope = options.initialSlope;
         offset = options.initialOffset;

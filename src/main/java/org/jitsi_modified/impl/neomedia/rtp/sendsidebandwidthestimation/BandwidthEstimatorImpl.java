@@ -23,7 +23,8 @@ import org.jitsi.service.configuration.*;
 import org.jitsi.service.libjitsi.*;
 
 import org.jitsi.utils.concurrent.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging.DiagnosticContext;
+import org.jitsi.utils.logging2.*;
 import org.jitsi_modified.service.neomedia.rtp.*;
 
 import java.util.*;
@@ -88,10 +89,12 @@ public class BandwidthEstimatorImpl
      * Initializes a new instance which is to belong to a particular
      * {@link MediaStream}.
      */
-    public BandwidthEstimatorImpl(DiagnosticContext diagnosticContext)
+    public BandwidthEstimatorImpl(DiagnosticContext diagnosticContext,
+        @NotNull Logger parentLogger)
     {
         sendSideBandwidthEstimation
-            = new SendSideBandwidthEstimation(diagnosticContext, START_BITRATE_BPS);
+            = new SendSideBandwidthEstimation(diagnosticContext,
+                START_BITRATE_BPS, parentLogger);
         sendSideBandwidthEstimation.setMinMaxBitrate(
                 MIN_BITRATE_BPS, MAX_BITRATE_BPS);
     }

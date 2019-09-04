@@ -18,7 +18,10 @@ package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
 import org.jetbrains.annotations.*;
 import org.jitsi_modified.service.neomedia.rtp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging.DiagnosticContext;
+import org.jitsi.utils.logging.TimeSeriesLogger;
+import org.jitsi.utils.logging2.*;
+
 import org.jitsi.utils.stats.*;
 
 import java.util.*;
@@ -159,6 +162,11 @@ public class RemoteBitrateEstimatorAbsSendTime
      */
     private final DiagnosticContext diagnosticContext;
 
+     /**
+      * The instance logger.
+      */
+    private final Logger logger;
+
     /**
      * Ctor.
      *
@@ -167,8 +175,10 @@ public class RemoteBitrateEstimatorAbsSendTime
      */
     public RemoteBitrateEstimatorAbsSendTime(
             RemoteBitrateObserver observer,
-            @NotNull DiagnosticContext diagnosticContext)
+            @NotNull DiagnosticContext diagnosticContext,
+            @NotNull Logger parentLogger)
     {
+        this.logger = parentLogger.createChildLogger(getClass().getName());
         this.observer = observer;
         this.diagnosticContext = diagnosticContext;
         this.remoteRate = new AimdRateControl(diagnosticContext);
@@ -262,7 +272,7 @@ public class RemoteBitrateEstimatorAbsSendTime
 
             if (detector == null)
             {
-                detector = new Detector(new OverUseDetectorOptions(), true);
+                detector = new Detector(new OverUseDetectorOptions(), true, logger);
             }
 
             if (detector.interArrival.computeDeltas(
@@ -461,13 +471,14 @@ public class RemoteBitrateEstimatorAbsSendTime
          * otherwise
          */
         Detector(OverUseDetectorOptions options,
-                 boolean enableBurstGrouping)
+                 boolean enableBurstGrouping,
+                 Logger parentLogger)
         {
             this.interArrival = new InterArrival(
                 kTimestampGroupLengthTicks, kTimestampToMs,
-                enableBurstGrouping, diagnosticContext);
-            this.estimator = new OveruseEstimator(options, diagnosticContext);
-            this.detector = new OveruseDetector(options, diagnosticContext);
+                enableBurstGrouping, diagnosticContext, parentLogger);
+            this.estimator = new OveruseEstimator(options, diagnosticContext, logger);
+            this.detector = new OveruseDetector(options, diagnosticContext, logger);
         }
     }
 

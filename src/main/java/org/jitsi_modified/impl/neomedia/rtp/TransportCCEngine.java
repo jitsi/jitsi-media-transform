@@ -21,7 +21,8 @@ import org.jitsi.nlj.rtcp.*;
 import org.jitsi.rtp.rtcp.*;
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging.DiagnosticContext;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 
@@ -47,29 +48,14 @@ public class TransportCCEngine
     private static final int MAX_OUTGOING_PACKETS_HISTORY = 1000;
 
     /**
-     * The {@link Logger} used by the {@link TransportCCEngine} class and its
-     * instances for logging output.
+     * The {@link Logger} used by this instance for logging output.
      */
-    private static final Logger logger
-        = Logger.getLogger(TransportCCEngine.class);
-
-    /**
-     * The {@link TimeSeriesLogger} to be used by this instance to print time
-     * series.
-     */
-    private static final TimeSeriesLogger timeSeriesLogger
-        = TimeSeriesLogger.getTimeSeriesLogger(TransportCCEngine.class);
+    private final Logger logger;
 
     /**
      * Used to synchronize access to {@link #sentPacketDetails}.
      */
     private final Object sentPacketsSyncRoot = new Object();
-
-    /**
-     * The {@link DiagnosticContext} to be used by this instance when printing
-     * diagnostic information.
-     */
-    private final DiagnosticContext diagnosticContext;
 
     /**
      * The reference time of the remote clock. This is used to rebase the
@@ -107,12 +93,13 @@ public class TransportCCEngine
      */
     public TransportCCEngine(
             @NotNull DiagnosticContext diagnosticContext,
-            RemoteBitrateObserver remoteBitrateObserver)
+            RemoteBitrateObserver remoteBitrateObserver,
+            @NotNull Logger parentLogger)
     {
-        this.diagnosticContext = diagnosticContext;
+        logger = parentLogger.createChildLogger(getClass().getName());
         this.remoteBitrateObserver = remoteBitrateObserver;
         bitrateEstimatorAbsSendTime
-            = new RemoteBitrateEstimatorAbsSendTime(this, diagnosticContext);
+            = new RemoteBitrateEstimatorAbsSendTime(this, diagnosticContext, logger);
     }
 
     /**
