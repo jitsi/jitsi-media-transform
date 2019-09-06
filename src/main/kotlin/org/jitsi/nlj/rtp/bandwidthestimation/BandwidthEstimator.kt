@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.rtp.bandwidthestimation
 
+import org.jitsi.nlj.stats.NodeStatsBlock
 import java.time.Instant
 
 /**
@@ -85,6 +86,9 @@ interface BandwidthEstimator {
      * @param[now] The current time, when this function is called.
      */
     fun getCurrentBw(now: Instant): Float
+
+    /** Get the current statistics related to this estimator. */
+    fun getStats(): NodeStatsBlock
 
     /** Reset the estimator to its initial state. */
     fun reset(): Unit
