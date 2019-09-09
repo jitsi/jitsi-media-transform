@@ -16,8 +16,8 @@
 
 package org.jitsi.nlj.rtp.bandwidthestimation
 
-import org.jitsi.nlj.stats.NodeStatsBlock
 import java.time.Instant
+import org.jitsi.nlj.stats.NodeStatsBlock
 
 /**
  * An abstract interface to a bandwidth estimation algorithm.
@@ -30,7 +30,7 @@ import java.time.Instant
  */
 interface BandwidthEstimator {
     /** The name of the algorithm implemented by this [BandwidthEstimator]. */
-    val algorithmName : String
+    val algorithmName: String
 
     /** The initial bandwidth estimate. */
     var initBw: Float
@@ -64,12 +64,14 @@ interface BandwidthEstimator {
      * @param[size] The size of the packet, in bytes.
      * @param[ecn] The ECN markings with which the packet was received.
      */
-    fun processPacketArrival(now: Instant,
-                             sendTime: Instant?,
-                             recvTime: Instant?,
-                             seq: Int,
-                             size: Int,
-                             ecn: Byte = 0)
+    fun processPacketArrival(
+        now: Instant,
+        sendTime: Instant?,
+        recvTime: Instant?,
+        seq: Int,
+        size: Int,
+        ecn: Byte = 0
+    )
 
     /**
      * Inform the bandwidth estimator that a packet was lost.
