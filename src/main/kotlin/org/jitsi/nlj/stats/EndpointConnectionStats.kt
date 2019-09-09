@@ -25,7 +25,6 @@ import org.jitsi.rtp.rtcp.RtcpRrPacket
 import org.jitsi.rtp.rtcp.RtcpSrPacket
 import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -33,7 +32,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 private const val MAX_SR_TIMESTAMP_HISTORY = 200
 
-private typealias SsrcAndTimestamp = Pair<Long,Long>
+private typealias SsrcAndTimestamp = Pair<Long, Long>
 
 /**
  * Tracks stats which are not necessarily tied to send or receive but the endpoint overall
@@ -48,7 +47,6 @@ class EndpointConnectionStats(
         val rtt: Double
     )
     private val endpointConnectionStatsListeners: MutableList<EndpointConnectionStatsListener> = CopyOnWriteArrayList()
-
 
     // Per-SSRC, maps the compacted NTP timestamp found in an SR SenderInfo to
     //  the clock time (in milliseconds) at which it was transmitted
