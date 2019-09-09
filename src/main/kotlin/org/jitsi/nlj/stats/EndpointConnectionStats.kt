@@ -33,6 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 private const val MAX_SR_TIMESTAMP_HISTORY = 200
 
+private typealias SsrcAndTimestamp = Pair<Long,Long>
 
 /**
  * Tracks stats which are not necessarily tied to send or receive but the endpoint overall
@@ -48,9 +49,10 @@ class EndpointConnectionStats(
     )
     private val endpointConnectionStatsListeners: MutableList<EndpointConnectionStatsListener> = CopyOnWriteArrayList()
 
-    // Maps the compacted NTP timestamp found in an SR SenderInfo to the clock time (in milliseconds)
-    //  at which it was transmitted
-    private val srSentTimes: MutableMap<Pair<Long,Long>, Long> = LRUCache(MAX_SR_TIMESTAMP_HISTORY)
+
+    // Per-SSRC, maps the compacted NTP timestamp found in an SR SenderInfo to
+    //  the clock time (in milliseconds) at which it was transmitted
+    private val srSentTimes: MutableMap<SsrcAndTimestamp, Long> = LRUCache(MAX_SR_TIMESTAMP_HISTORY)
     private val logger = parentLogger.createChildLogger(EndpointConnectionStats::class)
 
     /**
@@ -94,7 +96,7 @@ class EndpointConnectionStats(
     private fun processReportBlock(receivedTime: Long, reportBlock: RtcpReportBlock) {
         if (reportBlock.lastSrTimestamp > 0 && reportBlock.delaySinceLastSr > 0) {
             // We need to know when we sent the last SR
-            val srSentTime = srSentTimes.getOrDefault(Pair(reportBlock.ssrc, reportBlock.lastSrTimestamp), -1)
+            val srSentTime = srSentTimes.getOrDefault(SsrcAndTimestamp(reportBlock.ssrc, reportBlock.lastSrTimestamp), -1)
             if (srSentTime > 0) {
                 // The delaySinceLastSr value is given in 1/65536ths of a second, so divide it by 65.536 to get it
                 // in milliseconds
