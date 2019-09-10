@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Boris Grozev
  */
-class SendSideBandwidthEstimation
+public class SendSideBandwidthEstimation
     implements BandwidthEstimator
 {
     /**
