@@ -287,7 +287,7 @@ public class SendSideBandwidthEstimation
      */
     private final StatisticsImpl statistics = new StatisticsImpl();
 
-    SendSideBandwidthEstimation(DiagnosticContext diagnosticContext, long startBitrate,
+    public SendSideBandwidthEstimation(DiagnosticContext diagnosticContext, long startBitrate,
         @NotNull Logger parentLogger)
     {
         logger = parentLogger.createChildLogger(getClass().getName());
@@ -550,7 +550,7 @@ public class SendSideBandwidthEstimation
     /**
      * void SendSideBandwidthEstimation::SetMinMaxBitrate
      */
-    synchronized void setMinMaxBitrate(int min_bitrate, int max_bitrate)
+    synchronized public void setMinMaxBitrate(int min_bitrate, int max_bitrate)
     {
         min_bitrate_configured_ = Math.max(min_bitrate, kDefaultMinBitrateBps);
         if (max_bitrate > 0)
