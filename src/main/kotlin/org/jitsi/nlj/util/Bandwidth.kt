@@ -24,7 +24,7 @@ import java.text.DecimalFormat
  */
 class Bandwidth(
     bps: Double
-) {
+) : Comparable<Bandwidth> {
     var bps: Double = bps
         private set
 
@@ -67,6 +67,8 @@ class Bandwidth(
     operator fun timesAssign(other: Int) {
         bps *= other
     }
+
+    override fun compareTo(other: Bandwidth): Int = (bps - other.bps).toInt()
 
     override fun toString(): String {
         // To determine which unit we'll print in,

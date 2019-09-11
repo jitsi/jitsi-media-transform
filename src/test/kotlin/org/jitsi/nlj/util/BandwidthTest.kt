@@ -16,6 +16,8 @@
 
 package org.jitsi.nlj.util
 
+import io.kotlintest.matchers.beGreaterThan
+import io.kotlintest.should
 import io.kotlintest.specs.ShouldSpec
 import io.kotlintest.shouldBe
 
@@ -40,6 +42,12 @@ class BandwidthTest : ShouldSpec() {
                 2_500_000.bps().toString() shouldBe "2.5 mbps"
                 500_000.bps().toString() shouldBe "500 kbps"
                 .001.mbps().toString() shouldBe "1 kbps"
+            }
+        }
+        "comparing bandwidths" {
+            should("work correctly") {
+                2.mbps() should beGreaterThan(1.mbps())
+                1000.bps() should beGreaterThan(999.bps())
             }
         }
     }
