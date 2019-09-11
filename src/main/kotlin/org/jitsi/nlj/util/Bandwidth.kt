@@ -16,18 +16,20 @@
 
 package org.jitsi.nlj.util
 
+import java.text.DecimalFormat
+
 /**
  * [Bandwidth] models a current bandwidth, represented as a rate
  * of bits per second.
  */
 class Bandwidth(
-    bps: Float
+    bps: Double
 ) {
-    var bps: Float = bps
+    var bps: Double = bps
         private set
 
-    val kbps: Float = bps / 1000
-    val mbps: Float = bps / (1000 * 1000)
+    val kbps: Double = bps / 1000
+    val mbps: Double = bps / (1000 * 1000)
 
     operator fun minus(other: Bandwidth): Bandwidth =
         Bandwidth(bps - other.bps)
@@ -43,18 +45,39 @@ class Bandwidth(
         bps += other.bps
     }
 
-    operator fun times(other: Bandwidth): Bandwidth =
-        Bandwidth(bps * other.bps)
+    /**
+     * For multiplication, we support multiplying against
+     * a normal number (not another bandwidth).  This allows
+     * applying some factor to a given bandwidth, for example
+     *
+     * currentBandwidth *= *.95
+     *
+     * to reduce 'currentBandwidth' by 5%
+     */
+    operator fun times(other: Double): Bandwidth =
+        Bandwidth(bps * other)
 
-    operator fun timesAssign(other: Bandwidth) {
-        bps *= other.bps
+    operator fun timesAssign(other: Double) {
+        bps *= other
     }
 
-    operator fun div(other: Bandwidth): Bandwidth =
-        Bandwidth(bps / other.bps)
+    operator fun times(other: Int): Bandwidth =
+        Bandwidth(bps * other)
 
-    operator fun divAssign(other: Bandwidth) {
-        bps /= other.bps
+    operator fun timesAssign(other: Int) {
+        bps *= other
+    }
+
+    override fun toString(): String {
+        // To determine which unit we'll print in,
+        // find the biggest one which has a value
+        // in the ones place
+        val format = DecimalFormat("0.##")
+        return when {
+            mbps >= 1 -> "${format.format(mbps)} mbps"
+            kbps >= 1 -> "${format.format(kbps)} kbps"
+            else -> "${format.format(bps)} bps"
+        }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -63,20 +86,22 @@ class Bandwidth(
         }
         return this.bps == other.bps
     }
+
+    override fun hashCode(): Int = bps.hashCode()
 }
 
-fun Int.bps(): Bandwidth = Bandwidth(this.toFloat())
-fun Int.kbps(): Bandwidth = Bandwidth(this.toFloat() * 1000)
-fun Int.mbps(): Bandwidth = Bandwidth(this.toFloat() * 1000 * 1000)
+fun Int.bps(): Bandwidth = Bandwidth(this.toDouble())
+fun Int.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
+fun Int.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
 
-fun Float.bps(): Bandwidth = Bandwidth(this)
-fun Float.kbps(): Bandwidth = Bandwidth(this * 1000)
-fun Float.mbps(): Bandwidth = Bandwidth(this * 1000 * 1000)
+fun Float.bps(): Bandwidth = Bandwidth(this.toDouble())
+fun Float.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
+fun Float.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
 
-fun Double.bps(): Bandwidth = Bandwidth(this.toFloat())
-fun Double.kbps(): Bandwidth = Bandwidth(this.toFloat() * 1000)
-fun Double.mbps(): Bandwidth = Bandwidth(this.toFloat() * 1000 * 1000)
+fun Double.bps(): Bandwidth = Bandwidth(this.toDouble())
+fun Double.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
+fun Double.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
 
-fun Long.bps(): Bandwidth = Bandwidth(this.toFloat())
-fun Long.kbps(): Bandwidth = Bandwidth(this.toFloat() * 1000)
-fun Long.mbps(): Bandwidth = Bandwidth(this.toFloat() * 1000 * 1000)
+fun Long.bps(): Bandwidth = Bandwidth(this.toDouble())
+fun Long.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
+fun Long.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
