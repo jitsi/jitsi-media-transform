@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.rtp.bandwidthestimation
 
+import java.time.Duration
 import java.time.Instant
 import org.jitsi.nlj.stats.NodeStatsBlock
 
@@ -82,6 +83,11 @@ interface BandwidthEstimator {
      *  [BandwidthEstimator].
      */
     fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int)
+
+    /**
+     * Inform the bandwidth estimator about a new round-trip time value
+     */
+    fun onRttUpdate(newRtt: Duration)
 
     /** Get the estimator's current estimate of the available bandwidth.
      *

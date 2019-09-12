@@ -324,6 +324,25 @@ public class SendSideBandwidthEstimation
         setBitrate(startBitrate);
     }
 
+    public void reset(long startBitrate)
+    {
+        first_report_time_ms_ = -1;
+        lost_packets_since_last_loss_update_Q8_ = 0;
+        expected_packets_since_last_loss_update_ = 0;
+        has_decreased_since_last_fraction_loss_ = false;
+        last_fraction_loss_ = 0;
+        last_feedback_ms_ = -1;
+        last_packet_report_ms_ = -1;
+        last_timeout_ms_ = -1;
+
+        time_last_decrease_ms_= 0;
+        bwe_incoming_ = 0;
+        min_bitrate_history_.clear();
+
+        setBitrate(startBitrate);
+        /* TODO: reset statistics */
+    }
+
     /**
      * bool SendSideBandwidthEstimation::IsInStartPhase(int64_t now_ms)
      */

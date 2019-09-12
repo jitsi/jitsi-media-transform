@@ -1,5 +1,6 @@
 package org.jitsi.nlj.rtp.bandwidthestimation
 
+import java.time.Duration
 import java.time.Instant
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.createChildLogger
@@ -8,27 +9,44 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateEstimatorAbsSendTime
 import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.SendSideBandwidthEstimation
 
+private const val defaultInitBw: Float = 2_500_000.0f
+private const val defaultMinBw: Float = 30_000.0f
+private const val defaultMaxBw: Float = 20_000_000.0f
+
 class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logger) : BandwidthEstimator {
     override val algorithmName = "Google CC"
 
     /* TODO: Use configuration service to set this default value. */
-    override var initBw: Float = 2_500_000.0f
+    override var initBw: Float = defaultInitBw
+    /* TODO: setter which sets the components' values if we're in initial state. */
 
-    override var minBw: Float = 30_000.0f
+    override var minBw: Float = defaultMinBw
+    set(value) {
+        field = value
+        bitrateEstimatorAbsSendTime.setMinBitrate(value.toInt())
+        sendSideBandwidthEstimation.setMinMaxBitrate(value.toInt(), maxBw.toInt())
+    }
 
-    override var maxBw: Float = 20_000_000.0f
+    override var maxBw: Float = defaultMaxBw
+    set(value) {
+        field = value
+        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), value.toInt())
+    }
 
     private val logger = parentLogger.createChildLogger(GoogleCcEstimator::class)
 
     /**
      * Implements the delay-based part of Google CC.
      */
-    private var bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(null, diagnosticContext, logger)
+    private val bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(null, diagnosticContext, logger)
+    init {
+        bitrateEstimatorAbsSendTime.setMinBitrate(minBw.toInt())
+    }
 
     /**
      * Implements the loss-based part of Google CC.
      */
-    private var sendSideBandwidthEstimation = SendSideBandwidthEstimation(diagnosticContext, initBw.toLong(), logger)
+    private val sendSideBandwidthEstimation = SendSideBandwidthEstimation(diagnosticContext, initBw.toLong(), logger)
     init {
         sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), maxBw.toInt())
     }
@@ -41,8 +59,13 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         TODO("not implemented")
     }
 
+    override fun onRttUpdate(newRtt: Duration) {
+        bitrateEstimatorAbsSendTime.onRttUpdate(newRtt.toMillis(), -1)
+        sendSideBandwidthEstimation.onRttUpdate(newRtt.toNanos() / 1.0e9)
+    }
+
     override fun getCurrentBw(now: Instant): Float {
-        TODO("not implemented")
+        return sendSideBandwidthEstimation.latestEstimate.toFloat()
     }
 
     override fun getStats(): NodeStatsBlock {
@@ -50,6 +73,13 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     }
 
     override fun reset() {
-        TODO("not implemented")
+        initBw = defaultInitBw
+        minBw = defaultMinBw
+        maxBw = defaultMaxBw
+
+        bitrateEstimatorAbsSendTime.reset()
+        sendSideBandwidthEstimation.reset(initBw.toLong())
+
+        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), maxBw.toInt())
     }
 }

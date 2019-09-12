@@ -189,6 +189,18 @@ public class RemoteBitrateEstimatorAbsSendTime
     }
 
     /**
+     * Reset back to the state immediately after construction.
+     */
+    public void reset()
+    {
+        remoteRate.reset();
+        this.incomingBitrate = new RateStatistics(kBitrateWindowMs, kBitrateScale);
+        this.incomingBitrateInitialized = false;
+        this.firstPacketTimeMs = -1;
+        this.lastUpdateMs = -1;
+    }
+
+    /**
      * Notifies this instance of an incoming packet.
      *
      * @param arrivalTimeMs the arrival time of the packet in millis.
