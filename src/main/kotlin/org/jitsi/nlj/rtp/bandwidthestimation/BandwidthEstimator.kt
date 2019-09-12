@@ -87,7 +87,7 @@ interface BandwidthEstimator {
     /**
      * Inform the bandwidth estimator about a new round-trip time value
      */
-    fun onRttUpdate(newRtt: Duration)
+    fun onRttUpdate(now: Instant, newRtt: Duration)
 
     /** Get the estimator's current estimate of the available bandwidth.
      *
