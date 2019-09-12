@@ -409,12 +409,12 @@ class AimdRateControl
         currentBitrateBps = Math.max(minBitrateBps, currentBitrateBps);
     }
 
-    public void setRtt(long rtt)
+    public void setRtt(long nowMs, long rtt)
     {
         if (logger.isTraceEnabled())
         {
             logger.trace(diagnosticContext
-                    .makeTimeSeriesPoint("aimd_rtt", System.currentTimeMillis())
+                    .makeTimeSeriesPoint("aimd_rtt", nowMs)
                     .addField("aimd_id", hashCode())
                     .addField("rtt", rtt));
         }

@@ -93,7 +93,7 @@ public class RemoteBitrateEstimatorAbsSendTime
 
     /**
      * Reduces the effects of allocations and garbage collection of the method
-     * {@link #incomingPacketInfo(long, long, int, long)}} by promoting the
+     * {@link #incomingPacketInfo(long, long, long, int, long)}} by promoting the
      * {@code RateControlInput} instance from a local variable to a field and
      * reusing the same instance across method invocations. (Consequently, the
      * default values used to initialize the field are of no importance because
@@ -203,6 +203,7 @@ public class RemoteBitrateEstimatorAbsSendTime
     /**
      * Notifies this instance of an incoming packet.
      *
+     * @param nowMs the current time when this method is called
      * @param arrivalTimeMs the arrival time of the packet in millis.
      * @param sendTime24bits the send time of the packet in AST format
      * (24 bits, 6.18 fixed point).
@@ -211,6 +212,7 @@ public class RemoteBitrateEstimatorAbsSendTime
      */
     @Override
     public void incomingPacketInfo(
+        long nowMs,
         long arrivalTimeMs,
         long sendTime24bits,
         int payloadSize,
@@ -222,11 +224,6 @@ public class RemoteBitrateEstimatorAbsSendTime
 
         // Convert the expanded AST (32 bits, 6.26 fixed point) to millis.
         long sendTimeMs = (long) (timestamp * kTimestampToMs);
-
-        // XXX The arrival time should be the earliest we've seen this packet,
-        // not now. In our code however, we don't have access to the arrival
-        // time.
-        long nowMs = System.currentTimeMillis();
 
         if (timeSeriesLogger.isTraceEnabled())
         {
@@ -386,17 +383,17 @@ public class RemoteBitrateEstimatorAbsSendTime
     /**
      * Called when an RTP sender has a new round-trip time estimate.
      */
-    public synchronized void onRttUpdate(long avgRttMs, long maxRttMs)
+    public synchronized void onRttUpdate(long nowMs, long avgRttMs, long maxRttMs)
     {
         if (timeSeriesLogger.isTraceEnabled())
         {
             timeSeriesLogger.trace(diagnosticContext
-                .makeTimeSeriesPoint("new_rtt", System.currentTimeMillis())
+                .makeTimeSeriesPoint("new_rtt", nowMs)
                 .addField("avg_ms", avgRttMs)
                 .addField("max_ms", maxRttMs));
         }
 
-        remoteRate.setRtt(avgRttMs);
+        remoteRate.setRtt(nowMs, avgRttMs);
     }
 
     /**

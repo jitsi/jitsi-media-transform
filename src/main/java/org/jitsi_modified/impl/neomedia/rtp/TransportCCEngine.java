@@ -106,7 +106,8 @@ public class TransportCCEngine
      */
     public void onRttUpdate(long avgRttMs, long maxRttMs)
     {
-        bitrateEstimatorAbsSendTime.onRttUpdate(avgRttMs, maxRttMs);
+        long nowMs = System.currentTimeMillis();
+        bitrateEstimatorAbsSendTime.onRttUpdate(nowMs, avgRttMs, maxRttMs);
     }
 
     /**
@@ -133,10 +134,11 @@ public class TransportCCEngine
 
     private void tccReceived(RtcpFbTccPacket tccPacket)
     {
+        long nowMs = System.currentTimeMillis();
         if (remoteReferenceTimeMs == -1)
         {
             remoteReferenceTimeMs = tccPacket.GetBaseTimeUs() / 1000;
-            localReferenceTimeMs = System.currentTimeMillis();
+            localReferenceTimeMs = nowMs;
         }
         double currArrivalTimestampMs = tccPacket.GetBaseTimeUs() / 1000.0;
 
@@ -166,6 +168,7 @@ public class TransportCCEngine
                         .convertMsTo24Bits(packetDetail.packetSendTimeMs);
 
             bitrateEstimatorAbsSendTime.incomingPacketInfo(
+                    nowMs,
                     arrivalTimeMsInLocalClock,
                     sendTime24bitsInLocalClock,
                     packetDetail.packetLength,

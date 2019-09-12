@@ -75,6 +75,7 @@ public interface RemoteBitrateEstimator
     /**
      * Notifies this instance of an incoming packet.
      *
+     * @param nowMs the current time when this method is called
      * @param arrivalTimeMs the arrival time of the packet in millis.
      * @param timestamp the 32bit send timestamp of the packet. Note that the
      * specific format depends on the specific implementation.
@@ -82,5 +83,5 @@ public interface RemoteBitrateEstimator
      * @param ssrc the SSRC of the packet.
      */
     void incomingPacketInfo(
-        long arrivalTimeMs, long timestamp, int payloadSize, long ssrc);
+        long nowMs, long arrivalTimeMs, long timestamp, int payloadSize, long ssrc);
 }
