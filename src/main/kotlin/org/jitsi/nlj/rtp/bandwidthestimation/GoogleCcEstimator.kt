@@ -51,7 +51,19 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     }
 
     override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: Int, ecn: Byte) {
-        TODO("not implemented")
+        if (sendTime != null && recvTime != null) {
+            /* TODO: update bitrateEstimatorAbsSendTime to do all math in millis. */
+            val sendTime24bits = RemoteBitrateEstimatorAbsSendTime
+                    .convertMsTo24Bits(sendTime.toEpochMilli())
+
+            bitrateEstimatorAbsSendTime.incomingPacketInfo(now.toEpochMilli(),
+                    recvTime.toEpochMilli(), sendTime24bits, size, 1 /* TODO */)
+        }
+        sendSideBandwidthEstimation.updateReceiverEstimate(bitrateEstimatorAbsSendTime.latestEstimate)
+        /* TODO: update packet loss calculation */
+
+        /* TODO: rate-limit how often we call updateEstimate? */
+        sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
     }
 
     override fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {

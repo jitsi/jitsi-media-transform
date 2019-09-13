@@ -375,7 +375,7 @@ public class SendSideBandwidthEstimation
     /**
      * void SendSideBandwidthEstimation::UpdateEstimate(int64_t now_ms)
      */
-    synchronized void updateEstimate(long now)
+    synchronized public void updateEstimate(long now)
     {
         long bitrate = bitrate_;
 
