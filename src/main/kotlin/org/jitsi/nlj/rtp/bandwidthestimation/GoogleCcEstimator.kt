@@ -22,13 +22,13 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     /* TODO: observable which sets the components' values if we're in initial state. */
 
     override var minBw: Float by Delegates.observable(defaultMinBw) {
-        property, oldValue, newValue ->
+        _, _, newValue ->
         bitrateEstimatorAbsSendTime.setMinBitrate(newValue.toInt())
         sendSideBandwidthEstimation.setMinMaxBitrate(newValue.toInt(), maxBw.toInt())
     }
 
     override var maxBw: Float by Delegates.observable(defaultMaxBw) {
-        property, oldValue, newValue ->
+        _, _, newValue ->
         sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), newValue.toInt())
     }
 
