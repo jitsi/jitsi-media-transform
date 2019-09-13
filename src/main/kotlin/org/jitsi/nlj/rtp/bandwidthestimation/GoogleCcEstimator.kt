@@ -2,6 +2,7 @@ package org.jitsi.nlj.rtp.bandwidthestimation
 
 import java.time.Duration
 import java.time.Instant
+import kotlin.properties.Delegates
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.utils.logging.DiagnosticContext
@@ -18,19 +19,17 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
 
     /* TODO: Use configuration service to set this default value. */
     override var initBw: Float = defaultInitBw
-    /* TODO: setter which sets the components' values if we're in initial state. */
+    /* TODO: observable which sets the components' values if we're in initial state. */
 
-    override var minBw: Float = defaultMinBw
-    set(value) {
-        field = value
-        bitrateEstimatorAbsSendTime.setMinBitrate(value.toInt())
-        sendSideBandwidthEstimation.setMinMaxBitrate(value.toInt(), maxBw.toInt())
+    override var minBw: Float by Delegates.observable(defaultMinBw) {
+        property, oldValue, newValue ->
+        bitrateEstimatorAbsSendTime.setMinBitrate(newValue.toInt())
+        sendSideBandwidthEstimation.setMinMaxBitrate(newValue.toInt(), maxBw.toInt())
     }
 
-    override var maxBw: Float = defaultMaxBw
-    set(value) {
-        field = value
-        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), value.toInt())
+    override var maxBw: Float by Delegates.observable(defaultMaxBw) {
+        property, oldValue, newValue ->
+        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), newValue.toInt())
     }
 
     private val logger = parentLogger.createChildLogger(GoogleCcEstimator::class)
