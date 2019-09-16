@@ -71,11 +71,11 @@ internal abstract class FakeScheduledExecutorService : ScheduledExecutorService 
     }
 
     /**
-     * Run pending tasks until the timeout, or until there are no pending tasks
-     * in the queue.
+     * Run pending tasks until [endTime], or until there are no pending tasks
+     * in the queue, advancing the clock with each task.
      */
-    fun runUntil(timeout: Instant) {
-        while (jobs.isNotEmpty() && clock.instant() <= timeout) {
+    fun runUntil(endTime: Instant) {
+        while (jobs.isNotEmpty() && clock.instant() <= endTime) {
             runOne()
         }
     }
