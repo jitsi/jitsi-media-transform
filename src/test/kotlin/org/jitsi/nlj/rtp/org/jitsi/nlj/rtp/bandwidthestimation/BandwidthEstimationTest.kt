@@ -47,14 +47,18 @@ abstract class FixedRateSender(
         if (!running || rate <= 0 || nextPacketSize() == 0) {
             nextPacket = null
         } else {
-            val interPacketTime = (rate * 1e9 / nextPacketSize()).toLong()
-            var packetDelayTime = interPacketTime
+            var packetDelayTime: Long
+            if (lastSend == null) {
+                packetDelayTime = 0
+            } else {
+                packetDelayTime = (nextPacketSize() * 1e9 / rate).toLong()
 
-            if (!justSent && lastSend != null) {
-                packetDelayTime -= Duration.between(lastSend, clock.instant()).toNanos()
+                if (!justSent) {
+                    packetDelayTime -= Duration.between(lastSend, clock.instant()).toNanos()
+                }
             }
 
-            nextPacket = executor.schedule(::doSendPacket, interPacketTime, TimeUnit.NANOSECONDS)
+            nextPacket = executor.schedule(::doSendPacket, packetDelayTime, TimeUnit.NANOSECONDS)
         }
     }
 
@@ -62,8 +66,8 @@ abstract class FixedRateSender(
         val now = clock.instant()
         val sendNext = sendPacket(now)
 
-        lastSend = now
         if (sendNext) {
+            lastSend = now
             schedulePacket(true)
         }
     }
