@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
+import org.jitsi.nlj.util.NEVER
 import org.jitsi.service.libjitsi.LibJitsi
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.LoggerImpl
@@ -25,13 +26,16 @@ data class SimulatedPacket(
     val ssrc: Long
 )
 
+/* TODO: move this to some util class */
+const val NANOSECONDS_PER_SECOND = 1.0e9f
+
 abstract class FixedRateSender(
     val executor: ScheduledExecutorService,
     val clock: Clock,
     var receiver: (SimulatedPacket) -> Unit
 ) {
     var nextPacket: ScheduledFuture<*>? = null
-    var lastSend: Instant? = null
+    var lastSendTime: Instant = NEVER
 
     var running = false
 
@@ -47,16 +51,14 @@ abstract class FixedRateSender(
         if (!running || rate <= 0 || nextPacketSize() == 0) {
             nextPacket = null
         } else {
-            var packetDelayTime: Long
-            if (lastSend == null) {
-                packetDelayTime = 0
-            } else {
-                /* PacketSize is in bytes, rate is in bits/second. */
-                /* packetDelayTime is in ns. */
-                packetDelayTime = (nextPacketSize() * 8 * 1e9 / rate).toLong()
-
-                if (!justSent) {
-                    packetDelayTime -= Duration.between(lastSend, clock.instant()).toNanos()
+            val packetDelayTime = when (lastSendTime) {
+                NEVER -> 0
+                else -> {
+                    var delayTime = (nextPacketSize() * Byte.SIZE_BITS * NANOSECONDS_PER_SECOND / rate).toLong()
+                    if (!justSent) {
+                        delayTime -= Duration.between(lastSendTime, clock.instant()).toNanos()
+                    }
+                    delayTime
                 }
             }
 
@@ -69,7 +71,7 @@ abstract class FixedRateSender(
         val sendNext = sendPacket(now)
 
         if (sendNext) {
-            lastSend = now
+            lastSendTime = now
             schedulePacket(true)
         }
     }
