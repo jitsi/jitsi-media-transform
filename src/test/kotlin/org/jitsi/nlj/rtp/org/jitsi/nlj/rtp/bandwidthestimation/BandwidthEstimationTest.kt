@@ -51,7 +51,9 @@ abstract class FixedRateSender(
             if (lastSend == null) {
                 packetDelayTime = 0
             } else {
-                packetDelayTime = (nextPacketSize() * 1e9 / rate).toLong()
+                /* PacketSize is in bytes, rate is in bits/second. */
+                /* packetDelayTime is in ns. */
+                packetDelayTime = (nextPacketSize() * 8 * 1e9 / rate).toLong()
 
                 if (!justSent) {
                     packetDelayTime -= Duration.between(lastSend, clock.instant()).toNanos()
@@ -89,7 +91,7 @@ class PacketGenerator(
     executor: ScheduledExecutorService,
     clock: Clock,
     receiver: (SimulatedPacket) -> Unit,
-    var packetSize: Int = 10000,
+    var packetSize: Int = 1250,
     val ssrc: Long = 0xcafebabe
 ) : FixedRateSender(executor, clock, receiver) {
     override fun nextPacketSize() = packetSize
