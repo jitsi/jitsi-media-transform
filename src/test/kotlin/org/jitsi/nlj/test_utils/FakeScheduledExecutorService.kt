@@ -33,9 +33,9 @@ internal abstract class FakeScheduledExecutorService : ScheduledExecutorService 
     }
 
     override fun schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture<*> {
-        println("scheduling job with a delay of ${unit.toMillis(delay)} from time ${clock.instant()}")
+        println("scheduling job with a delay of $delay $unit from time ${clock.instant()}")
         val future: ScheduledFuture<Unit> = mock()
-        val nextRunTime = clock.instant().plus(Duration.ofMillis(unit.toMillis(delay)))
+        val nextRunTime = clock.instant().plus(Duration.ofNanos(unit.toNanos(delay)))
         val job = Job(command, nextRunTime)
         jobs.add(job)
 
