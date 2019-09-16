@@ -179,7 +179,7 @@ class BandwidthEstimationTest : ShouldSpec() {
                 bottleneck.start()
                 generator.start()
 
-                while (clock.millis() < 5000) {
+                while (clock.millis() < 30000) {
                     scheduler.run()
                 }
 
