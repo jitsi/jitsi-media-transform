@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
+import org.jitsi.service.libjitsi.LibJitsi
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.LoggerImpl
 
@@ -154,6 +155,11 @@ class PacketReceiver(
 }
 
 class BandwidthEstimationTest : ShouldSpec() {
+    init {
+        /* Internals of GoogleCc use ConfigurationService at construct time. */
+        LibJitsi.start()
+    }
+
     val ctx = DiagnosticContext()
     val logger = LoggerImpl(BandwidthEstimationTest::class.qualifiedName)
     val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
