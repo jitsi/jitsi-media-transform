@@ -42,14 +42,15 @@ abstract class FixedRateSender(
     abstract fun nextPacketSize(): Int
 
     fun schedulePacket(justSent: Boolean) {
-        if (!running || rate <= 0 || nextPacketSize() == 0)
+        if (!running || rate <= 0 || nextPacketSize() == 0) {
             nextPacket = null
-        else {
+        } else {
             val interPacketTime = (rate * 1e9 / nextPacketSize()).toLong()
             var packetDelayTime = interPacketTime
 
-            if (!justSent && lastSend != null)
+            if (!justSent && lastSend != null) {
                 packetDelayTime -= Duration.between(lastSend, clock.instant()).toNanos()
+            }
 
             nextPacket = executor.schedule(::doSendPacket, interPacketTime, TimeUnit.NANOSECONDS)
         }
@@ -60,8 +61,9 @@ abstract class FixedRateSender(
         val sendNext = sendPacket(now)
 
         lastSend = now
-        if (sendNext)
+        if (sendNext) {
             schedulePacket(true)
+        }
     }
 
     abstract fun sendPacket(now: Instant): Boolean
@@ -101,17 +103,20 @@ class PacketBottleneck(
     val queue = ArrayDeque<SimulatedPacket>()
 
     fun enqueue(packet: SimulatedPacket) {
-        if (!running)
+        if (!running) {
             return
+        }
         val queueWasEmpty = queue.isEmpty()
         queue.push(packet)
-        if (queueWasEmpty)
+        if (queueWasEmpty) {
             schedulePacket(false)
+        }
     }
 
     override fun sendPacket(now: Instant): Boolean {
-        if (queue.isEmpty())
+        if (queue.isEmpty()) {
             return false
+        }
 
         val packet = queue.pop()
         receiver(packet)
