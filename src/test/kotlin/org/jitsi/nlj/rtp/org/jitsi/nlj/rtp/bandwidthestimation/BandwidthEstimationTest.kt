@@ -7,6 +7,7 @@ import io.kotlintest.specs.ShouldSpec
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.ArrayDeque
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -185,9 +186,7 @@ class BandwidthEstimationTest : ShouldSpec() {
                 bottleneck.start()
                 generator.start()
 
-                while (clock.millis() < 30000) {
-                    scheduler.run()
-                }
+                scheduler.runUntil(clock.instant().plus(30, ChronoUnit.SECONDS))
 
                 generator.stop()
                 bottleneck.stop()
