@@ -112,7 +112,7 @@ class PacketBottleneck(
     receiver: (SimulatedPacket) -> Unit
 ) : FixedRateSender(executor, clock, receiver) {
     val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
-    val ctx = DiagnosticContext()
+    val ctx = DiagnosticContext(clock)
 
     val queue = ArrayDeque<SimulatedPacket>()
 
@@ -136,7 +136,7 @@ class PacketBottleneck(
         receiver(packet)
 
         if (timeSeriesLogger.isTraceEnabled) {
-            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("queueDepth", now.toEpochMilli()).addField("depth", queue.size))
+            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("queueDepth", now).addField("depth", queue.size))
         }
 
         return true
@@ -172,7 +172,7 @@ class PacketReceiver(
         seq++
         val bw = estimator.getCurrentBw(now)
         if (timeSeriesLogger.isTraceEnabled) {
-            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("bw", now.toEpochMilli()).addField("bw", bw))
+            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("bw", now).addField("bw", bw))
         }
         rateReceiver(bw)
     }
@@ -183,13 +183,12 @@ class BandwidthEstimationTest : ShouldSpec() {
         /* Internals of GoogleCc use ConfigurationService at construct time. */
         LibJitsi.start()
     }
-
-    val ctx = DiagnosticContext()
-    val logger = LoggerImpl(BandwidthEstimationTest::class.qualifiedName)
-    val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
-
     private val scheduler: FakeScheduledExecutorService = spy()
     val clock: Clock = scheduler.clock
+
+    val ctx = DiagnosticContext(clock)
+    val logger = LoggerImpl(BandwidthEstimationTest::class.qualifiedName)
+    val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
 
     val rtt = Duration.ofMillis(200)
     val bottleneckRate = 1.0e6f
