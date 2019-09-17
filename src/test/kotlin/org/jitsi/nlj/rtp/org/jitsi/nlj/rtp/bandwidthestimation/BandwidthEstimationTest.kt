@@ -17,6 +17,7 @@ import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.service.libjitsi.LibJitsi
 import org.jitsi.utils.logging.DiagnosticContext
+import org.jitsi.utils.logging.TimeSeriesLogger
 import org.jitsi.utils.logging2.LoggerImpl
 
 /** A simulated packet, for bandwidth estimation testing. */
@@ -110,6 +111,9 @@ class PacketBottleneck(
     clock: Clock,
     receiver: (SimulatedPacket) -> Unit
 ) : FixedRateSender(executor, clock, receiver) {
+    val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
+    val ctx = DiagnosticContext()
+
     val queue = ArrayDeque<SimulatedPacket>()
 
     fun enqueue(packet: SimulatedPacket) {
@@ -130,6 +134,11 @@ class PacketBottleneck(
 
         val packet = queue.pop()
         receiver(packet)
+
+        if (timeSeriesLogger.isTraceEnabled) {
+            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("queueDepth", now.toEpochMilli()).addField("depth", queue.size))
+        }
+
         return true
     }
 
@@ -151,6 +160,8 @@ class PacketReceiver(
     val estimator: BandwidthEstimator,
     val rateReceiver: (Float) -> Unit
 ) {
+    val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
+    val ctx = DiagnosticContext()
     var seq = 0
 
     fun setRtt(rtt: Duration) = estimator.onRttUpdate(clock.instant(), rtt)
@@ -159,7 +170,11 @@ class PacketReceiver(
         val now = clock.instant()
         estimator.processPacketArrival(now, packet.sendTime, now, seq, packet.packetSize)
         seq++
-        rateReceiver(estimator.getCurrentBw(now))
+        val bw = estimator.getCurrentBw(now)
+        if (timeSeriesLogger.isTraceEnabled) {
+            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("bw", now.toEpochMilli()).addField("bw", bw))
+        }
+        rateReceiver(bw)
     }
 }
 
