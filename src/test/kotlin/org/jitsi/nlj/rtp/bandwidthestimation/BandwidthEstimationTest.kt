@@ -120,8 +120,9 @@ class PacketBottleneck(
         if (!running) {
             return
         }
+        assert(packet.sendTime <= clock.instant())
         val queueWasEmpty = queue.isEmpty()
-        queue.push(packet)
+        queue.addFirst(packet)
         if (queueWasEmpty) {
             schedulePacket(false)
         }
@@ -132,11 +133,15 @@ class PacketBottleneck(
             return false
         }
 
-        val packet = queue.pop()
+        val packet = queue.removeLast()
         receiver(packet)
 
         if (timeSeriesLogger.isTraceEnabled) {
-            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("queueDepth", now).addField("depth", queue.size))
+            val delay = Duration.between(packet.sendTime, now)
+            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("queue", now)
+                .addField("depth", queue.size)
+                .addField("delay", delay.toNanos() / 1e6)
+            )
         }
 
         return true
@@ -168,6 +173,7 @@ class PacketReceiver(
 
     fun receivePacket(packet: SimulatedPacket) {
         val now = clock.instant()
+        assert(packet.sendTime <= now)
         estimator.processPacketArrival(now, packet.sendTime, now, seq, packet.packetSize)
         seq++
         val bw = estimator.getCurrentBw(now)
@@ -208,14 +214,14 @@ class BandwidthEstimationTest : ShouldSpec() {
                 bottleneck.start()
                 generator.start()
 
-                scheduler.runUntil(clock.instant().plus(30, ChronoUnit.SECONDS))
+                scheduler.runUntil(clock.instant().plus(60, ChronoUnit.SECONDS))
 
                 generator.stop()
                 bottleneck.stop()
 
                 val finalBw = estimator.getCurrentBw(clock.instant())
-                finalBw.shouldBeGreaterThan(bottleneckRate * 0.9f)
-                finalBw.shouldBeLessThan(bottleneckRate * 1.1f)
+                finalBw.shouldBeGreaterThan(bottleneckRate / 1.2f)
+                finalBw.shouldBeLessThan(bottleneckRate * 1.2f)
             }
         }
     }
