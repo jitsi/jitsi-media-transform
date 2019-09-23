@@ -169,11 +169,11 @@ class PacketReceiver(
     val ctx = DiagnosticContext()
     var seq = 0
 
-    fun setRtt(rtt: Duration) = estimator.onRttUpdate(clock.instant(), rtt)
-
     fun receivePacket(packet: SimulatedPacket) {
         val now = clock.instant()
         assert(packet.sendTime <= now)
+        /* All delay is send -> receive in this simulation, so one-way delay is rtt. */
+        estimator.onRttUpdate(now, Duration.between(packet.sendTime, now))
         estimator.processPacketArrival(now, packet.sendTime, now, seq, packet.packetSize)
         seq++
         val bw = estimator.getCurrentBw(now)
@@ -197,7 +197,7 @@ class BandwidthEstimationTest : ShouldSpec() {
     val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
 
     val rtt = Duration.ofMillis(200)
-    val bottleneckRate = 1.0e6f
+    val bottleneckRate = 4.0e6f
 
     val generator: PacketGenerator = PacketGenerator(scheduler, clock, { bottleneck.enqueue(it) })
     val bottleneck: PacketBottleneck = PacketBottleneck(scheduler, clock, { delayer.enqueue(it) })
@@ -209,12 +209,11 @@ class BandwidthEstimationTest : ShouldSpec() {
             should("work correctly") {
                 bottleneck.rate = bottleneckRate
                 generator.rate = estimator.getCurrentBw(clock.instant())
-                receiver.setRtt(rtt)
 
                 bottleneck.start()
                 generator.start()
 
-                scheduler.runUntil(clock.instant().plus(60, ChronoUnit.SECONDS))
+                scheduler.runUntil(clock.instant().plus(120, ChronoUnit.SECONDS))
 
                 generator.stop()
                 bottleneck.stop()
