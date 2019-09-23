@@ -488,7 +488,7 @@ public class SendSideBandwidthEstimation
     /**
      * void SendSideBandwidthEstimation::UpdateReceiverBlock
      */
-    synchronized void updateReceiverBlock(
+    synchronized public void updateReceiverBlock(
             long fraction_lost, long number_of_packets, long now)
     {
         last_feedback_ms_ = now;
@@ -859,7 +859,13 @@ public class SendSideBandwidthEstimation
                             .addField("high_loss_threshold",
                                 high_loss_threshold_)
                             .addField("delta_bps",
-                                bitrate_ - currentStateStartBitrateBps));
+                                bitrate_ - currentStateStartBitrateBps)
+                            .addField("bitrate",
+                                bitrate_)
+                            .addField("bwe_incoming",
+                                bwe_incoming_)
+                            .addField("rtt",
+                                rtt));
                     }
                 }
 
