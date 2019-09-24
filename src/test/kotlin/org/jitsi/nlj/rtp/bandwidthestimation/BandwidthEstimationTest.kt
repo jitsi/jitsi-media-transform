@@ -109,10 +109,10 @@ class PacketGenerator(
 class PacketBottleneck(
     executor: ScheduledExecutorService,
     clock: Clock,
+    val ctx: DiagnosticContext,
     receiver: (SimulatedPacket) -> Unit
 ) : FixedRateSender(executor, clock, receiver) {
     val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
-    val ctx = DiagnosticContext(clock)
 
     val queue = ArrayDeque<SimulatedPacket>()
 
@@ -163,10 +163,10 @@ class PacketDelayer(
 class PacketReceiver(
     val clock: Clock,
     val estimator: BandwidthEstimator,
+    val ctx: DiagnosticContext,
     val rateReceiver: (Float) -> Unit
 ) {
     val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
-    val ctx = DiagnosticContext()
     var seq = 0
 
     fun receivePacket(packet: SimulatedPacket) {
@@ -193,6 +193,13 @@ class BandwidthEstimationTest : ShouldSpec() {
     val clock: Clock = scheduler.clock
 
     val ctx = DiagnosticContext(clock)
+    init {
+        /* Emulate the fields that jitsi-videobridge puts in its DiagnosticContexts. */
+        ctx["conf_name"] = "BandwidthEstimationTest"
+        ctx["conf_creation_time_ms"] = clock.instant().toEpochMilli()
+        ctx["endpoint_id"] = "00000000"
+    }
+
     val logger = LoggerImpl(BandwidthEstimationTest::class.qualifiedName)
     val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
 
@@ -200,9 +207,9 @@ class BandwidthEstimationTest : ShouldSpec() {
     val bottleneckRate = 4.0e6f
 
     val generator: PacketGenerator = PacketGenerator(scheduler, clock, { bottleneck.enqueue(it) })
-    val bottleneck: PacketBottleneck = PacketBottleneck(scheduler, clock, { delayer.enqueue(it) })
+    val bottleneck: PacketBottleneck = PacketBottleneck(scheduler, clock, ctx, { delayer.enqueue(it) })
     val delayer: PacketDelayer = PacketDelayer(scheduler, { receiver.receivePacket(it) }, rtt)
-    val receiver: PacketReceiver = PacketReceiver(clock, estimator, { generator.rate = it })
+    val receiver: PacketReceiver = PacketReceiver(clock, estimator, ctx, { generator.rate = it })
 
     init {
         "Running bandwidth estimation test" {
