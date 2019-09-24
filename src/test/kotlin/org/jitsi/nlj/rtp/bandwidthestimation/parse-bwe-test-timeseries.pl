@@ -99,6 +99,7 @@ while (<>) {
     next if !defined($line);
 
     my $key = get_ep_key($line);
+    # Use 1e8 since the epoch (March 1973) as the threshold between fake clocks and real clocks.
     my $time = $line->{time} < 1e8 ? $line->{time} / 1e3 : "new Date($line->{time})";
     my $series = $line->{series};
     next if (!defined($key) || !defined($time) || !defined($series));
@@ -127,6 +128,7 @@ foreach my $ep (keys %endpoints) {
     print "," if ($subsequent); $subsequent = 1;
 
     my $conf_time_str;
+    # See above about 1e8
     if ($conf_time > 1e8) {
 	$conf_time_str = "new Date($conf_time).toISOString()";
     }
