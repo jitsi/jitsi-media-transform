@@ -10,43 +10,52 @@
       google.charts.load('current', {'packages':['corechart', 'scatter']});
 
       // Set a callback to run when the Google Visualization API is loaded.
-      google.charts.setOnLoadCallback(drawChart);
+      google.charts.setOnLoadCallback(drawCharts);
 
       // Callback that creates and populates a data table,
       // instantiates the pie chart, passes in the data and
       // draws it.
-      function drawChart() {
+      function drawChart(chart) {
 
         // Create the data table.
-        var data = google.visualization.arrayToDataTable(dataRows);
+        var data = google.visualization.arrayToDataTable(chart.data);
 
         var options = {
           width: 800,
           height: 600,
           series: {
-            0: {targetAxisIndex: 0},
-            1: {targetAxisIndex: 1}
-          },
-          title: 'Bandwidth Estimation and Queue Delay',
+            0: {targetAxisIndex: 0}, 
+            1: {targetAxisIndex: 1},
+            2: {targetAxisIndex: 1}
+         },
+          title: chart.title,
 
           vAxes: {
-            // Adds titles to each axis.
-            0: {title: 'Bandwidth (bps)'},
-            1: {title: 'Queueing Delay (ms)'}
+            0: {title: 'Bandwidth (bps)', minValue:0},
+            1: {title: 'ms', minValue:0}
          },
          pointSize: 0,
          lineWidth: 1,
          interpolateNulls: true,
         }
 
-      var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
+      var div = document.createElement("div");
+      document.getElementById('chart_div').appendChild(div);      
+      var chart = new google.visualization.ScatterChart(div);
       chart.draw(data, options);
+      }
+
+      function drawCharts() {
+        var chart;
+      	for (chart in charts) {
+          drawChart(charts[chart]);
+        }
       }
     </script>
   </head>
 
   <body>
-    <!--Div that will hold the pie chart-->
+    <!--Div that will hold the charts -->
     <div id="chart_div"></div>
   </body>
 </html>
