@@ -18,8 +18,8 @@ package org.jitsi.nlj.util
 
 import io.kotlintest.matchers.beGreaterThan
 import io.kotlintest.should
-import io.kotlintest.specs.ShouldSpec
 import io.kotlintest.shouldBe
+import io.kotlintest.specs.ShouldSpec
 
 class BandwidthTest : ShouldSpec() {
 
