@@ -40,7 +40,7 @@ class BandwidthTest : ShouldSpec() {
             }
         }
         "printing bandwidths" {
-            "should print as the most appropriate unit" {
+            should("print as the most appropriate unit") {
                 2_500_000.bps().toString() shouldBe "2.5 mbps"
                 500_000.bps().toString() shouldBe "500 kbps"
                 .001.mbps().toString() shouldBe "1 kbps"
