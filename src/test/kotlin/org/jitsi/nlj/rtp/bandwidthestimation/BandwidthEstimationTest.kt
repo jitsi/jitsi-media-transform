@@ -1,8 +1,8 @@
 package org.jitsi.nlj.rtp.bandwidthestimation
 
 import com.nhaarman.mockitokotlin2.spy
-import io.kotlintest.matchers.floats.shouldBeGreaterThan
-import io.kotlintest.matchers.floats.shouldBeLessThan
+import io.kotlintest.matchers.doubles.shouldBeGreaterThan
+import io.kotlintest.matchers.doubles.shouldBeLessThan
 import io.kotlintest.specs.ShouldSpec
 import java.time.Clock
 import java.time.Duration
@@ -14,7 +14,10 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
+import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.NEVER
+import org.jitsi.nlj.util.bps
+import org.jitsi.nlj.util.mbps
 import org.jitsi.service.libjitsi.LibJitsi
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging.TimeSeriesLogger
@@ -40,7 +43,7 @@ abstract class FixedRateSender(
 
     var running = false
 
-    var rate: Float by Delegates.observable(0.0f) {
+    var rate: Bandwidth by Delegates.observable(0.bps()) {
         _, _, newValue ->
         nextPacket?.cancel(false)
         schedulePacket(false)
@@ -49,13 +52,13 @@ abstract class FixedRateSender(
     abstract fun nextPacketSize(): Int
 
     fun schedulePacket(justSent: Boolean) {
-        if (!running || rate <= 0 || nextPacketSize() == 0) {
+        if (!running || rate <= 0.bps() || nextPacketSize() == 0) {
             nextPacket = null
         } else {
             val packetDelayTime = when (lastSendTime) {
                 NEVER -> 0
                 else -> {
-                    var delayTime = (nextPacketSize() * Byte.SIZE_BITS * NANOSECONDS_PER_SECOND / rate).toLong()
+                    var delayTime = (nextPacketSize() * Byte.SIZE_BITS * NANOSECONDS_PER_SECOND / rate.bps).toLong()
                     if (!justSent) {
                         delayTime -= Duration.between(lastSendTime, clock.instant()).toNanos()
                     }
@@ -164,7 +167,7 @@ class PacketReceiver(
     val clock: Clock,
     val estimator: BandwidthEstimator,
     val ctx: DiagnosticContext,
-    val rateReceiver: (Float) -> Unit
+    val rateReceiver: (Bandwidth) -> Unit
 ) {
     val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
     var seq = 0
@@ -204,7 +207,7 @@ class BandwidthEstimationTest : ShouldSpec() {
     val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
 
     val rtt = Duration.ofMillis(200)
-    val bottleneckRate = 4.0e6f
+    val bottleneckRate = 4.0.mbps()
 
     val generator: PacketGenerator = PacketGenerator(scheduler, clock, { bottleneck.enqueue(it) })
     val bottleneck: PacketBottleneck = PacketBottleneck(scheduler, clock, ctx, { delayer.enqueue(it) })
@@ -226,8 +229,8 @@ class BandwidthEstimationTest : ShouldSpec() {
                 bottleneck.stop()
 
                 val finalBw = estimator.getCurrentBw(clock.instant())
-                finalBw.shouldBeGreaterThan(bottleneckRate / 1.2f)
-                finalBw.shouldBeLessThan(bottleneckRate * 1.2f)
+                finalBw.bps.shouldBeGreaterThan((bottleneckRate / 1.2).bps)
+                finalBw.bps.shouldBeLessThan((bottleneckRate * 1.2).bps)
             }
         }
     }

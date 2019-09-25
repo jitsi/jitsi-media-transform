@@ -19,6 +19,7 @@ package org.jitsi.nlj.rtp.bandwidthestimation
 import java.time.Duration
 import java.time.Instant
 import org.jitsi.nlj.stats.NodeStatsBlock
+import org.jitsi.nlj.util.Bandwidth
 
 /**
  * An abstract interface to a bandwidth estimation algorithm.
@@ -34,13 +35,13 @@ interface BandwidthEstimator {
     val algorithmName: String
 
     /** The initial bandwidth estimate. */
-    var initBw: Float
+    var initBw: Bandwidth
 
     /** The minimum bandwidth the estimator will return. */
-    var minBw: Float
+    var minBw: Bandwidth
 
     /** The maximum bandwidth the estimator will return. */
-    var maxBw: Float
+    var maxBw: Bandwidth
 
     /**
      * Inform the bandwidth estimator about a packet that has arrived at its
@@ -93,7 +94,7 @@ interface BandwidthEstimator {
      *
      * @param[now] The current time, when this function is called.
      */
-    fun getCurrentBw(now: Instant): Float
+    fun getCurrentBw(now: Instant): Bandwidth
 
     /** Get the current statistics related to this estimator. */
     fun getStats(): NodeStatsBlock

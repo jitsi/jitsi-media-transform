@@ -4,32 +4,36 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.properties.Delegates
 import org.jitsi.nlj.stats.NodeStatsBlock
+import org.jitsi.nlj.util.Bandwidth
+import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.createChildLogger
+import org.jitsi.nlj.util.kbps
+import org.jitsi.nlj.util.mbps
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateEstimatorAbsSendTime
 import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.SendSideBandwidthEstimation
 
-private const val defaultInitBw: Float = 2_500_000.0f
-private const val defaultMinBw: Float = 30_000.0f
-private const val defaultMaxBw: Float = 20_000_000.0f
+private val defaultInitBw: Bandwidth = 2.5.mbps()
+private val defaultMinBw: Bandwidth = 30.kbps()
+private val defaultMaxBw: Bandwidth = 20.mbps()
 
 class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logger) : BandwidthEstimator {
     override val algorithmName = "Google CC"
 
     /* TODO: Use configuration service to set this default value. */
-    override var initBw: Float = defaultInitBw
+    override var initBw: Bandwidth = defaultInitBw
     /* TODO: observable which sets the components' values if we're in initial state. */
 
-    override var minBw: Float by Delegates.observable(defaultMinBw) {
+    override var minBw: Bandwidth by Delegates.observable(defaultMinBw) {
         _, _, newValue ->
-        bitrateEstimatorAbsSendTime.setMinBitrate(newValue.toInt())
-        sendSideBandwidthEstimation.setMinMaxBitrate(newValue.toInt(), maxBw.toInt())
+        bitrateEstimatorAbsSendTime.setMinBitrate(newValue.bps.toInt())
+        sendSideBandwidthEstimation.setMinMaxBitrate(newValue.bps.toInt(), maxBw.bps.toInt())
     }
 
-    override var maxBw: Float by Delegates.observable(defaultMaxBw) {
+    override var maxBw: Bandwidth by Delegates.observable(defaultMaxBw) {
         _, _, newValue ->
-        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), newValue.toInt())
+        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.bps.toInt(), newValue.bps.toInt())
     }
 
     private val logger = parentLogger.createChildLogger(GoogleCcEstimator::class)
@@ -39,15 +43,15 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
      */
     private val bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(null, diagnosticContext, logger)
     init {
-        bitrateEstimatorAbsSendTime.setMinBitrate(minBw.toInt())
+        bitrateEstimatorAbsSendTime.setMinBitrate(minBw.bps.toInt())
     }
 
     /**
      * Implements the loss-based part of Google CC.
      */
-    private val sendSideBandwidthEstimation = SendSideBandwidthEstimation(diagnosticContext, initBw.toLong(), logger)
+    private val sendSideBandwidthEstimation = SendSideBandwidthEstimation(diagnosticContext, initBw.bps.toLong(), logger)
     init {
-        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), maxBw.toInt())
+        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
     }
 
     override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: Int, ecn: Byte) {
@@ -77,8 +81,8 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         sendSideBandwidthEstimation.onRttUpdate(newRtt.toNanos() / 1.0e9)
     }
 
-    override fun getCurrentBw(now: Instant): Float {
-        return sendSideBandwidthEstimation.latestEstimate.toFloat()
+    override fun getCurrentBw(now: Instant): Bandwidth {
+        return sendSideBandwidthEstimation.latestEstimate.bps()
     }
 
     override fun getStats(): NodeStatsBlock {
@@ -91,8 +95,8 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         maxBw = defaultMaxBw
 
         bitrateEstimatorAbsSendTime.reset()
-        sendSideBandwidthEstimation.reset(initBw.toLong())
+        sendSideBandwidthEstimation.reset(initBw.bps.toLong())
 
-        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.toInt(), maxBw.toInt())
+        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
     }
 }
