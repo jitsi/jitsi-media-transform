@@ -35,6 +35,8 @@ class BandwidthTest : ShouldSpec() {
                 1.kbps() * 10 shouldBe 10.kbps()
                 1.mbps() + 500.kbps() shouldBe 1.5.mbps()
                 1.mbps() * .95 shouldBe 950.kbps()
+                1.mbps() / 4 shouldBe 250.kbps()
+                1.mbps() / 4.mbps() shouldBe 0.25
             }
         }
         "printing bandwidths" {

@@ -68,6 +68,28 @@ class Bandwidth(
         bps *= other
     }
 
+    /**
+     * For division, we support both dividing by
+     * a normal number (giving a bandwidth), and dividing
+     * by another bandwidth, giving a number
+     */
+    operator fun div(other: Double): Bandwidth =
+        Bandwidth(bps / other)
+
+    operator fun divAssign(other: Double) {
+        bps /= other
+    }
+
+    operator fun div(other: Int): Bandwidth =
+        Bandwidth(bps / other)
+
+    operator fun divAssign(other: Int) {
+        bps /= other
+    }
+
+    operator fun div(other: Bandwidth): Double =
+        bps / other.bps
+
     override fun compareTo(other: Bandwidth): Int = (bps - other.bps).toInt()
 
     override fun toString(): String {
