@@ -108,7 +108,7 @@ class Bandwidth(
         if (other !is Bandwidth) {
             return false
         }
-        return this.bps == other.bps
+        return compareTo(other) == 0
     }
 
     override fun hashCode(): Int = bps.hashCode()
