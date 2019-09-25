@@ -33,3 +33,9 @@ infix fun DataSize.atRate(bw: Bandwidth): Duration {
     val bitsPerNano = bw.bps / 1e9
     return Duration.ofNanos((this.bits / bitsPerNano).toLong())
 }
+
+fun howMuchCanISendAtRate(bw: Bandwidth): Bandwidth = bw
+
+infix fun Bandwidth.`in`(time: Duration): DataSize {
+    return DataSize((bps * time.seconds).toLong())
+}

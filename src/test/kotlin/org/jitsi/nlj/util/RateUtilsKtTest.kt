@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.util
 
+import io.kotlintest.seconds
 import io.kotlintest.specs.ShouldSpec
 import io.kotlintest.shouldBe
 import java.time.Duration
@@ -26,6 +27,12 @@ class RateUtilsKtTest : ShouldSpec() {
         "atRate" {
             should("work correctly") {
                 1.megabytes() atRate 1.mbps() shouldBe Duration.ofSeconds(8)
+            }
+        }
+        "in" {
+            should("work correctly") {
+                val size = howMuchCanISendAtRate(1.mbps()).`in`(8.seconds)
+                size shouldBe 1.megabytes()
             }
         }
     }
