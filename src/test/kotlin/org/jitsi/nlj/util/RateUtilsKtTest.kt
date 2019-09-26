@@ -26,12 +26,12 @@ class RateUtilsKtTest : ShouldSpec() {
     init {
         "atRate" {
             should("work correctly") {
-                1.megabytes() atRate 1.mbps() shouldBe Duration.ofSeconds(8)
+                1.megabytes() atRate 1.mbps shouldBe Duration.ofSeconds(8)
             }
         }
         "in" {
             should("work correctly") {
-                val size = howMuchCanISendAtRate(1.mbps()).`in`(8.seconds)
+                val size = howMuchCanISendAtRate(1.mbps).`in`(8.seconds)
                 size shouldBe 1.megabytes()
             }
         }

@@ -26,30 +26,30 @@ class BandwidthTest : ShouldSpec() {
     init {
         "equivalent bandwidths" {
             should("match even if created differently") {
-                2.5.mbps() shouldBe 2_500_000.bps()
-                2500.kbps() shouldBe 2.5.mbps()
+                2.5.mbps shouldBe 2_500_000.bps
+                2500.kbps shouldBe 2.5.mbps
             }
         }
         "arithmetic operations on bandwidths" {
             should("work correctly") {
-                1.kbps() * 10 shouldBe 10.kbps()
-                1.mbps() + 500.kbps() shouldBe 1.5.mbps()
-                1.mbps() * .95 shouldBe 950.kbps()
-                1.mbps() / 4 shouldBe 250.kbps()
-                1.mbps() / 4.mbps() shouldBe 0.25
+                1.kbps * 10 shouldBe 10.kbps
+                1.mbps + 500.kbps shouldBe 1.5.mbps
+                1.mbps * .95 shouldBe 950.kbps
+                1.mbps / 4 shouldBe 250.kbps
+                1.mbps / 4.mbps shouldBe 0.25
             }
         }
         "printing bandwidths" {
             should("print as the most appropriate unit") {
-                2_500_000.bps().toString() shouldBe "2.5 mbps"
-                500_000.bps().toString() shouldBe "500 kbps"
-                .001.mbps().toString() shouldBe "1 kbps"
+                2_500_000.bps.toString() shouldBe "2.5 mbps"
+                500_000.bps.toString() shouldBe "500 kbps"
+                .001.mbps.toString() shouldBe "1 kbps"
             }
         }
         "comparing bandwidths" {
             should("work correctly") {
-                2.mbps() should beGreaterThan(1.mbps())
-                1000.bps() should beGreaterThan(999.bps())
+                2.mbps should beGreaterThan(1.mbps)
+                1000.bps should beGreaterThan(999.bps)
             }
         }
     }

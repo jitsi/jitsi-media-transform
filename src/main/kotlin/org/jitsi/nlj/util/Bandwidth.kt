@@ -22,9 +22,7 @@ import java.text.DecimalFormat
  * [Bandwidth] models a current bandwidth, represented as a rate
  * of bits per second.
  */
-class Bandwidth(
-    bps: Double
-) : Comparable<Bandwidth> {
+class Bandwidth(bps: Double) : Comparable<Bandwidth> {
     var bps: Double = bps
         private set
 
@@ -114,18 +112,31 @@ class Bandwidth(
     override fun hashCode(): Int = bps.hashCode()
 }
 
-fun Int.bps(): Bandwidth = Bandwidth(this.toDouble())
-fun Int.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
-fun Int.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
+val Int.bps: Bandwidth
+    get() = Bandwidth(this.toDouble())
+val Int.kbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000)
+val Int.mbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000 * 1000)
 
-fun Float.bps(): Bandwidth = Bandwidth(this.toDouble())
-fun Float.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
-fun Float.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
+val Float.bps: Bandwidth
+    get() = Bandwidth(this.toDouble())
+val Float.kbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000)
+val Float.mbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000 * 1000)
 
-fun Double.bps(): Bandwidth = Bandwidth(this.toDouble())
-fun Double.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
-fun Double.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
+val Double.bps: Bandwidth
+    get() = Bandwidth(this.toDouble())
+val Double.kbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000)
+val Double.mbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000 * 1000)
 
-fun Long.bps(): Bandwidth = Bandwidth(this.toDouble())
-fun Long.kbps(): Bandwidth = Bandwidth(this.toDouble() * 1000)
-fun Long.mbps(): Bandwidth = Bandwidth(this.toDouble() * 1000 * 1000)
+val Long.bps: Bandwidth
+    get() = Bandwidth(this.toDouble())
+val Long.kbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000)
+val Long.mbps: Bandwidth
+    get() = Bandwidth(this.toDouble() * 1000 * 1000)
+
