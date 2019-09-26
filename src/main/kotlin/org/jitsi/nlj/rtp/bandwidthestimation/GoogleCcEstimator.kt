@@ -5,6 +5,7 @@ import java.time.Instant
 import kotlin.properties.Delegates
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.Bandwidth
+import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.nlj.util.kbps
@@ -54,18 +55,17 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         sendSideBandwidthEstimation.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
     }
 
-    override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: Int, ecn: Byte) {
+    override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
         if (sendTime != null && recvTime != null) {
             /* TODO: update bitrateEstimatorAbsSendTime to do all math in millis. */
             val sendTime24bits = RemoteBitrateEstimatorAbsSendTime
                     .convertMsTo24Bits(sendTime.toEpochMilli())
 
             bitrateEstimatorAbsSendTime.incomingPacketInfo(now.toEpochMilli(),
-                    recvTime.toEpochMilli(), sendTime24bits, size, 1 /* TODO */)
+                    recvTime.toEpochMilli(), sendTime24bits, size.bytes.toInt(), 1 /* TODO */)
         }
         sendSideBandwidthEstimation.updateReceiverEstimate(bitrateEstimatorAbsSendTime.latestEstimate)
         sendSideBandwidthEstimation.updateReceiverBlock(0, 1, now.toEpochMilli())
-        /* TODO: update packet loss calculation */
 
         /* TODO: rate-limit how often we call updateEstimate? */
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())

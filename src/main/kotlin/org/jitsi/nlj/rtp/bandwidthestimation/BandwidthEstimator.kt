@@ -20,6 +20,7 @@ import java.time.Duration
 import java.time.Instant
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.Bandwidth
+import org.jitsi.nlj.util.DataSize
 
 /**
  * An abstract interface to a bandwidth estimation algorithm.
@@ -63,7 +64,7 @@ interface BandwidthEstimator {
      * @param[recvTime] The time the packet was received, if known, or null.
      * @param[seq] A 16-bit sequence number of packets processed by this
      *  [BandwidthEstimator].
-     * @param[size] The size of the packet, in bytes.
+     * @param[size] The size of the packet.
      * @param[ecn] The ECN markings with which the packet was received.
      */
     fun processPacketArrival(
@@ -71,7 +72,7 @@ interface BandwidthEstimator {
         sendTime: Instant?,
         recvTime: Instant?,
         seq: Int,
-        size: Int,
+        size: DataSize,
         ecn: Byte = 0
     )
 

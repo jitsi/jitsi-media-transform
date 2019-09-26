@@ -15,8 +15,12 @@ import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
 import org.jitsi.nlj.util.Bandwidth
+import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
+import org.jitsi.nlj.util.atRate
+import org.jitsi.nlj.util.bits
 import org.jitsi.nlj.util.bps
+import org.jitsi.nlj.util.bytes
 import org.jitsi.nlj.util.mbps
 import org.jitsi.service.libjitsi.LibJitsi
 import org.jitsi.utils.logging.DiagnosticContext
@@ -26,12 +30,9 @@ import org.jitsi.utils.logging2.LoggerImpl
 /** A simulated packet, for bandwidth estimation testing. */
 data class SimulatedPacket(
     val sendTime: Instant,
-    val packetSize: Int,
+    val packetSize: DataSize,
     val ssrc: Long
 )
-
-/* TODO: move this to some util class */
-const val NANOSECONDS_PER_SECOND = 1.0e9f
 
 abstract class FixedRateSender(
     val executor: ScheduledExecutorService,
@@ -49,24 +50,24 @@ abstract class FixedRateSender(
         schedulePacket(false)
     }
 
-    abstract fun nextPacketSize(): Int
+    abstract fun nextPacketSize(): DataSize
 
     fun schedulePacket(justSent: Boolean) {
-        if (!running || rate <= 0.bps || nextPacketSize() == 0) {
+        if (!running || rate <= 0.bps || nextPacketSize().bits == 0L) {
             nextPacket = null
         } else {
             val packetDelayTime = when (lastSendTime) {
-                NEVER -> 0
+                NEVER -> Duration.ZERO
                 else -> {
-                    var delayTime = (nextPacketSize() * Byte.SIZE_BITS * NANOSECONDS_PER_SECOND / rate.bps).toLong()
+                    var delayTime = (nextPacketSize() atRate rate)
                     if (!justSent) {
-                        delayTime -= Duration.between(lastSendTime, clock.instant()).toNanos()
+                        delayTime -= Duration.between(lastSendTime, clock.instant())
                     }
                     delayTime
                 }
             }
 
-            nextPacket = executor.schedule(::doSendPacket, packetDelayTime, TimeUnit.NANOSECONDS)
+            nextPacket = executor.schedule(::doSendPacket, packetDelayTime.toNanos(), TimeUnit.NANOSECONDS)
         }
     }
 
@@ -97,7 +98,7 @@ class PacketGenerator(
     executor: ScheduledExecutorService,
     clock: Clock,
     receiver: (SimulatedPacket) -> Unit,
-    var packetSize: Int = 1250,
+    var packetSize: DataSize = 1250.bytes,
     val ssrc: Long = 0xcafebabe
 ) : FixedRateSender(executor, clock, receiver) {
     override fun nextPacketSize() = packetSize
@@ -150,7 +151,7 @@ class PacketBottleneck(
         return true
     }
 
-    override fun nextPacketSize(): Int = queue.peek()?.packetSize ?: 0
+    override fun nextPacketSize(): DataSize = queue.peek()?.packetSize ?: 0.bits
 }
 
 class PacketDelayer(
