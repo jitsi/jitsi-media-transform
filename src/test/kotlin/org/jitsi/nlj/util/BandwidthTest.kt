@@ -17,6 +17,7 @@
 package org.jitsi.nlj.util
 
 import io.kotlintest.matchers.beGreaterThan
+import io.kotlintest.seconds
 import io.kotlintest.should
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
@@ -50,6 +51,11 @@ class BandwidthTest : ShouldSpec() {
             should("work correctly") {
                 2.mbps should beGreaterThan(1.mbps)
                 1000.bps should beGreaterThan(999.bps)
+            }
+        }
+        "creation from 'per'" {
+            should("work correctly") {
+                1.megabytes.per(1.seconds) shouldBe 8.mbps
             }
         }
     }

@@ -17,6 +17,7 @@
 package org.jitsi.nlj.util
 
 import java.text.DecimalFormat
+import java.time.Duration
 
 /**
  * [Bandwidth] models a current bandwidth, represented as a rate
@@ -140,3 +141,9 @@ val Long.kbps: Bandwidth
 val Long.mbps: Bandwidth
     get() = Bandwidth(this.toDouble() * 1000 * 1000)
 
+/**
+ * Create a [Bandwidth] from a [DataSize] over a given time
+ */
+fun DataSize.per(duration: Duration): Bandwidth {
+    return Bandwidth((this.bits / duration.seconds).toDouble())
+}
