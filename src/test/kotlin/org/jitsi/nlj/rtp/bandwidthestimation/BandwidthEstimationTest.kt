@@ -35,17 +35,17 @@ data class SimulatedPacket(
 )
 
 abstract class FixedRateSender(
-    val executor: ScheduledExecutorService,
+    private val executor: ScheduledExecutorService,
     val clock: Clock,
     var receiver: (SimulatedPacket) -> Unit
 ) {
-    var nextPacket: ScheduledFuture<*>? = null
-    var lastSendTime: Instant = NEVER
+    private var nextPacket: ScheduledFuture<*>? = null
+    private var lastSendTime: Instant = NEVER
 
     var running = false
 
     var rate: Bandwidth by Delegates.observable(0.bps) {
-        _, _, newValue ->
+        _, _, _ ->
         nextPacket?.cancel(false)
         schedulePacket(false)
     }
@@ -71,7 +71,7 @@ abstract class FixedRateSender(
         }
     }
 
-    fun doSendPacket() {
+    private fun doSendPacket() {
         val now = clock.instant()
         val sendNext = sendPacket(now)
 
@@ -98,8 +98,8 @@ class PacketGenerator(
     executor: ScheduledExecutorService,
     clock: Clock,
     receiver: (SimulatedPacket) -> Unit,
-    var packetSize: DataSize = 1250.bytes,
-    val ssrc: Long = 0xcafebabe
+    private var packetSize: DataSize = 1250.bytes,
+    private val ssrc: Long = 0xcafebabe
 ) : FixedRateSender(executor, clock, receiver) {
     override fun nextPacketSize() = packetSize
 
@@ -113,12 +113,12 @@ class PacketGenerator(
 class PacketBottleneck(
     executor: ScheduledExecutorService,
     clock: Clock,
-    val ctx: DiagnosticContext,
+    private val ctx: DiagnosticContext,
     receiver: (SimulatedPacket) -> Unit
 ) : FixedRateSender(executor, clock, receiver) {
-    val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
+    private val timeSeriesLogger: TimeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
 
-    val queue = ArrayDeque<SimulatedPacket>()
+    private val queue = ArrayDeque<SimulatedPacket>()
 
     fun enqueue(packet: SimulatedPacket) {
         if (!running) {
@@ -155,9 +155,9 @@ class PacketBottleneck(
 }
 
 class PacketDelayer(
-    val executor: ScheduledExecutorService,
-    val receiver: (SimulatedPacket) -> Unit,
-    val delay: Duration
+    private val executor: ScheduledExecutorService,
+    private val delay: Duration,
+    val receiver: (SimulatedPacket) -> Unit
 ) {
     fun enqueue(packet: SimulatedPacket) {
         executor.schedule({ receiver(packet) }, delay.toNanos(), TimeUnit.NANOSECONDS)
@@ -165,13 +165,13 @@ class PacketDelayer(
 }
 
 class PacketReceiver(
-    val clock: Clock,
-    val estimator: BandwidthEstimator,
-    val ctx: DiagnosticContext,
+    private val clock: Clock,
+    private val estimator: BandwidthEstimator,
+    private val ctx: DiagnosticContext,
     val rateReceiver: (Bandwidth) -> Unit
 ) {
-    val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
-    var seq = 0
+    private val timeSeriesLogger: TimeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
+    private var seq = 0
 
     fun receivePacket(packet: SimulatedPacket) {
         val now = clock.instant()
@@ -194,9 +194,9 @@ class BandwidthEstimationTest : ShouldSpec() {
         LibJitsi.start()
     }
     private val scheduler: FakeScheduledExecutorService = spy()
-    val clock: Clock = scheduler.clock
+    private val clock: Clock = scheduler.clock
 
-    val ctx = DiagnosticContext(clock)
+    private val ctx = DiagnosticContext(clock)
     init {
         /* Emulate the fields that jitsi-videobridge puts in its DiagnosticContexts. */
         ctx["conf_name"] = "BandwidthEstimationTest"
@@ -204,16 +204,16 @@ class BandwidthEstimationTest : ShouldSpec() {
         ctx["endpoint_id"] = "00000000"
     }
 
-    val logger = LoggerImpl(BandwidthEstimationTest::class.qualifiedName)
-    val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
+    private val logger = LoggerImpl(BandwidthEstimationTest::class.qualifiedName)
+    private val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
 
-    val rtt = Duration.ofMillis(200)
-    val bottleneckRate = 4.mbps
+    private val rtt: Duration = Duration.ofMillis(200)
+    private val bottleneckRate = 4.mbps
 
-    val generator: PacketGenerator = PacketGenerator(scheduler, clock, { bottleneck.enqueue(it) })
-    val bottleneck: PacketBottleneck = PacketBottleneck(scheduler, clock, ctx, { delayer.enqueue(it) })
-    val delayer: PacketDelayer = PacketDelayer(scheduler, { receiver.receivePacket(it) }, rtt)
-    val receiver: PacketReceiver = PacketReceiver(clock, estimator, ctx, { generator.rate = it })
+    private val generator: PacketGenerator = PacketGenerator(scheduler, clock, { bottleneck.enqueue(it) })
+    private val bottleneck: PacketBottleneck = PacketBottleneck(scheduler, clock, ctx) { delayer.enqueue(it) }
+    private val delayer: PacketDelayer = PacketDelayer(scheduler, rtt) { receiver.receivePacket(it) }
+    private val receiver: PacketReceiver = PacketReceiver(clock, estimator, ctx) { generator.rate = it }
 
     init {
         "Running bandwidth estimation test" {
