@@ -17,8 +17,8 @@
 package org.jitsi.nlj.util
 
 import io.kotlintest.seconds
-import io.kotlintest.specs.ShouldSpec
 import io.kotlintest.shouldBe
+import io.kotlintest.specs.ShouldSpec
 import java.time.Duration
 
 class RateUtilsKtTest : ShouldSpec() {
