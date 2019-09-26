@@ -26,29 +26,29 @@ class DataSizeTest : ShouldSpec() {
     init {
         "equivalent data sizes" {
             should("match even if created differently") {
-                1000.bytes() shouldBe 1.kilobytes()
-                1.megabytes() shouldBe 8_000_000.bits()
+                1000.bytes shouldBe 1.kilobytes
+                1.megabytes shouldBe 8_000_000.bits
             }
         }
         "arithmetic operations" {
             should("work correctly") {
-                1.kilobytes() + 1.kilobytes() shouldBe 2.kilobytes()
-                1.megabytes() - 500.kilobytes() shouldBe 500.kilobytes()
-                1.bytes() * 10 shouldBe 10.bytes()
+                1.kilobytes + 1.kilobytes shouldBe 2.kilobytes
+                1.megabytes - 500.kilobytes shouldBe 500.kilobytes
+                1.bytes * 10 shouldBe 10.bytes
             }
         }
         "printing data sizes" {
             should("print as the most appropriate unit") {
-                8_000_000.bits().toString() shouldBe "1 MB"
-                1000.bytes().toString() shouldBe "1 KB"
-                32.bits().toString() shouldBe "4 B"
-                4.bits().toString() shouldBe "4 bits"
+                8_000_000.bits.toString() shouldBe "1 MB"
+                1000.bytes.toString() shouldBe "1 KB"
+                32.bits.toString() shouldBe "4 B"
+                4.bits.toString() shouldBe "4 bits"
             }
         }
         "comparing data sizes" {
             should("work correctly") {
-                2.megabytes() should beGreaterThan(1.megabytes())
-                1000.bits() should beGreaterThan(999.bits())
+                2.megabytes should beGreaterThan(1.megabytes)
+                1000.bits should beGreaterThan(999.bits)
             }
         }
     }

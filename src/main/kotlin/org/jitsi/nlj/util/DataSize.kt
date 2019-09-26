@@ -82,12 +82,20 @@ class DataSize(
     override fun hashCode(): Int = bits.hashCode()
 }
 
-fun Int.bits(): DataSize = DataSize(this.toLong())
-fun Int.bytes(): DataSize = DataSize(this.toLong() * 8)
-fun Int.kilobytes(): DataSize = DataSize(this.toLong() * 1000 * 8)
-fun Int.megabytes(): DataSize = DataSize(this.toLong() * 1000 * 1000 * 8)
+val Int.bits: DataSize
+    get() = DataSize(this.toLong())
+val Int.bytes: DataSize
+    get() = DataSize(this.toLong() * 8)
+val Int.kilobytes: DataSize
+    get() = DataSize(this.toLong() * 1000 * 8)
+val Int.megabytes: DataSize
+    get() = DataSize(this.toLong() * 1000 * 1000 * 8)
 
-fun Long.bits(): DataSize = DataSize(this)
-fun Long.bytes(): DataSize = DataSize(this * 8)
-fun Long.kilobytes(): DataSize = DataSize(this * 1000 * 8)
-fun Long.megabytes(): DataSize = DataSize(this * 1000 * 1000 * 8)
+val Long.bits: DataSize
+    get() = DataSize(this)
+val Long.bytes: DataSize
+    get() = DataSize(this * 8)
+val Long.kilobytes: DataSize
+    get() = DataSize(this * 1000 * 8)
+val Long.megabytes: DataSize
+    get() = DataSize(this * 1000 * 1000 * 8)
