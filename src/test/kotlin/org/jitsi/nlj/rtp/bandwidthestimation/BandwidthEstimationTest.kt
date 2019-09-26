@@ -182,7 +182,7 @@ class PacketReceiver(
         seq++
         val bw = estimator.getCurrentBw(now)
         if (timeSeriesLogger.isTraceEnabled) {
-            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("bw", now).addField("bw", bw))
+            timeSeriesLogger.trace(ctx.makeTimeSeriesPoint("bw", now).addField("bw", bw.bps))
         }
         rateReceiver(bw)
     }
