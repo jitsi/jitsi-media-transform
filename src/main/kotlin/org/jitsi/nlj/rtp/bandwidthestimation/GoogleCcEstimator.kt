@@ -57,7 +57,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
 
     override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
         if (sendTime != null && recvTime != null) {
-            /* TODO: update bitrateEstimatorAbsSendTime to do all math in millis. */
+            /* TODO: update bitrateEstimatorAbsSendTime to do all math in millis, or Instants. */
             val sendTime24bits = RemoteBitrateEstimatorAbsSendTime
                     .convertMsTo24Bits(sendTime.toEpochMilli())
 
@@ -72,7 +72,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     }
 
     override fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
-        sendSideBandwidthEstimation.updateReceiverBlock(255, 1, now.toEpochMilli())
+        sendSideBandwidthEstimation.updateReceiverBlock(256, 1, now.toEpochMilli())
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
     }
 
@@ -85,8 +85,15 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         return sendSideBandwidthEstimation.latestEstimate.bps
     }
 
-    override fun getStats(): NodeStatsBlock {
-        TODO("not implemented")
+    override fun getStats(): NodeStatsBlock = NodeStatsBlock("GoogleCcEstimator").apply {
+        addNumber("latestLossEstimate", sendSideBandwidthEstimation.latestREMB)
+        addNumber("latestEstimate", sendSideBandwidthEstimation.latestEstimate)
+        addNumber("latestFractionLoss", sendSideBandwidthEstimation.latestFractionLoss)
+        val bweStats: org.jitsi_modified.service.neomedia.rtp.BandwidthEstimator.Statistics =
+            sendSideBandwidthEstimation.statistics
+        addNumber("lossDegradedMs", bweStats.lossDegradedMs)
+        addNumber("lossFreeMs", bweStats.lossFreeMs)
+        addNumber("lossLimitedMs", bweStats.lossLimitedMs)
     }
 
     override fun reset() {
