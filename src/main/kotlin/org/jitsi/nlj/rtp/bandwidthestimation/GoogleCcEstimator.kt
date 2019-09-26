@@ -14,9 +14,9 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateEstimatorAbsSendTime
 import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.SendSideBandwidthEstimation
 
-private val defaultInitBw: Bandwidth = 2.5.mbps()
-private val defaultMinBw: Bandwidth = 30.kbps()
-private val defaultMaxBw: Bandwidth = 20.mbps()
+private val defaultInitBw: Bandwidth = 2.5.mbps
+private val defaultMinBw: Bandwidth = 30.kbps
+private val defaultMaxBw: Bandwidth = 20.mbps
 
 class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logger) : BandwidthEstimator {
     override val algorithmName = "Google CC"
@@ -82,7 +82,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     }
 
     override fun getCurrentBw(now: Instant): Bandwidth {
-        return sendSideBandwidthEstimation.latestEstimate.bps()
+        return sendSideBandwidthEstimation.latestEstimate.bps
     }
 
     override fun getStats(): NodeStatsBlock {

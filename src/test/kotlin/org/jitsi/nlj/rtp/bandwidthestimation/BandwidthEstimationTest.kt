@@ -43,7 +43,7 @@ abstract class FixedRateSender(
 
     var running = false
 
-    var rate: Bandwidth by Delegates.observable(0.bps()) {
+    var rate: Bandwidth by Delegates.observable(0.bps) {
         _, _, newValue ->
         nextPacket?.cancel(false)
         schedulePacket(false)
@@ -52,7 +52,7 @@ abstract class FixedRateSender(
     abstract fun nextPacketSize(): Int
 
     fun schedulePacket(justSent: Boolean) {
-        if (!running || rate <= 0.bps() || nextPacketSize() == 0) {
+        if (!running || rate <= 0.bps || nextPacketSize() == 0) {
             nextPacket = null
         } else {
             val packetDelayTime = when (lastSendTime) {
@@ -207,7 +207,7 @@ class BandwidthEstimationTest : ShouldSpec() {
     val estimator: BandwidthEstimator = GoogleCcEstimator(ctx, logger)
 
     val rtt = Duration.ofMillis(200)
-    val bottleneckRate = 4.0.mbps()
+    val bottleneckRate = 4.mbps
 
     val generator: PacketGenerator = PacketGenerator(scheduler, clock, { bottleneck.enqueue(it) })
     val bottleneck: PacketBottleneck = PacketBottleneck(scheduler, clock, ctx, { delayer.enqueue(it) })
