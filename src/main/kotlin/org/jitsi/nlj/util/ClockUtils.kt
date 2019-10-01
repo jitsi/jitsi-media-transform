@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+@file:JvmName("ClockUtils")
+
 package org.jitsi.nlj.util
 
 import java.time.Instant
 
+@JvmField
 val NEVER: Instant = Instant.MIN
