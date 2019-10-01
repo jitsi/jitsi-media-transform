@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
+import org.jitsi.nlj.rtp.TransportCcEngine
 import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.stats.EndpointConnectionStats
@@ -38,7 +39,6 @@ import org.jitsi.utils.concurrent.RecurringRunnableExecutor
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
-import org.jitsi_modified.impl.neomedia.rtp.TransportCCEngine
 import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.BandwidthEstimatorImpl
 import org.jitsi_modified.service.neomedia.rtp.BandwidthEstimator
 
@@ -84,7 +84,7 @@ class Transceiver(
 
     private val bandwidthEstimator: BandwidthEstimatorImpl = BandwidthEstimatorImpl(diagnosticContext, logger)
 
-    private val transportCcEngine = TransportCCEngine(diagnosticContext, bandwidthEstimator, logger)
+    private val transportCcEngine = TransportCcEngine(diagnosticContext, bandwidthEstimator, logger)
 
     private val rtpSender: RtpSender = RtpSenderImpl(
         id,
