@@ -21,6 +21,7 @@ import org.jitsi.nlj.rtp.TransportCcEngine
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
+import org.jitsi.nlj.util.bytes
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
 
@@ -44,7 +45,7 @@ class TccSeqNumTagger(
                 ?: rtpPacket.addHeaderExtension(tccExtId, TccHeaderExtension.DATA_SIZE_BYTES)
 
             TccHeaderExtension.setSequenceNumber(ext, currTccSeqNum)
-            transportCcEngine?.mediaPacketSent(currTccSeqNum, rtpPacket.length)
+            transportCcEngine?.mediaPacketSent(currTccSeqNum, rtpPacket.length.bytes)
             currTccSeqNum++
         }
 

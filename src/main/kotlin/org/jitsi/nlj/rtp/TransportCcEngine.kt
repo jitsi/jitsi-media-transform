@@ -15,7 +15,13 @@
  */
 package org.jitsi.nlj.rtp
 
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.jitsi.nlj.rtcp.RtcpListener
+import org.jitsi.nlj.util.DataSize
+import org.jitsi.nlj.util.NEVER
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.utils.LRUCache
@@ -36,7 +42,8 @@ import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrate
 class TransportCcEngine(
     diagnosticContext: DiagnosticContext,
     private val remoteBitrateObserver: RemoteBitrateObserver,
-    parentLogger: Logger
+    parentLogger: Logger,
+    val clock: Clock = Clock.systemUTC()
 ) : RemoteBitrateObserver, RtcpListener {
 
     /**
@@ -54,7 +61,7 @@ class TransportCcEngine(
      * arrival times in the TCC packets to a meaningful time base (that of the
      * sender). This is technically not necessary and it's done for convenience.
      */
-    private var remoteReferenceTimeMs: Long = -1
+    private var remoteReferenceTime: Instant = NEVER
 
     /**
      * Local time to map to the reference time of the remote clock. This is used
@@ -62,7 +69,7 @@ class TransportCcEngine(
      * (that of the sender). This is technically not necessary and it's done for
      * convenience.
      */
-    private var localReferenceTimeMs: Long = -1
+    private var localReferenceTime: Instant = NEVER
 
     /**
      * Holds a key value pair of the packet sequence number and an object made
@@ -84,8 +91,8 @@ class TransportCcEngine(
      * Called when an RTP sender has a new round-trip time estimate.
      */
     fun onRttUpdate(avgRttMs: Long, maxRttMs: Long) {
-        val nowMs = System.currentTimeMillis()
-        bitrateEstimatorAbsSendTime.onRttUpdate(nowMs, avgRttMs, maxRttMs)
+        val now = clock.instant()
+        bitrateEstimatorAbsSendTime.onRttUpdate(now.toEpochMilli(), avgRttMs, maxRttMs)
     }
 
     /**
@@ -106,17 +113,17 @@ class TransportCcEngine(
     }
 
     private fun tccReceived(tccPacket: RtcpFbTccPacket) {
-        val nowMs = System.currentTimeMillis()
-        if (remoteReferenceTimeMs == -1L) {
-            remoteReferenceTimeMs = tccPacket.GetBaseTimeUs() / 1000
-            localReferenceTimeMs = nowMs
+        val now = clock.instant()
+        var currArrivalTimestamp = Instant.ofEpochMilli(tccPacket.GetBaseTimeUs() / 1000)
+        if (remoteReferenceTime == NEVER) {
+            remoteReferenceTime = currArrivalTimestamp
+            localReferenceTime = now
         }
-        var currArrivalTimestampMs = tccPacket.GetBaseTimeUs() / 1000.0
 
         for (receivedPacket in tccPacket) {
             val tccSeqNum = receivedPacket.seqNum
-            val deltaMs = receivedPacket.deltaTicks / 4.0
-            currArrivalTimestampMs += deltaMs
+            val delta = Duration.of(receivedPacket.deltaTicks * 250L, ChronoUnit.MICROS)
+            currArrivalTimestamp += delta
 
             val packetDetail: PacketDetail?
             synchronized(sentPacketsSyncRoot) {
@@ -128,23 +135,21 @@ class TransportCcEngine(
                 continue
             }
 
-            val arrivalTimeMsInLocalClock = currArrivalTimestampMs.toLong() - remoteReferenceTimeMs + localReferenceTimeMs
-            val sendTime24bitsInLocalClock = RemoteBitrateEstimatorAbsSendTime
-                .convertMsTo24Bits(packetDetail.packetSendTimeMs)
+            val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
             bitrateEstimatorAbsSendTime.incomingPacketInfo(
-                nowMs,
-                arrivalTimeMsInLocalClock,
-                sendTime24bitsInLocalClock,
-                packetDetail.packetLength,
+                now.toEpochMilli(),
+                arrivalTimeInLocalClock.toEpochMilli(),
+                packetDetail.packetSendTime.toEpochMilli(),
+                packetDetail.packetLength.bytes.toInt(),
                 tccPacket.mediaSourceSsrc
             )
         }
     }
 
-    fun mediaPacketSent(tccSeqNum: Int, length: Int) {
+    fun mediaPacketSent(tccSeqNum: Int, length: DataSize) {
         synchronized(sentPacketsSyncRoot) {
-            val now = System.currentTimeMillis()
+            val now = clock.instant()
             sentPacketDetails.put(
                 tccSeqNum and 0xFFFF,
                 PacketDetail(length, now))
@@ -155,9 +160,9 @@ class TransportCcEngine(
      * [PacketDetail] is an object that holds the
      * length(size) of the packet in [.packetLength]
      * and the time stamps of the outgoing packet
-     * in [.packetSendTimeMs]
+     * in [.packetSendTime]
      */
-    private inner class PacketDetail internal constructor(internal var packetLength: Int, internal var packetSendTimeMs: Long)
+    private data class PacketDetail internal constructor(internal var packetLength: DataSize, internal var packetSendTime: Instant)
 
     companion object {
         /**
