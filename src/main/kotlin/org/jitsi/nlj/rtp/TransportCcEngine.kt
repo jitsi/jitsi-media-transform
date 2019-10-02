@@ -121,6 +121,8 @@ class TransportCcEngine(
         }
 
         for (receivedPacket in tccPacket) {
+            if (!receivedPacket.received)
+                continue
             val tccSeqNum = receivedPacket.seqNum
             val delta = Duration.of(receivedPacket.deltaTicks * 250L, ChronoUnit.MICROS)
             currArrivalTimestamp += delta
