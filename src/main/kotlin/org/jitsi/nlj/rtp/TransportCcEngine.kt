@@ -43,13 +43,13 @@ class TransportCcEngine(
     diagnosticContext: DiagnosticContext,
     private val remoteBitrateObserver: RemoteBitrateObserver,
     parentLogger: Logger,
-    val clock: Clock = Clock.systemUTC()
+    private val clock: Clock = Clock.systemUTC()
 ) : RemoteBitrateObserver, RtcpListener {
 
     /**
      * The [Logger] used by this instance for logging output.
      */
-    private val logger: Logger
+    private val logger: Logger = parentLogger.createChildLogger(javaClass.name)
 
     /**
      * Used to synchronize access to [.sentPacketDetails].
@@ -80,12 +80,8 @@ class TransportCcEngine(
     /**
      * Used for estimating the bitrate from RTCP TCC feedback packets
      */
-    private val bitrateEstimatorAbsSendTime: RemoteBitrateEstimatorAbsSendTime
-
-    init {
-        logger = parentLogger.createChildLogger(javaClass.name)
-        bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(this, diagnosticContext, logger)
-    }
+    private val bitrateEstimatorAbsSendTime =
+        RemoteBitrateEstimatorAbsSendTime(this, diagnosticContext, logger)
 
     /**
      * Called when an RTP sender has a new round-trip time estimate.
@@ -160,9 +156,9 @@ class TransportCcEngine(
 
     /**
      * [PacketDetail] is an object that holds the
-     * length(size) of the packet in [.packetLength]
+     * length(size) of the packet in [packetLength]
      * and the time stamps of the outgoing packet
-     * in [.packetSendTime]
+     * in [packetSendTime]
      */
     private data class PacketDetail internal constructor(internal var packetLength: DataSize, internal var packetSendTime: Instant)
 
@@ -172,6 +168,6 @@ class TransportCcEngine(
          *
          * XXX this is an uninformed value.
          */
-        private val MAX_OUTGOING_PACKETS_HISTORY = 1000
+        private const val MAX_OUTGOING_PACKETS_HISTORY = 1000
     }
 }
