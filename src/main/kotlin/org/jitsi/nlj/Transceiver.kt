@@ -21,6 +21,7 @@ import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.TransportCcEngine
+import org.jitsi.nlj.rtp.bandwidthestimation.GoogleCcEstimator
 import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.stats.EndpointConnectionStats
@@ -84,7 +85,9 @@ class Transceiver(
 
     private val bandwidthEstimator: BandwidthEstimatorImpl = BandwidthEstimatorImpl(diagnosticContext, logger)
 
-    private val transportCcEngine = TransportCcEngine(diagnosticContext, bandwidthEstimator, logger)
+    private val newBandwidthEstimator: GoogleCcEstimator = GoogleCcEstimator(diagnosticContext, logger)
+
+    private val transportCcEngine = TransportCcEngine(newBandwidthEstimator, diagnosticContext, bandwidthEstimator, logger)
 
     private val rtpSender: RtpSender = RtpSenderImpl(
         id,

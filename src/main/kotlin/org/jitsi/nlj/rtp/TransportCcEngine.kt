@@ -20,6 +20,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.jitsi.nlj.rtcp.RtcpListener
+import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.rtp.rtcp.RtcpPacket
@@ -40,6 +41,7 @@ import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrate
  * @author George Politis
  */
 class TransportCcEngine(
+    private val bandwidthEstimator: BandwidthEstimator,
     diagnosticContext: DiagnosticContext,
     private val remoteBitrateObserver: RemoteBitrateObserver,
     parentLogger: Logger,
@@ -89,6 +91,7 @@ class TransportCcEngine(
     fun onRttUpdate(avgRttMs: Long, maxRttMs: Long) {
         val now = clock.instant()
         bitrateEstimatorAbsSendTime.onRttUpdate(now.toEpochMilli(), avgRttMs, maxRttMs)
+        bandwidthEstimator.onRttUpdate(now, Duration.ofMillis(avgRttMs))
     }
 
     /**
@@ -117,21 +120,25 @@ class TransportCcEngine(
         }
 
         for (receivedPacket in tccPacket) {
-            if (!receivedPacket.received)
-                continue
-            val tccSeqNum = receivedPacket.seqNum
-            val delta = Duration.of(receivedPacket.deltaTicks * 250L, ChronoUnit.MICROS)
-            currArrivalTimestamp += delta
-
             val packetDetail: PacketDetail?
+            val tccSeqNum = receivedPacket.seqNum
             synchronized(sentPacketsSyncRoot) {
                 packetDetail = sentPacketDetails.remove(tccSeqNum)
             }
 
             if (packetDetail == null) {
-                logger.warn("Couldn't find packet detail for $tccSeqNum.")
+                if (receivedPacket.received) {
+                    logger.warn("Couldn't find packet detail for $tccSeqNum.")
+                }
                 continue
             }
+
+            if (!receivedPacket.received) {
+                bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
+                continue
+            }
+            val delta = Duration.of(receivedPacket.deltaTicks * 250L, ChronoUnit.MICROS)
+            currArrivalTimestamp += delta
 
             val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
@@ -142,6 +149,8 @@ class TransportCcEngine(
                 packetDetail.packetLength.bytes.toInt(),
                 tccPacket.mediaSourceSsrc
             )
+            bandwidthEstimator.processPacketArrival(
+                now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
         }
     }
 
