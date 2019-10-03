@@ -18,9 +18,14 @@ package org.jitsi.nlj.rtp.bandwidthestimation
 
 import java.time.Duration
 import java.time.Instant
+import java.util.LinkedList
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
+import org.jitsi.nlj.util.bps
+import org.jitsi.nlj.util.toDoubleMilli
+import org.jitsi.utils.logging.DiagnosticContext
+import org.jitsi.utils.logging.TimeSeriesLogger
 
 /**
  * An abstract interface to a bandwidth estimation algorithm.
@@ -31,18 +36,26 @@ import org.jitsi.nlj.util.DataSize
  *
  * All bandwidths/bitrates are in bits per second.
  */
-interface BandwidthEstimator {
+abstract class BandwidthEstimator(
+    protected val diagnosticContext: DiagnosticContext
+) {
+    /**
+     * The [TimeSeriesLogger] to be used by this instance to print time
+     * series.
+     */
+    protected val timeSeriesLogger = TimeSeriesLogger.getTimeSeriesLogger(this.javaClass)
+
     /** The name of the algorithm implemented by this [BandwidthEstimator]. */
-    val algorithmName: String
+    abstract val algorithmName: String
 
     /** The initial bandwidth estimate. */
-    var initBw: Bandwidth
+    abstract var initBw: Bandwidth
 
     /** The minimum bandwidth the estimator will return. */
-    var minBw: Bandwidth
+    abstract var minBw: Bandwidth
 
     /** The maximum bandwidth the estimator will return. */
-    var maxBw: Bandwidth
+    abstract var maxBw: Bandwidth
 
     /**
      * Inform the bandwidth estimator about a packet that has arrived at its
@@ -67,14 +80,31 @@ interface BandwidthEstimator {
      * @param[size] The size of the packet.
      * @param[ecn] The ECN markings with which the packet was received.
      */
-    fun processPacketArrival(
+    open fun processPacketArrival(
         now: Instant,
         sendTime: Instant?,
         recvTime: Instant?,
         seq: Int,
         size: DataSize,
         ecn: Byte = 0
-    )
+    ) {
+        if (!timeSeriesLogger.isTraceEnabled) {
+            return
+        }
+
+        val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_arrival", now)
+        if (sendTime != null) {
+            point.addField("sendTime", sendTime.toDoubleMilli())
+        }
+        if (recvTime != null) {
+            point.addField("recvTime", recvTime.toDoubleMilli())
+        }
+        point.addField("seq", seq)
+        point.addField("size", size.bytes)
+        if (ecn != 0.toByte())
+            point.addField("ecn", 0)
+        timeSeriesLogger.trace(point)
+    }
 
     /**
      * Inform the bandwidth estimator that a packet was lost.
@@ -84,22 +114,80 @@ interface BandwidthEstimator {
      * @param[seq] A 16-bit sequence number of packets processed by this
      *  [BandwidthEstimator].
      */
-    fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int)
+    open fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
+        if (!timeSeriesLogger.isTraceEnabled) {
+            return
+        }
+
+        val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_loss", now)
+        if (sendTime != null) {
+            point.addField("sendTime", sendTime.toDoubleMilli())
+        }
+        point.addField("seq", seq)
+        timeSeriesLogger.trace(point)
+    }
 
     /**
      * Inform the bandwidth estimator about a new round-trip time value
      */
-    fun onRttUpdate(now: Instant, newRtt: Duration)
+    open fun onRttUpdate(now: Instant, newRtt: Duration) {
+        if (!timeSeriesLogger.isTraceEnabled) {
+            return
+        }
+
+        val point = diagnosticContext.makeTimeSeriesPoint("bwe_rtt", now)
+        point.addField("rtt", newRtt.toDoubleMilli())
+        timeSeriesLogger.trace(point)
+    }
 
     /** Get the estimator's current estimate of the available bandwidth.
      *
      * @param[now] The current time, when this function is called.
      */
-    fun getCurrentBw(now: Instant): Bandwidth
+    abstract fun getCurrentBw(now: Instant): Bandwidth
 
     /** Get the current statistics related to this estimator. */
-    fun getStats(): NodeStatsBlock
+    abstract fun getStats(): NodeStatsBlock
 
     /** Reset the estimator to its initial state. */
-    fun reset(): Unit
+    abstract fun reset(): Unit
+
+    interface Listener {
+        fun bandwidthEstimationChanged(newValue: Bandwidth)
+    }
+
+    private val listeners = LinkedList<Listener>()
+    private var curBandwidth = (-1).bps
+
+    /**
+     * Notifies registered listeners that the estimate of the available
+     * bandwidth has changed.
+     */
+    @Synchronized
+    protected fun reportBandwidthEstimate(newValue: Bandwidth) {
+        if (newValue == curBandwidth)
+            return
+        for (listener in listeners) {
+            listener.bandwidthEstimationChanged(newValue)
+        }
+        curBandwidth = newValue
+    }
+
+    /**
+     * Adds a listener to be notified about changes to the bandwidth estimation.
+     * @param listener
+     */
+    @Synchronized
+    fun addListener(listener: Listener) {
+        listeners.add(listener)
+    }
+
+    /**
+     * Removes a listener.
+     * @param listener
+     */
+    @Synchronized
+    fun removeListener(listener: Listener) {
+        listeners.remove(listener)
+    }
 }

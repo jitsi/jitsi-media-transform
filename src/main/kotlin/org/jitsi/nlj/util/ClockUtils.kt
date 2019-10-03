@@ -18,7 +18,20 @@
 
 package org.jitsi.nlj.util
 
+import java.time.Duration
 import java.time.Instant
 
 @JvmField
 val NEVER: Instant = Instant.MIN
+
+fun Instant.toDoubleMilli(): Double {
+    val sec = this.epochSecond
+    val nano = this.nano
+    return sec * 1e3 + nano * 1e-6
+}
+
+fun Duration.toDoubleMilli(): Double {
+    val sec = this.seconds
+    val nano = this.nano
+    return sec * 1e3 + nano * 1e-6
+}

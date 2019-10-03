@@ -19,7 +19,8 @@ private val defaultInitBw: Bandwidth = 2.5.mbps
 private val defaultMinBw: Bandwidth = 30.kbps
 private val defaultMaxBw: Bandwidth = 20.mbps
 
-class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logger) : BandwidthEstimator {
+class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logger) :
+    BandwidthEstimator(diagnosticContext) {
     override val algorithmName = "Google CC"
 
     /* TODO: Use configuration service to set this default value. */
@@ -56,6 +57,8 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     }
 
     override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
+        super.processPacketArrival(now, sendTime, recvTime, seq, size, ecn)
+
         if (sendTime != null && recvTime != null) {
             bitrateEstimatorAbsSendTime.incomingPacketInfo(now.toEpochMilli(),
                     recvTime.toEpochMilli(), sendTime.toEpochMilli(), size.bytes.toInt(), 1 /* TODO */)
@@ -65,14 +68,20 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
 
         /* TODO: rate-limit how often we call updateEstimate? */
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
+        reportBandwidthEstimate(sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
     override fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
+        super.processPacketLoss(now, sendTime, seq)
+
         sendSideBandwidthEstimation.updateReceiverBlock(256, 1, now.toEpochMilli())
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
+        reportBandwidthEstimate(sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
     override fun onRttUpdate(now: Instant, newRtt: Duration) {
+        super.onRttUpdate(now, newRtt)
+
         bitrateEstimatorAbsSendTime.onRttUpdate(now.toEpochMilli(), newRtt.toMillis(), -1)
         sendSideBandwidthEstimation.onRttUpdate(newRtt.toNanos() / 1.0e9)
     }
