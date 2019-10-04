@@ -68,7 +68,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
 
         /* TODO: rate-limit how often we call updateEstimate? */
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
-        reportBandwidthEstimate(sendSideBandwidthEstimation.latestEstimate.bps)
+        reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
     override fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
@@ -76,7 +76,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
 
         sendSideBandwidthEstimation.updateReceiverBlock(256, 1, now.toEpochMilli())
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
-        reportBandwidthEstimate(sendSideBandwidthEstimation.latestEstimate.bps)
+        reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
     override fun onRttUpdate(now: Instant, newRtt: Duration) {

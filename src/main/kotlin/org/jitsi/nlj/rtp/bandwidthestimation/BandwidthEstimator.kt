@@ -23,7 +23,7 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.bps
-import org.jitsi.nlj.util.toDoubleMilli
+import org.jitsi.nlj.util.formatMilli
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging.TimeSeriesLogger
 
@@ -94,10 +94,10 @@ abstract class BandwidthEstimator(
 
         val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_arrival", now)
         if (sendTime != null) {
-            point.addField("sendTime", sendTime.toDoubleMilli())
+            point.addField("sendTime", sendTime.formatMilli())
         }
         if (recvTime != null) {
-            point.addField("recvTime", recvTime.toDoubleMilli())
+            point.addField("recvTime", recvTime.formatMilli())
         }
         point.addField("seq", seq)
         point.addField("size", size.bytes)
@@ -121,7 +121,7 @@ abstract class BandwidthEstimator(
 
         val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_loss", now)
         if (sendTime != null) {
-            point.addField("sendTime", sendTime.toDoubleMilli())
+            point.addField("sendTime", sendTime.formatMilli())
         }
         point.addField("seq", seq)
         timeSeriesLogger.trace(point)
@@ -136,7 +136,7 @@ abstract class BandwidthEstimator(
         }
 
         val point = diagnosticContext.makeTimeSeriesPoint("bwe_rtt", now)
-        point.addField("rtt", newRtt.toDoubleMilli())
+        point.addField("rtt", newRtt.formatMilli())
         timeSeriesLogger.trace(point)
     }
 
@@ -164,13 +164,20 @@ abstract class BandwidthEstimator(
      * bandwidth has changed.
      */
     @Synchronized
-    protected fun reportBandwidthEstimate(newValue: Bandwidth) {
+    protected fun reportBandwidthEstimate(now: Instant, newValue: Bandwidth) {
         if (newValue == curBandwidth)
             return
         for (listener in listeners) {
             listener.bandwidthEstimationChanged(newValue)
         }
         curBandwidth = newValue
+        if (!timeSeriesLogger.isTraceEnabled) {
+            return
+        }
+
+        val point = diagnosticContext.makeTimeSeriesPoint("bwe_estimate", now)
+        point.addField("bw", newValue.bps)
+        timeSeriesLogger.trace(point)
     }
 
     /**

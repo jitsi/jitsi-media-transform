@@ -18,20 +18,27 @@
 
 package org.jitsi.nlj.util
 
+import java.text.DecimalFormat
 import java.time.Duration
 import java.time.Instant
 
 @JvmField
 val NEVER: Instant = Instant.MIN
 
-fun Instant.toDoubleMilli(): Double {
-    val sec = this.epochSecond
-    val nano = this.nano
-    return sec * 1e3 + nano * 1e-6
+private val formatter by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    DecimalFormat("#.######")
 }
 
-fun Duration.toDoubleMilli(): Double {
+fun Instant.formatMilli(): String {
+    val sec = this.epochSecond
+    val nano = this.nano
+    val milli = sec * 1e3 + nano * 1e-6
+    return formatter.format(milli)
+}
+
+fun Duration.formatMilli(): String {
     val sec = this.seconds
     val nano = this.nano
-    return sec * 1e3 + nano * 1e-6
+    val milli = sec * 1e3 + nano * 1e-6
+    return formatter.format(milli)
 }
