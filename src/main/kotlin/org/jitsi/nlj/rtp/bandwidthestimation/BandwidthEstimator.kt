@@ -22,6 +22,7 @@ import java.util.LinkedList
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
+import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.formatMilli
 import org.jitsi.utils.logging.DiagnosticContext
@@ -159,25 +160,32 @@ abstract class BandwidthEstimator(
     private val listeners = LinkedList<Listener>()
     private var curBandwidth = (-1).bps
 
+    private var lastBweLogTime = NEVER
+    private val minBweLogInterval = Duration.ofMillis(500)
+
     /**
      * Notifies registered listeners that the estimate of the available
      * bandwidth has changed.
      */
     @Synchronized
     protected fun reportBandwidthEstimate(now: Instant, newValue: Bandwidth) {
+        if (timeSeriesLogger.isTraceEnabled) {
+            if (newValue != curBandwidth ||
+                lastBweLogTime == NEVER ||
+                Duration.between(lastBweLogTime, now) >= minBweLogInterval) {
+                val point = diagnosticContext.makeTimeSeriesPoint("bwe_estimate", now)
+                point.addField("bw", newValue.bps)
+                timeSeriesLogger.trace(point)
+                lastBweLogTime = now
+            }
+        }
+
         if (newValue == curBandwidth)
             return
         for (listener in listeners) {
             listener.bandwidthEstimationChanged(newValue)
         }
         curBandwidth = newValue
-        if (!timeSeriesLogger.isTraceEnabled) {
-            return
-        }
-
-        val point = diagnosticContext.makeTimeSeriesPoint("bwe_estimate", now)
-        point.addField("bw", newValue.bps)
-        timeSeriesLogger.trace(point)
     }
 
     /**
