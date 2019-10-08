@@ -2,12 +2,9 @@
 
 # Parse the bandwidth estimation timeseries log output, and convert
 # to JSON in the format expected by chart-bwe-output.html.
-# Timeseries logging should be enabled for the relevant classes, i.e.:
-#  timeseries.org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateEstimatorAbsSendTime.level=ALL
-#  timeseries.org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.AimdRateControl.level=ALL
-#  timeseries.org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.SendSideBandwidthEstimation.level=ALL
-#
-#   * (or timeseries.org.jitsi.* ... if using the old videobridge.)
+# Timeseries logging should be enabled for the relevant subclass of
+#  org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator, e.g.
+#  timeseries.org.jitsi.nlj.rtp.bandwidthestimation.GoogleCcEstimator.level=ALL
 #
 # Output file should be bwe-output.js.
 
@@ -16,6 +13,7 @@ use Data::Dump 'dump';
 
 my %endpoints;
 
+my $check_old_bwe = 0;
 
 sub parse_line($)
 {
@@ -104,25 +102,44 @@ while (<>) {
     my $series = $line->{series};
     next if (!defined($key) || !defined($time) || !defined($series));
 
-    if ($series eq "in_pkt") {
-	# send_ts_ms is mod 64000, so do all math like that.
-	my $delta = ($line->{recv_ts_ms} - $line->{send_ts_ms}) % 64000;
+    if ($check_old_bwe) {
+	if ($series eq "in_pkt") {
+	    # send_ts_ms is mod 64000, so do all math like that.
+	    my $delta = ($line->{recv_ts_ms} - $line->{send_ts_ms}) % 64000;
 
-	$endpoints{$key}{min_delta} = min_modulo($delta, $endpoints{$key}{min_delta}, 64000);
-	push(@{$endpoints{$key}{trace}}, ["pkt", $time, $delta]);
+	    $endpoints{$key}{min_delta} = min_modulo($delta, $endpoints{$key}{min_delta}, 64000);
+	    push(@{$endpoints{$key}{trace}}, ["pkt", $time, $delta]);
+	}
+	elsif ($series eq "aimd_rtt") {
+	    my $entry = ["rtt", $time, $line->{rtt}];
+	    push(@{$endpoints{$key}{trace}}, $entry);
+	}
+	elsif ($series eq "bwe_incoming") {
+	    push(@{$endpoints{$key}{trace}}, ["bw", $time, $line->{bitrate_bps}]);
+	}
     }
-    elsif ($series eq "aimd_rtt") {
-	my $entry = ["rtt", $time, $line->{rtt}];
-	push(@{$endpoints{$key}{trace}}, $entry);
-    }
-    elsif ($series eq "bwe_incoming") {
-	push(@{$endpoints{$key}{trace}}, ["bw", $time, $line->{bitrate_bps}]);
+    else {
+	if ($series eq "bwe_packet_arrival") {
+	    my $delta = ($line->{recvTime} - $line->{sendTime});
+
+	    if (!defined($endpoints{$key}{min_delta}) || $delta < $endpoints{$key}{min_delta}) {
+		$endpoints{$key}{min_delta} = $delta;
+	    }
+	    push(@{$endpoints{$key}{trace}}, ["pkt", $time, $delta]);
+	}
+	elsif ($series eq "bwe_rtt") {
+	    my $entry = ["rtt", $time, $line->{rtt}];
+	    push(@{$endpoints{$key}{trace}}, $entry);
+	}
+	elsif ($series eq "bwe_estimate") {
+	    push(@{$endpoints{$key}{trace}}, ["bw", $time, $line->{bw}]);
+	}
     }
 }
 
 print "var charts={";
 my $subsequent=0;
-foreach my $ep (keys %endpoints) {
+foreach my $ep (sort keys %endpoints) {
     my ($conf_name, $conf_time, $ep_id) = @{$endpoints{$ep}{info}};
 
     print "," if ($subsequent); $subsequent = 1;
