@@ -130,11 +130,6 @@ public class RemoteBitrateEstimatorAbsSendTime
     private long lastUpdateMs;
 
     /**
-     * The observer to notify on bitrate estimation changes.
-     */
-    private final RemoteBitrateObserver observer;
-
-    /**
      * The rate control implementation based on additive increases of bitrate
      * when no over-use is detected and multiplicative decreases when over-uses
      * are detected.
@@ -170,16 +165,13 @@ public class RemoteBitrateEstimatorAbsSendTime
     /**
      * Ctor.
      *
-     * @param observer the observer to notify on bitrate estimation changes.
      * @param diagnosticContext the {@link DiagnosticContext} of this instance.
      */
     public RemoteBitrateEstimatorAbsSendTime(
-            RemoteBitrateObserver observer,
             @NotNull DiagnosticContext diagnosticContext,
             @NotNull Logger parentLogger)
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
-        this.observer = observer;
         this.diagnosticContext = diagnosticContext;
         this.remoteRate = new AimdRateControl(diagnosticContext);
         this.incomingBitrate = new RateStatistics(kBitrateWindowMs, kBitrateScale);
@@ -340,10 +332,6 @@ public class RemoteBitrateEstimatorAbsSendTime
         if (updateEstimate)
         {
             lastUpdateMs = nowMs;
-            if (observer != null)
-            {
-                observer.onReceiveBitrateChanged(getSsrcs(), targetBitrateBps);
-            }
         }
     }
 

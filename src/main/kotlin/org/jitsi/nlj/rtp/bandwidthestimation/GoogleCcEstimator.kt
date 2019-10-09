@@ -43,7 +43,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     /**
      * Implements the delay-based part of Google CC.
      */
-    private val bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(null, diagnosticContext, logger)
+    private val bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(diagnosticContext, logger)
     init {
         bitrateEstimatorAbsSendTime.setMinBitrate(minBw.bps.toInt())
     }

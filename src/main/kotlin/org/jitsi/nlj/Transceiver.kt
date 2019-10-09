@@ -37,11 +37,9 @@ import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.concurrent.RecurringRunnableExecutor
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
-import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.BandwidthEstimatorImpl
 
 // This is an API class, so its usages will largely be outside of this library
 @Suppress("unused")
@@ -83,11 +81,9 @@ class Transceiver(
 
     private var mediaStreamTracks = MediaStreamTracks()
 
-    private val bandwidthEstimator: BandwidthEstimatorImpl = BandwidthEstimatorImpl(diagnosticContext, logger)
-
     private val newBandwidthEstimator: BandwidthEstimator = GoogleCcEstimator(diagnosticContext, logger)
 
-    private val transportCcEngine = TransportCcEngine(newBandwidthEstimator, diagnosticContext, bandwidthEstimator, logger)
+    private val transportCcEngine = TransportCcEngine(newBandwidthEstimator, logger)
 
     private val rtpSender: RtpSender = RtpSenderImpl(
         id,
@@ -116,12 +112,9 @@ class Transceiver(
     init {
         rtcpEventNotifier.addRtcpEventListener(endpointConnectionStats)
 
-        endpointConnectionStats.addListener(bandwidthEstimator)
-        rtcpEventNotifier.addRtcpEventListener(bandwidthEstimator)
         rtcpEventNotifier.addRtcpEventListener(transportCcEngine)
 
         endpointConnectionStats.addListener(rtpSender)
-        bandwidthEstimatorExecutor.registerRecurringRunnable(bandwidthEstimator)
     }
 
     fun onBandwidthEstimateChanged(listener: BandwidthEstimator.Listener) {
@@ -279,13 +272,12 @@ class Transceiver(
             rtpReceiver.getPacketStreamStats(),
             rtpSender.getStreamStats(),
             rtpSender.getPacketStreamStats(),
-            bandwidthEstimator.statistics)
+            newBandwidthEstimator.getStats())
     }
 
     override fun stop() {
         rtpReceiver.stop()
         rtpSender.stop()
-        bandwidthEstimatorExecutor.deRegisterRecurringRunnable(bandwidthEstimator)
     }
 
     fun teardown() {
@@ -294,11 +286,6 @@ class Transceiver(
     }
 
     companion object {
-        /**
-         * The executor which will periodically run the bandwidth estimators.
-         */
-        private val bandwidthEstimatorExecutor = RecurringRunnableExecutor("BandwidthEstimator")
-
         init {
 //            Node.plugins.add(BufferTracePlugin)
 //            Node.PLUGINS_ENABLED = true

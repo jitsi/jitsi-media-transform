@@ -26,10 +26,7 @@ import org.jitsi.nlj.util.NEVER
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.utils.LRUCache
-import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
-import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateEstimatorAbsSendTime
-import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateObserver
 
 /**
  * Implements transport-cc functionality.
@@ -42,11 +39,9 @@ import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrate
  */
 class TransportCcEngine(
     private val bandwidthEstimator: BandwidthEstimator,
-    diagnosticContext: DiagnosticContext,
-    private val remoteBitrateObserver: RemoteBitrateObserver,
     parentLogger: Logger,
     private val clock: Clock = Clock.systemUTC()
-) : RemoteBitrateObserver, RtcpListener {
+) : RtcpListener {
 
     /**
      * The [Logger] used by this instance for logging output.
@@ -80,29 +75,11 @@ class TransportCcEngine(
     private val sentPacketDetails = LRUCache<Int, PacketDetail>(MAX_OUTGOING_PACKETS_HISTORY)
 
     /**
-     * Used for estimating the bitrate from RTCP TCC feedback packets
-     */
-    private val bitrateEstimatorAbsSendTime =
-        RemoteBitrateEstimatorAbsSendTime(this, diagnosticContext, logger)
-
-    /**
      * Called when an RTP sender has a new round-trip time estimate.
      */
     fun onRttUpdate(avgRttMs: Long, maxRttMs: Long) {
         val now = clock.instant()
-        bitrateEstimatorAbsSendTime.onRttUpdate(now.toEpochMilli(), avgRttMs, maxRttMs)
         bandwidthEstimator.onRttUpdate(now, Duration.ofMillis(avgRttMs))
-    }
-
-    /**
-     * Called when a receive channel group has a new bitrate estimate for the
-     * incoming streams.
-     *
-     * @param ssrcs
-     * @param bitrate
-     */
-    override fun onReceiveBitrateChanged(ssrcs: Collection<Long>, bitrate: Long) {
-        remoteBitrateObserver.onReceiveBitrateChanged(ssrcs, bitrate)
     }
 
     override fun rtcpPacketReceived(rtcpPacket: RtcpPacket, receivedTime: Long) {
@@ -142,13 +119,6 @@ class TransportCcEngine(
 
             val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
-            bitrateEstimatorAbsSendTime.incomingPacketInfo(
-                now.toEpochMilli(),
-                arrivalTimeInLocalClock.toEpochMilli(),
-                packetDetail.packetSendTime.toEpochMilli(),
-                packetDetail.packetLength.bytes.toInt(),
-                tccPacket.mediaSourceSsrc
-            )
             bandwidthEstimator.processPacketArrival(
                 now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
         }
