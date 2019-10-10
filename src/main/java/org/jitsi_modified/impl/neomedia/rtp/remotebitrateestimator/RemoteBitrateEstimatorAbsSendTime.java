@@ -197,8 +197,7 @@ public class RemoteBitrateEstimatorAbsSendTime
      *
      * @param nowMs the current time when this method is called
      * @param arrivalTimeMs the arrival time of the packet in millis.
-     * @param sendTimeMs_ the send time of the packet in millis
-     * (24 bits, 6.18 fixed point).
+     * @param sendTimeMs the send time of the packet in millis
      * @param payloadSize the payload size of the packet.
      * @param ssrc the SSRC of the packet.
      */
@@ -206,18 +205,15 @@ public class RemoteBitrateEstimatorAbsSendTime
     public void incomingPacketInfo(
         long nowMs,
         long arrivalTimeMs,
-        long sendTimeMs_,
+        long sendTimeMs,
         int payloadSize,
         long ssrc)
     {
-        long sendTime24bits = convertMsTo24Bits(sendTimeMs_);
+        long sendTime24bits = convertMsTo24Bits(sendTimeMs);
 
         // Shift up send time to use the full 32 bits that inter_arrival
         // works with, so wrapping works properly.
         long timestamp = sendTime24bits << kAbsSendTimeInterArrivalUpshift;
-
-        // Convert the expanded AST (32 bits, 6.26 fixed point) to millis.
-        long sendTimeMs = (long) (timestamp * kTimestampToMs);
 
         if (timeSeriesLogger.isTraceEnabled())
         {
