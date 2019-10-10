@@ -81,9 +81,9 @@ class Transceiver(
 
     private var mediaStreamTracks = MediaStreamTracks()
 
-    private val newBandwidthEstimator: BandwidthEstimator = GoogleCcEstimator(diagnosticContext, logger)
+    private val bandwidthEstimator: BandwidthEstimator = GoogleCcEstimator(diagnosticContext, logger)
 
-    private val transportCcEngine = TransportCcEngine(newBandwidthEstimator, logger)
+    private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger)
 
     private val rtpSender: RtpSender = RtpSenderImpl(
         id,
@@ -118,7 +118,7 @@ class Transceiver(
     }
 
     fun onBandwidthEstimateChanged(listener: BandwidthEstimator.Listener) {
-        newBandwidthEstimator.addListener(listener)
+        bandwidthEstimator.addListener(listener)
     }
 
     /**
@@ -256,7 +256,7 @@ class Transceiver(
             addBlock(streamInformationStore.getNodeStats())
             addBlock(mediaStreamTracks.getNodeStats())
             addString("endpointConnectionStats", endpointConnectionStats.getSnapshot().toString())
-            addBlock(newBandwidthEstimator.getStats())
+            addBlock(bandwidthEstimator.getStats())
             addBlock(rtpReceiver.getNodeStats())
             addBlock(rtpSender.getNodeStats())
         }
@@ -272,7 +272,7 @@ class Transceiver(
             rtpReceiver.getPacketStreamStats(),
             rtpSender.getStreamStats(),
             rtpSender.getPacketStreamStats(),
-            newBandwidthEstimator.getStats())
+            bandwidthEstimator.getStats())
     }
 
     override fun stop() {
