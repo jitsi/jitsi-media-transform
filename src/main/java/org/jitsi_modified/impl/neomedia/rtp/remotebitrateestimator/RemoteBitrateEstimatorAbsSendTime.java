@@ -343,14 +343,13 @@ public class RemoteBitrateEstimatorAbsSendTime
     /**
      * Called when an RTP sender has a new round-trip time estimate.
      */
-    public synchronized void onRttUpdate(long nowMs, long avgRttMs, long maxRttMs)
+    public synchronized void onRttUpdate(long nowMs, long avgRttMs)
     {
         if (timeSeriesLogger.isTraceEnabled())
         {
             timeSeriesLogger.trace(diagnosticContext
                 .makeTimeSeriesPoint("new_rtt", nowMs)
-                .addField("avg_ms", avgRttMs)
-                .addField("max_ms", maxRttMs));
+                .addField("avg_ms", avgRttMs));
         }
 
         remoteRate.setRtt(nowMs, avgRttMs);
