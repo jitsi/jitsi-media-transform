@@ -54,9 +54,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         it.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
     }
 
-    override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
-        super.processPacketArrival(now, sendTime, recvTime, seq, size, ecn)
-
+    override fun doProcessPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
         if (sendTime != null && recvTime != null) {
             bitrateEstimatorAbsSendTime.incomingPacketInfo(now.toEpochMilli(),
                     recvTime.toEpochMilli(), sendTime.toEpochMilli(), size.bytes.toInt())
@@ -69,17 +67,13 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
-    override fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
-        super.processPacketLoss(now, sendTime, seq)
-
+    override fun doProcessPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
         sendSideBandwidthEstimation.updateReceiverBlock(256 /* fraction_lost */, 1 /* number_of_packets */, now.toEpochMilli())
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
         reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
-    override fun onRttUpdate(now: Instant, newRtt: Duration) {
-        super.onRttUpdate(now, newRtt)
-
+    override fun doRttUpdate(now: Instant, newRtt: Duration) {
         bitrateEstimatorAbsSendTime.onRttUpdate(now.toEpochMilli(), newRtt.toMillis())
         sendSideBandwidthEstimation.onRttUpdate(newRtt.toNanos() / 1.0e9)
     }

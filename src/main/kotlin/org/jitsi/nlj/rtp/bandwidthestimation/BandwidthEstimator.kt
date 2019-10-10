@@ -81,7 +81,7 @@ abstract class BandwidthEstimator(
      * @param[size] The size of the packet.
      * @param[ecn] The ECN markings with which the packet was received.
      */
-    open fun processPacketArrival(
+    fun processPacketArrival(
         now: Instant,
         sendTime: Instant?,
         recvTime: Instant?,
@@ -89,24 +89,38 @@ abstract class BandwidthEstimator(
         size: DataSize,
         ecn: Byte = 0
     ) {
-        if (!timeSeriesLogger.isTraceEnabled) {
-            return
+        if (timeSeriesLogger.isTraceEnabled) {
+            val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_arrival", now)
+            if (sendTime != null) {
+                point.addField("sendTime", sendTime.formatMilli())
+            }
+            if (recvTime != null) {
+                point.addField("recvTime", recvTime.formatMilli())
+            }
+            point.addField("seq", seq)
+            point.addField("size", size.bytes)
+            if (ecn != 0.toByte()) {
+                point.addField("ecn", ecn)
+            }
+            timeSeriesLogger.trace(point)
         }
 
-        val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_arrival", now)
-        if (sendTime != null) {
-            point.addField("sendTime", sendTime.formatMilli())
-        }
-        if (recvTime != null) {
-            point.addField("recvTime", recvTime.formatMilli())
-        }
-        point.addField("seq", seq)
-        point.addField("size", size.bytes)
-        if (ecn != 0.toByte()) {
-            point.addField("ecn", ecn)
-        }
-        timeSeriesLogger.trace(point)
+        doProcessPacketArrival(now, sendTime, recvTime, seq, size, ecn)
     }
+
+    /**
+     * A subclass's implementation of [processPacketArrival].
+     *
+     * See that function for parameter details.
+     */
+    protected abstract fun doProcessPacketArrival(
+        now: Instant,
+        sendTime: Instant?,
+        recvTime: Instant?,
+        seq: Int,
+        size: DataSize,
+        ecn: Byte = 0
+    )
 
     /**
      * Inform the bandwidth estimator that a packet was lost.
@@ -116,31 +130,45 @@ abstract class BandwidthEstimator(
      * @param[seq] A 16-bit sequence number of packets processed by this
      *  [BandwidthEstimator].
      */
-    open fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
-        if (!timeSeriesLogger.isTraceEnabled) {
-            return
+    fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
+        if (timeSeriesLogger.isTraceEnabled) {
+            val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_loss", now)
+            if (sendTime != null) {
+                point.addField("sendTime", sendTime.formatMilli())
+            }
+            point.addField("seq", seq)
+            timeSeriesLogger.trace(point)
         }
 
-        val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_loss", now)
-        if (sendTime != null) {
-            point.addField("sendTime", sendTime.formatMilli())
-        }
-        point.addField("seq", seq)
-        timeSeriesLogger.trace(point)
+        doProcessPacketLoss(now, sendTime, seq)
     }
+
+    /**
+     * A subclass's implementation of [processPacketLoss].
+     *
+     * See that function for parameter details.
+     */
+    protected abstract fun doProcessPacketLoss(now: Instant, sendTime: Instant?, seq: Int)
 
     /**
      * Inform the bandwidth estimator about a new round-trip time value
      */
-    open fun onRttUpdate(now: Instant, newRtt: Duration) {
-        if (!timeSeriesLogger.isTraceEnabled) {
-            return
+    fun onRttUpdate(now: Instant, newRtt: Duration) {
+        if (timeSeriesLogger.isTraceEnabled) {
+            val point = diagnosticContext.makeTimeSeriesPoint("bwe_rtt", now)
+            point.addField("rtt", newRtt.formatMilli())
+            timeSeriesLogger.trace(point)
         }
 
-        val point = diagnosticContext.makeTimeSeriesPoint("bwe_rtt", now)
-        point.addField("rtt", newRtt.formatMilli())
-        timeSeriesLogger.trace(point)
+        doRttUpdate(now, newRtt)
     }
+
+    /**
+     * A subclass's implementation of [onRttUpdate].
+     *
+     * See that function for parameter details.
+     */
+    protected abstract fun doRttUpdate(now: Instant, newRtt: Duration)
 
     /** Get the estimator's current estimate of the available bandwidth.
      *
