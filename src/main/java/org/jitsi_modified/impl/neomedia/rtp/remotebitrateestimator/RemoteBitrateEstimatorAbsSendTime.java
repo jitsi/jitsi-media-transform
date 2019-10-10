@@ -17,7 +17,6 @@ package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
 
 import org.jetbrains.annotations.*;
-import org.jitsi_modified.service.neomedia.rtp.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
 import org.jitsi.utils.logging2.*;
