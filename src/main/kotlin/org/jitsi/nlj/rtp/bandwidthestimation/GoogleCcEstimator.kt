@@ -94,10 +94,11 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         addNumber("latestLossEstimate", sendSideBandwidthEstimation.latestREMB)
         addNumber("latestEstimate", sendSideBandwidthEstimation.latestEstimate)
         addNumber("latestFractionLoss", sendSideBandwidthEstimation.latestFractionLoss)
-        val bweStats = sendSideBandwidthEstimation.statistics
-        addNumber("lossDegradedMs", bweStats.lossDegradedMs)
-        addNumber("lossFreeMs", bweStats.lossFreeMs)
-        addNumber("lossLimitedMs", bweStats.lossLimitedMs)
+        with(sendSideBandwidthEstimation.statistics) {
+            addNumber("lossDegradedMs", lossDegradedMs)
+            addNumber("lossFreeMs", lossFreeMs)
+            addNumber("lossLimitedMs", lossLimitedMs)
+        }
     }
 
     override fun reset() {

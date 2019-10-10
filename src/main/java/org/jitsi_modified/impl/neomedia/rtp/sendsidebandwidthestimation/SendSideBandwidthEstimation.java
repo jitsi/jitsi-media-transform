@@ -280,7 +280,7 @@ public class SendSideBandwidthEstimation
     /**
      * The instance that holds stats for this instance.
      */
-    private final StatisticsImpl statistics = new StatisticsImpl();
+    private final Statistics statistics = new Statistics();
 
     public SendSideBandwidthEstimation(DiagnosticContext diagnosticContext, long startBitrate,
         @NotNull Logger parentLogger)
@@ -519,9 +519,6 @@ public class SendSideBandwidthEstimation
         }
     }
 
-    /**
-     * void SendSideBandwidthEstimation::UpdateMinHistory(int64_t now_ms)
-     */
     private synchronized void updateMinHistory(long now_ms)
     {
         // Remove old data points from history.
@@ -546,7 +543,7 @@ public class SendSideBandwidthEstimation
     }
 
     /**
-     * void SendSideBandwidthEstimation::UpdateReceiverEstimate
+     * {@link SendSideBandwidthEstimation#updateReceiverEstimate}
      * This is the entry/update point for the estimated bitrate in the
      * REMBPacket or a Delay Based Controller estimated bitrate when the
      * Delay based controller and the loss based controller lives on the
@@ -619,7 +616,7 @@ public class SendSideBandwidthEstimation
     /**
      * @return the statistics specific to this bandwidth estimator.
      */
-    public StatisticsImpl getStatistics()
+    public Statistics getStatistics()
     {
         return statistics;
     }
@@ -662,7 +659,7 @@ public class SendSideBandwidthEstimation
      * This class records statistics information about how much time we spend
      * in different loss-states (loss-free, loss-limited and loss-degraded).
      */
-    public class StatisticsImpl
+    public class Statistics
     {
         /**
          * The current state {@link LossRegion}.
