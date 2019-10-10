@@ -24,6 +24,7 @@ import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.ReceivedPacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
@@ -96,25 +97,25 @@ class TransportCcEngine(
             localReferenceTime = now
         }
 
-        for (receivedPacket in tccPacket) {
+        for (packetReport in tccPacket) {
             val packetDetail: PacketDetail?
-            val tccSeqNum = receivedPacket.seqNum
+            val tccSeqNum = packetReport.seqNum
             synchronized(sentPacketsSyncRoot) {
                 packetDetail = sentPacketDetails.remove(tccSeqNum)
             }
 
             if (packetDetail == null) {
-                if (receivedPacket.received) {
+                if (packetReport is ReceivedPacketReport) {
                     logger.warn("Couldn't find packet detail for $tccSeqNum.")
                 }
                 continue
             }
 
-            if (!receivedPacket.received) {
+            if (!(packetReport is ReceivedPacketReport)) {
                 bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
                 continue
             }
-            val delta = Duration.of(receivedPacket.deltaTicks * 250L, ChronoUnit.MICROS)
+            val delta = Duration.of(packetReport.deltaTicks * 250L, ChronoUnit.MICROS)
             currArrivalTimestamp += delta
 
             val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
