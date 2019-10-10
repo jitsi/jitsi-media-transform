@@ -34,8 +34,18 @@ import java.util.*;
  * @author George Politis
  */
 public class RemoteBitrateEstimatorAbsSendTime
-    implements RemoteBitrateEstimator
 {
+    /**
+     * webrtc/modules/remote_bitrate_estimator/include/bwe_defines.h
+     */
+    static final private int kBitrateWindowMs = 1000;
+
+    static final private int kBitrateScale = 8000;
+
+    static final int kDefaultMinBitrateBps = 30000;
+
+    static final private int kStreamTimeOutMs = 2000;
+
     /**
      * The {@link TimeSeriesLogger} to be used by this instance to print time
      * series.
@@ -191,7 +201,6 @@ public class RemoteBitrateEstimatorAbsSendTime
      * @param sendTimeMs the send time of the packet in millis
      * @param payloadSize the payload size of the packet.
      */
-    @Override
     public void incomingPacketInfo(
         long nowMs,
         long arrivalTimeMs,
@@ -347,7 +356,6 @@ public class RemoteBitrateEstimatorAbsSendTime
         remoteRate.setRtt(nowMs, avgRttMs);
     }
 
-    @Override
     public synchronized long getLatestEstimate()
     {
         long bitrateBps;
@@ -367,9 +375,10 @@ public class RemoteBitrateEstimatorAbsSendTime
     }
 
     /**
-     * {@inheritDoc}
+     * Sets the minimum bitrate for this instance.
+     *
+     * @param minBitrateBps the minimum bitrate in bps.
      */
-    @Override
     public synchronized void setMinBitrate(int minBitrateBps)
     {
         // Called from both the configuration thread and the network thread.

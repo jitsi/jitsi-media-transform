@@ -15,7 +15,6 @@
  */
 package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
-import org.jitsi_modified.service.neomedia.rtp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
@@ -372,7 +371,7 @@ class AimdRateControl
 
     public void reset()
     {
-        reset(RemoteBitrateEstimator.kDefaultMinBitrateBps);
+        reset(RemoteBitrateEstimatorAbsSendTime.kDefaultMinBitrateBps);
     }
 
     private void reset(long minBitrateBps)
