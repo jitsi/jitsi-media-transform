@@ -43,17 +43,15 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     /**
      * Implements the delay-based part of Google CC.
      */
-    private val bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(diagnosticContext, logger)
-    init {
-        bitrateEstimatorAbsSendTime.setMinBitrate(minBw.bps.toInt())
+    private val bitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(diagnosticContext, logger).also {
+        it.setMinBitrate(minBw.bps.toInt())
     }
 
     /**
      * Implements the loss-based part of Google CC.
      */
-    private val sendSideBandwidthEstimation = SendSideBandwidthEstimation(diagnosticContext, initBw.bps.toLong(), logger)
-    init {
-        sendSideBandwidthEstimation.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
+    private val sendSideBandwidthEstimation = SendSideBandwidthEstimation(diagnosticContext, initBw.bps.toLong(), logger).also {
+        it.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
     }
 
     override fun processPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
