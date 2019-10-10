@@ -18,7 +18,6 @@ package org.jitsi.nlj.rtp
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 import org.jitsi.nlj.rtcp.RtcpListener
 import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.util.DataSize
@@ -115,8 +114,7 @@ class TransportCcEngine(
                 bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
                 continue
             }
-            val delta = Duration.of(packetReport.deltaTicks * 250L, ChronoUnit.MICROS)
-            currArrivalTimestamp += delta
+            currArrivalTimestamp += packetReport.deltaTicksDuration
 
             val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
