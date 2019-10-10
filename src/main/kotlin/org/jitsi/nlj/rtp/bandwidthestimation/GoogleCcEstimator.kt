@@ -61,7 +61,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
 
         if (sendTime != null && recvTime != null) {
             bitrateEstimatorAbsSendTime.incomingPacketInfo(now.toEpochMilli(),
-                    recvTime.toEpochMilli(), sendTime.toEpochMilli(), size.bytes.toInt(), 1 /* TODO */)
+                    recvTime.toEpochMilli(), sendTime.toEpochMilli(), size.bytes.toInt())
         }
         sendSideBandwidthEstimation.updateReceiverEstimate(bitrateEstimatorAbsSendTime.latestEstimate)
         sendSideBandwidthEstimation.updateReceiverBlock(0, 1, now.toEpochMilli())

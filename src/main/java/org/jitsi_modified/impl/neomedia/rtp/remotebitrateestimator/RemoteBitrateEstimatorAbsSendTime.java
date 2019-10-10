@@ -93,7 +93,7 @@ public class RemoteBitrateEstimatorAbsSendTime
 
     /**
      * Reduces the effects of allocations and garbage collection of the method
-     * {@link #incomingPacketInfo(long, long, long, int, long)}} by promoting the
+     * {@link #incomingPacketInfo(long, long, long, int)}} by promoting the
      * {@code RateControlInput} instance from a local variable to a field and
      * reusing the same instance across method invocations. (Consequently, the
      * default values used to initialize the field are of no importance because
@@ -102,20 +102,7 @@ public class RemoteBitrateEstimatorAbsSendTime
     private final RateControlInput input
         = new RateControlInput(BandwidthUsage.kBwNormal, 0L, 0D);
 
-    /**
-     * The set of synchronization source identifiers (SSRCs) currently being
-     * received. Represents an unmodifiable copy/snapshot of the current keys of
-     * {@link #ssrcsMap} suitable for public access and introduced for
-     * the purposes of reducing the number of allocations and the effects of
-     * garbage collection.
-     */
-    private Collection<Long> ssrcs
-        = Collections.unmodifiableList(Collections.EMPTY_LIST);
-
-    /**
-     * A map of SSRCs -> time first seen (in millis).
-     */
-    private final Map<Long, Long> ssrcsMap = new TreeMap<>();
+    private long lastPacketTimeMs;
 
     /**
      * The time (in millis) when we saw the first packet. Useful to determine
@@ -177,6 +164,7 @@ public class RemoteBitrateEstimatorAbsSendTime
         this.incomingBitrate = new RateStatistics(kBitrateWindowMs, kBitrateScale);
         this.incomingBitrateInitialized = false;
         this.firstPacketTimeMs = -1;
+        this.lastPacketTimeMs = -1;
         this.lastUpdateMs = -1;
     }
 
@@ -189,7 +177,10 @@ public class RemoteBitrateEstimatorAbsSendTime
         this.incomingBitrate = new RateStatistics(kBitrateWindowMs, kBitrateScale);
         this.incomingBitrateInitialized = false;
         this.firstPacketTimeMs = -1;
+        this.lastPacketTimeMs = -1;
         this.lastUpdateMs = -1;
+
+        this.detector = null;
     }
 
     /**
@@ -199,15 +190,13 @@ public class RemoteBitrateEstimatorAbsSendTime
      * @param arrivalTimeMs the arrival time of the packet in millis.
      * @param sendTimeMs the send time of the packet in millis
      * @param payloadSize the payload size of the packet.
-     * @param ssrc the SSRC of the packet.
      */
     @Override
     public void incomingPacketInfo(
         long nowMs,
         long arrivalTimeMs,
         long sendTimeMs,
-        int payloadSize,
-        long ssrc)
+        int payloadSize)
     {
         long sendTime24bits = convertMsTo24Bits(sendTimeMs);
 
@@ -222,8 +211,7 @@ public class RemoteBitrateEstimatorAbsSendTime
                 .addField("rbe_id", hashCode())
                 .addField("recv_ts_ms", arrivalTimeMs)
                 .addField("send_ts_ms", sendTimeMs)
-                .addField("pkt_sz_bytes", payloadSize)
-                .addField("ssrc", ssrc));
+                .addField("pkt_sz_bytes", payloadSize));
         }
 
         // should be broken out from  here.
@@ -256,12 +244,8 @@ public class RemoteBitrateEstimatorAbsSendTime
 
         synchronized (this)
         {
-            timeoutStreams(nowMs);
-            ssrcsMap.put(ssrc, nowMs);
-            if (!ssrcs.contains(ssrc))
-            {
-                ssrcs = Collections.unmodifiableCollection(ssrcsMap.keySet());
-            }
+            checkTimeouts(nowMs);
+            lastPacketTimeMs = nowMs;
 
             long[] deltas = this.deltas;
 
@@ -337,28 +321,9 @@ public class RemoteBitrateEstimatorAbsSendTime
      *
      * @param nowMs the current time in millis.
      */
-    private synchronized void timeoutStreams(long nowMs)
+    private synchronized void checkTimeouts(long nowMs)
     {
-        boolean removed = false;
-        Iterator<Map.Entry<Long, Long>> itr = ssrcsMap.entrySet().iterator();
-        while (itr.hasNext())
-        {
-            Map.Entry<Long, Long> entry = itr.next();
-            if ((nowMs - entry.getValue() > kStreamTimeOutMs))
-            {
-                removed = true;
-                itr.remove();
-            }
-        }
-
-        if (removed)
-        {
-            ssrcs = Collections.unmodifiableCollection(ssrcsMap.keySet());
-        }
-
-        if (detector != null && ssrcsMap.isEmpty())
-        {
-            // We can't update the estimate if we don't have any active streams.
+        if (nowMs - lastPacketTimeMs > kStreamTimeOutMs) {
             detector = null;
             // We deliberately don't reset the first_packet_time_ms_
             // here for now since we only probe for bandwidth in the
@@ -382,9 +347,6 @@ public class RemoteBitrateEstimatorAbsSendTime
         remoteRate.setRtt(nowMs, avgRttMs);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public synchronized long getLatestEstimate()
     {
@@ -393,7 +355,7 @@ public class RemoteBitrateEstimatorAbsSendTime
         {
             return -1;
         }
-        if (ssrcsMap.isEmpty())
+        if (detector == null)
         {
             bitrateBps = 0;
         }
@@ -402,27 +364,6 @@ public class RemoteBitrateEstimatorAbsSendTime
             bitrateBps = remoteRate.getLatestEstimate();
         }
         return bitrateBps;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Collection<Long> getSsrcs()
-    {
-        return ssrcs;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void removeStream(long ssrc)
-    {
-        if (ssrcsMap.remove(ssrc) != null)
-        {
-            ssrcs = Collections.unmodifiableCollection(ssrcsMap.keySet());
-        }
     }
 
     /**

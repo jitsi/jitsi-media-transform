@@ -50,22 +50,6 @@ public interface RemoteBitrateEstimator
     long getLatestEstimate();
 
     /**
-     * Returns the estimated payload bitrate in bits per second if a valid
-     * estimate exists; otherwise, <tt>-1</tt>.
-     *
-     * @return the estimated payload bitrate in bits per seconds if a valid
-     * estimate exists; otherwise, <tt>-1</tt>
-     */
-    Collection<Long> getSsrcs();
-
-    /**
-     * Removes all data for <tt>ssrc</tt>.
-     *
-     * @param ssrc
-     */
-    void removeStream(long ssrc);
-
-    /**
      * Sets the minimum bitrate for this instance.
      *
      * @param minBitrateBps the minimum bitrate in bps.
@@ -80,8 +64,7 @@ public interface RemoteBitrateEstimator
      * @param timestamp the 32bit send timestamp of the packet. Note that the
      * specific format depends on the specific implementation.
      * @param payloadSize the payload size of the packet.
-     * @param ssrc the SSRC of the packet.
      */
     void incomingPacketInfo(
-        long nowMs, long arrivalTimeMs, long timestamp, int payloadSize, long ssrc);
+        long nowMs, long arrivalTimeMs, long timestamp, int payloadSize);
 }
