@@ -62,7 +62,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
                     recvTime.toEpochMilli(), sendTime.toEpochMilli(), size.bytes.toInt())
         }
         sendSideBandwidthEstimation.updateReceiverEstimate(bitrateEstimatorAbsSendTime.latestEstimate)
-        sendSideBandwidthEstimation.updateReceiverBlock(0, 1, now.toEpochMilli())
+        sendSideBandwidthEstimation.updateReceiverBlock(0 /* fraction_lost */, 1 /* number_of_packets */, now.toEpochMilli())
 
         /* TODO: rate-limit how often we call updateEstimate? */
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
@@ -72,7 +72,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     override fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
         super.processPacketLoss(now, sendTime, seq)
 
-        sendSideBandwidthEstimation.updateReceiverBlock(256, 1, now.toEpochMilli())
+        sendSideBandwidthEstimation.updateReceiverBlock(256 /* fraction_lost */, 1 /* number_of_packets */, now.toEpochMilli())
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
         reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
