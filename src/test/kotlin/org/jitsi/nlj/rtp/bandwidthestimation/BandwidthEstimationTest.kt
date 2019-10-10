@@ -1,8 +1,7 @@
 package org.jitsi.nlj.rtp.bandwidthestimation
 
 import com.nhaarman.mockitokotlin2.spy
-import io.kotlintest.matchers.doubles.shouldBeGreaterThan
-import io.kotlintest.matchers.doubles.shouldBeLessThan
+import io.kotlintest.matchers.doubles.shouldBeBetween
 import io.kotlintest.specs.ShouldSpec
 import java.time.Clock
 import java.time.Duration
@@ -230,8 +229,7 @@ class BandwidthEstimationTest : ShouldSpec() {
                 bottleneck.stop()
 
                 val finalBw = estimator.getCurrentBw(clock.instant())
-                finalBw.bps.shouldBeGreaterThan((bottleneckRate / 1.2).bps)
-                finalBw.bps.shouldBeLessThan((bottleneckRate * 1.2).bps)
+                finalBw.bps.shouldBeBetween((bottleneckRate / 1.2).bps, (bottleneckRate * 1.2).bps, 0.0)
             }
         }
     }
