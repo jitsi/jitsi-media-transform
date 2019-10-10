@@ -102,8 +102,9 @@ abstract class BandwidthEstimator(
         }
         point.addField("seq", seq)
         point.addField("size", size.bytes)
-        if (ecn != 0.toByte())
-            point.addField("ecn", 0)
+        if (ecn != 0.toByte()) {
+            point.addField("ecn", ecn)
+        }
         timeSeriesLogger.trace(point)
     }
 
@@ -180,8 +181,9 @@ abstract class BandwidthEstimator(
             }
         }
 
-        if (newValue == curBandwidth)
+        if (newValue == curBandwidth) {
             return
+        }
         for (listener in listeners) {
             listener.bandwidthEstimationChanged(newValue)
         }

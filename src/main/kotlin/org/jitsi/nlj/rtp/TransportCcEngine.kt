@@ -140,7 +140,7 @@ class TransportCcEngine(
      * and the time stamps of the outgoing packet
      * in [packetSendTime]
      */
-    private data class PacketDetail internal constructor(internal var packetLength: DataSize, internal var packetSendTime: Instant)
+    private data class PacketDetail internal constructor(internal val packetLength: DataSize, internal val packetSendTime: Instant)
 
     companion object {
         /**
