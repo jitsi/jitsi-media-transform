@@ -78,9 +78,9 @@ class TransportCcEngine(
     /**
      * Called when an RTP sender has a new round-trip time estimate.
      */
-    fun onRttUpdate(avgRttMs: Long, maxRttMs: Long) {
+    fun onRttUpdate(rtt: Duration) {
         val now = clock.instant()
-        bandwidthEstimator.onRttUpdate(now, Duration.ofMillis(avgRttMs))
+        bandwidthEstimator.onRttUpdate(now, rtt)
     }
 
     override fun rtcpPacketReceived(rtcpPacket: RtcpPacket, receivedTime: Long) {

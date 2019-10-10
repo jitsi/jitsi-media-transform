@@ -15,6 +15,7 @@
  */
 package org.jitsi.nlj
 
+import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.rtcp.KeyframeRequester
@@ -159,7 +160,7 @@ class RtpSenderImpl(
     override fun onRttUpdate(newRtt: Double) {
         nackHandler.onRttUpdate(newRtt)
         keyframeRequester.onRttUpdate(newRtt)
-        transportCcEngine?.onRttUpdate(newRtt.toLong(), -1)
+        transportCcEngine?.onRttUpdate(Duration.ofNanos((newRtt*1e6).toLong()))
     }
 
     /**
