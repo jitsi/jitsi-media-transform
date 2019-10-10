@@ -21,7 +21,6 @@ import org.jitsi.service.libjitsi.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
 import org.jitsi.utils.logging2.*;
-import org.jitsi_modified.service.neomedia.rtp.BandwidthEstimator;
 
 import java.util.*;
 
@@ -34,7 +33,6 @@ import java.util.*;
  * @author Boris Grozev
  */
 public class SendSideBandwidthEstimation
-    implements BandwidthEstimator
 {
     /**
      * The name of the property that specifies the low-loss threshold
@@ -273,9 +271,6 @@ public class SendSideBandwidthEstimation
      * The {@link DiagnosticContext} of this instance.
      */
     private final DiagnosticContext diagnosticContext;
-
-    private final List<Listener> listeners
-        = new LinkedList<>();
 
     /**
      * The most recent RTT calculation we've received for our connection with the remote endpoint
@@ -551,9 +546,12 @@ public class SendSideBandwidthEstimation
     }
 
     /**
-     * {@inheritDoc}
+     * void SendSideBandwidthEstimation::UpdateReceiverEstimate
+     * This is the entry/update point for the estimated bitrate in the
+     * REMBPacket or a Delay Based Controller estimated bitrate when the
+     * Delay based controller and the loss based controller lives on the
+     * send side. see internet draft on "Congestion Control for RTCWEB"
      */
-    @Override
     public synchronized void updateReceiverEstimate(long bandwidth)
     {
         if (timeSeriesLogger.isTraceEnabled())
@@ -589,66 +587,43 @@ public class SendSideBandwidthEstimation
      */
     private synchronized void setBitrate(long newValue)
     {
-        long oldValue = bitrate_;
         bitrate_ = newValue;
-        if (oldValue != bitrate_)
-        {
-            fireBandwidthEstimationChanged(oldValue, newValue);
-        }
     }
 
     /**
-     * {@inheritDoc}
+     * @return the latest estimate.
      */
-    @Override
     public long getLatestEstimate()
     {
         return bitrate_;
     }
 
     /**
-     * {@inheritDoc}
+     * @return the latest values of the Receiver Estimated Maximum Bandwidth.
      */
-    @Override
     public long getLatestREMB()
     {
         return bwe_incoming_;
     }
 
     /**
-     * {@inheritDoc}
+     * @return the latest effective fraction loss calculated.
+     * The value is between 0 and 256 (corresponding
+     * to 0% and 100% respectively).
      */
-    @Override
     public int getLatestFractionLoss()
     {
         return last_fraction_loss_;
     }
 
     /**
-     * {@inheritDoc}
+     * @return the statistics specific to this bandwidth estimator.
      */
-    @Override
-    public synchronized void addListener(Listener listener)
-    {
-        listeners.add(listener);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void removeListener(Listener listener)
-    {
-        listeners.remove(listener);
-    }
-
-    @Override
     public StatisticsImpl getStatistics()
     {
         return statistics;
     }
 
-    @Override
     public void onRttUpdate(double newRtt)
     {
         //TODO(brian): does it make sense to use rtt as a long in here? which is more approriate, double or long?
@@ -672,21 +647,6 @@ public class SendSideBandwidthEstimation
         return rtt;
     }
 
-    /**
-     * Notifies registered listeners that the estimation of the available
-     * bandwidth has changed.
-     * @param oldValue the old value (in bps).
-     * @param newValue the new value (in bps).
-     */
-    private synchronized void fireBandwidthEstimationChanged(
-            long oldValue, long newValue)
-    {
-        for (BandwidthEstimator.Listener listener : listeners)
-        {
-            listener.bandwidthEstimationChanged(newValue);
-        }
-    }
-
     private class Pair<T>
     {
         T first;
@@ -702,7 +662,7 @@ public class SendSideBandwidthEstimation
      * This class records statistics information about how much time we spend
      * in different loss-states (loss-free, loss-limited and loss-degraded).
      */
-    public class StatisticsImpl implements Statistics
+    public class StatisticsImpl
     {
         /**
          * The current state {@link LossRegion}.
@@ -760,7 +720,6 @@ public class SendSideBandwidthEstimation
             lossDegradedMsStats = new LongSummaryStatistics(),
             lossLimitedMsStats = new LongSummaryStatistics();
 
-        @Override
         public void update(long nowMs)
         {
             synchronized (SendSideBandwidthEstimation.this)
@@ -885,7 +844,9 @@ public class SendSideBandwidthEstimation
             }
         }
 
-        @Override
+        /**
+         * @return the number of millis spent in the loss-limited state.
+         */
         public long getLossLimitedMs()
         {
             synchronized (SendSideBandwidthEstimation.this)
@@ -894,7 +855,9 @@ public class SendSideBandwidthEstimation
             }
         }
 
-        @Override
+        /**
+         * @return the number of millis spent in the loss-degraded state.
+         */
         public long getLossDegradedMs()
         {
             synchronized (SendSideBandwidthEstimation.this)
@@ -903,7 +866,9 @@ public class SendSideBandwidthEstimation
             }
         }
 
-        @Override
+        /**
+         * @return the number of millis spent in the loss-free state.
+         */
         public long getLossFreeMs()
         {
             synchronized (SendSideBandwidthEstimation.this)
