@@ -15,6 +15,7 @@
  */
 package org.jitsi.nlj
 
+import java.time.Clock
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.format.PayloadType
@@ -256,7 +257,7 @@ class Transceiver(
             addBlock(streamInformationStore.getNodeStats())
             addBlock(mediaStreamTracks.getNodeStats())
             addString("endpointConnectionStats", endpointConnectionStats.getSnapshot().toString())
-            addBlock(bandwidthEstimator.getStats())
+            addBlock(bandwidthEstimator.getStats(Clock.systemUTC().instant()))
             addBlock(rtpReceiver.getNodeStats())
             addBlock(rtpSender.getNodeStats())
         }
@@ -272,7 +273,7 @@ class Transceiver(
             rtpReceiver.getPacketStreamStats(),
             rtpSender.getStreamStats(),
             rtpSender.getPacketStreamStats(),
-            bandwidthEstimator.getStats())
+            bandwidthEstimator.getStats(Clock.systemUTC().instant()))
     }
 
     override fun stop() {

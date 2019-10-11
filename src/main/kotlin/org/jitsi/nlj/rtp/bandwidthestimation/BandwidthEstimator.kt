@@ -176,8 +176,11 @@ abstract class BandwidthEstimator(
      */
     abstract fun getCurrentBw(now: Instant): Bandwidth
 
-    /** Get the current statistics related to this estimator. */
-    abstract fun getStats(): NodeStatsBlock
+    /** Get the current statistics related to this estimator.
+     *
+     * @param[now] The current time, when this function is called.
+     */
+    abstract fun getStats(now: Instant): NodeStatsBlock
 
     /** Reset the estimator to its initial state. */
     abstract fun reset(): Unit
