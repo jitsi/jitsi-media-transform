@@ -335,7 +335,8 @@ public class SendSideBandwidthEstimation
         min_bitrate_history_.clear();
 
         setBitrate(startBitrate);
-        /* TODO: reset statistics */
+
+        statistics.reset();
     }
 
     /**
@@ -712,7 +713,7 @@ public class SendSideBandwidthEstimation
         /**
          * Computes the sum of the duration of the different states.
          */
-        private final LongSummaryStatistics
+        private LongSummaryStatistics
             lossFreeMsStats = new LongSummaryStatistics(),
             lossDegradedMsStats = new LongSummaryStatistics(),
             lossLimitedMsStats = new LongSummaryStatistics();
@@ -838,6 +839,30 @@ public class SendSideBandwidthEstimation
                 }
 
                 currentStateBitrateStatistics.accept(bitrate_);
+            }
+        }
+
+        /** Return to state immediately after construction. */
+        void reset()
+        {
+            synchronized (SendSideBandwidthEstimation.this)
+            {
+                currentState = null;
+
+                lastTransitionTimestampMs = -1;
+
+                lossFreeMsStats = new LongSummaryStatistics();
+                lossDegradedMsStats = new LongSummaryStatistics();
+                lossLimitedMsStats = new LongSummaryStatistics();
+
+                if (isDirty)
+                {
+                    currentStateLossStatistics = new IntSummaryStatistics();
+                    currentStateBitrateStatistics = new LongSummaryStatistics();
+                    currentStateConsecutiveVisits = 0;
+                    currentStateCumulativeDurationMs = 0;
+                    isDirty = false;
+                }
             }
         }
 
