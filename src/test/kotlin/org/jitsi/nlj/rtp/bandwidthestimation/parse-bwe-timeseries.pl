@@ -108,14 +108,17 @@ while (<>) {
 	    my $delta = ($line->{recv_ts_ms} - $line->{send_ts_ms}) % 64000;
 
 	    $endpoints{$key}{min_delta} = min_modulo($delta, $endpoints{$key}{min_delta}, 64000);
-	    push(@{$endpoints{$key}{trace}}, ["pkt", $time, $delta]);
+	    push(@{$endpoints{$key}{trace}}, ["delay", $time, $delta]);
+	    $endpoints{columns}{delay} = 1;
 	}
 	elsif ($series eq "aimd_rtt") {
 	    my $entry = ["rtt", $time, $line->{rtt}];
 	    push(@{$endpoints{$key}{trace}}, $entry);
+	    $endpoints{columns}{rtt} = 1;
 	}
 	elsif ($series eq "bwe_incoming") {
 	    push(@{$endpoints{$key}{trace}}, ["bw", $time, $line->{bitrate_bps}]);
+	    $endpoints{columns}{bw} = 1;
 	}
     }
     else {
@@ -125,22 +128,47 @@ while (<>) {
 	    if (!defined($endpoints{$key}{min_delta}) || $delta < $endpoints{$key}{min_delta}) {
 		$endpoints{$key}{min_delta} = $delta;
 	    }
-	    push(@{$endpoints{$key}{trace}}, ["pkt", $time, $delta]);
+	    push(@{$endpoints{$key}{trace}}, ["delay", $time, $delta]);
+	    $endpoints{$key}{columns}{delay} = 1;
 	}
 	elsif ($series eq "bwe_rtt") {
 	    my $entry = ["rtt", $time, $line->{rtt}];
 	    push(@{$endpoints{$key}{trace}}, $entry);
+	    $endpoints{$key}{columns}{rtt} = 1;
 	}
 	elsif ($series eq "bwe_estimate") {
 	    push(@{$endpoints{$key}{trace}}, ["bw", $time, $line->{bw}]);
+	    $endpoints{$key}{columns}{bw} = 1;
 	}
     }
+}
+
+sub print_row($$$$$;$) {
+    my ($cols, $time, $bw, $rtt, $delay, $skip_comma) = @_;
+
+    my $have_bw = exists($cols->{bw});
+    my $have_rtt = exists($cols->{rtt});
+    my $have_delay = exists($cols->{delay});
+
+    print "," if (!defined($skip_comma) || $skip_comma);
+    print ("[", $time);
+    print ",$bw" if ($have_bw);
+    print ",$rtt" if ($have_rtt);
+    print ",$delay" if ($have_delay);
+    print "]\n";
 }
 
 print "var charts={";
 my $subsequent=0;
 foreach my $ep (sort keys %endpoints) {
     my ($conf_name, $conf_time, $ep_id) = @{$endpoints{$ep}{info}};
+
+    my $cols = $endpoints{$ep}{columns};
+    my $have_bw = exists($cols->{bw});
+    my $have_rtt = exists($cols->{rtt});
+    my $have_delay = exists($cols->{delay});
+
+    next if (!$have_delay && !$have_rtt && !$have_bw);
 
     print "," if ($subsequent); $subsequent = 1;
 
@@ -152,21 +180,27 @@ foreach my $ep (sort keys %endpoints) {
     else {
 	$conf_time_str = "\"$conf_time\"";
     }
-	
+
     print "\"$ep\":{\"title\":\"Endpoint $ep_id in Conference $conf_name at \" + $conf_time_str,\n";
 
-    print "\"data\":[[\"Time\",\"Bandwidth\",\"RTT\",\"Excess One-Way Delay\"]\n";
+    print "\"columns\":{";
+    print "\"bw\":", $have_bw ? "true," : "false,";
+    print "\"rtt\":", $have_rtt ? "true," : "false,";
+    print "\"delay\":", $have_delay ? "true},\n" : "false},\n";
+
+    print "\"data\":[";
+    print_row($cols, "\"Time\"","\"Bandwidth\"","\"RTT\"","\"Excess One-Way Delay\"", 0);
 
     foreach my $row (@{$endpoints{$ep}{trace}}) {
-	if ($row->[0] eq "pkt") {
-	    print (",[", $row->[1], ",null,null,", $row->[2] - $endpoints{$ep}{min_delta}, "]\n");
+	if ($row->[0] eq "delay") {
+	    print_row($cols, $row->[1], "null", "null", $row->[2] - $endpoints{$ep}{min_delta});
 	}
 	elsif ($row->[0] eq "rtt") {
-	    print (",[", $row->[1], ",null,", $row->[2], ",null]\n");
+	    print_row($cols, $row->[1], "null", $row->[2], "null");
 	}
 	elsif ($row->[0] eq "bw") {
 	    if ($row->[2] != -1) {
-		print (",[", $row->[1], ",", $row->[2], ",null,null]\n");
+		print_row ($cols, $row->[1], $row->[2], "null", "null");
 	    }
 	}
     }
