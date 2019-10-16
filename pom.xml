@@ -34,7 +34,7 @@
         <dependency>
             <groupId>org.jitsi</groupId>
             <artifactId>jitsi-utils</artifactId>
-            <version>1.0-5-g7b044d4</version>
+            <version>1.0-19-ge5cd0ce</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -70,6 +70,11 @@
             <groupId>org.jitsi</groupId>
             <artifactId>libjitsi</artifactId>
             <version>1.0-20190723.113238-389</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.3.4</version>
         </dependency>
 
         <!-- test -->

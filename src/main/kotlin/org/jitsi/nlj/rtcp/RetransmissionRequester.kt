@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.rtcp
 
+import org.jitsi.nlj.rtcp.config.RetransmissionRequesterMaxRequestsProperty
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -181,7 +182,8 @@ class RetransmissionRequester(
                     // was received and is no longer in the requests map
                     requests[nackedSeqNum]?.let { request ->
                         request.requested(timestamp)
-                        if (request.numTimesRequested == MAX_REQUESTS) {
+                        // if (request.numTimesRequested == MAX_REQUESTS) {
+                        if (request.numTimesRequested == RetransmissionRequesterMaxRequestsProperty.getValue()) {
                             logger.cdebug { "$ssrc generated the last NACK for seq num ${request.seqNum}, " +
                                     "time since the first request = ${Duration.between(request.firstRequestTimestamp, timestamp)}" }
 
