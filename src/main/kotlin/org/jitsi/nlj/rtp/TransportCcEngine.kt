@@ -25,6 +25,7 @@ import org.jitsi.nlj.util.NEVER
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.ReceivedPacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
+import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.UnreceivedPacketReport
 import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
 
@@ -110,16 +111,19 @@ class TransportCcEngine(
                 continue
             }
 
-            if (!(packetReport is ReceivedPacketReport)) {
-                bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
-                continue
+            when (packetReport) {
+                is UnreceivedPacketReport ->
+                    bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
+
+                is ReceivedPacketReport -> {
+                    currArrivalTimestamp += packetReport.deltaDuration
+
+                    val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
+
+                    bandwidthEstimator.processPacketArrival(
+                        now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
+                }
             }
-            currArrivalTimestamp += packetReport.deltaDuration
-
-            val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
-
-            bandwidthEstimator.processPacketArrival(
-                now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
         }
     }
 
