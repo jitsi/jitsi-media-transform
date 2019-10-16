@@ -114,7 +114,7 @@ class TransportCcEngine(
                 bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
                 continue
             }
-            currArrivalTimestamp += packetReport.deltaTicksDuration
+            currArrivalTimestamp += packetReport.deltaDuration
 
             val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
