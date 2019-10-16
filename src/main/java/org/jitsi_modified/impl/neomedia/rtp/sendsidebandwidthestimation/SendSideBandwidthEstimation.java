@@ -482,6 +482,25 @@ public class SendSideBandwidthEstimation
     }
 
     /**
+     * Report that one packet has arrived.
+     */
+    public void reportPacketArrived(long now)
+    {
+        updateReceiverBlock(0, 1, now);
+    }
+
+    /**
+     * Report that one packet was lost.
+     */
+    public void reportPacketLost(long now)
+    {
+        updateReceiverBlock(256, 1, now);
+    }
+
+    /* TODO: We need an API to report that a packet that was previously
+       reported lost has in fact arrived after all. */
+
+    /**
      * void SendSideBandwidthEstimation::UpdateReceiverBlock
      */
     synchronized public void updateReceiverBlock(
