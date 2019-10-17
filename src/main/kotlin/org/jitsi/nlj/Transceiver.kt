@@ -257,7 +257,7 @@ class Transceiver(
             addBlock(streamInformationStore.getNodeStats())
             addBlock(mediaStreamTracks.getNodeStats())
             addString("endpointConnectionStats", endpointConnectionStats.getSnapshot().toString())
-            addBlock(bandwidthEstimator.getStats(Clock.systemUTC().instant()))
+            addJson("Bandwidth Estimation", bandwidthEstimator.getStats(Clock.systemUTC().instant()).toJson())
             addBlock(rtpReceiver.getNodeStats())
             addBlock(rtpSender.getNodeStats())
         }

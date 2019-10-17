@@ -19,10 +19,10 @@ package org.jitsi.nlj.rtp.bandwidthestimation
 import java.time.Duration
 import java.time.Instant
 import java.util.LinkedList
-import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
+import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.formatMilli
 import org.jitsi.utils.logging.DiagnosticContext
@@ -180,7 +180,7 @@ abstract class BandwidthEstimator(
      *
      * @param[now] The current time, when this function is called.
      */
-    abstract fun getStats(now: Instant): NodeStatsBlock
+    abstract fun getStats(now: Instant): Statistics
 
     /** Reset the estimator to its initial state. */
     abstract fun reset(): Unit
@@ -237,5 +237,76 @@ abstract class BandwidthEstimator(
     @Synchronized
     fun removeListener(listener: Listener) {
         listeners.remove(listener)
+    }
+
+    class Statistics(algorithmName: String, currentEstimate: Bandwidth) {
+        private val stats = mutableMapOf<String, Any>().apply {
+            addString("algorithmName", algorithmName)
+            addBandwidth("currentEstimate", currentEstimate)
+        }
+        var algorithmName: String by stats
+        var currentEstimate: Bandwidth by stats
+
+        fun getValue(name: String): Any? = stats[name]
+
+        /**
+         * Gets the value of a stat with a given name, if this [Statistics] has it and it is a [Number].
+         * Otherwise returns 'null'.
+         */
+        fun getNumber(name: String): Number? = when {
+            stats[name] is Number -> stats[name] as Number
+            else -> null
+        }
+
+        /**
+         * Promotes integer values to [Long] and floating point values to [Double]. Returns a
+         * [Long], [Double], or null.
+         */
+        private fun promote(n: Number): Number? = when (n) {
+            is Byte, is Short, is Int, is Long -> n.toLong()
+            is Float, is Double -> n.toDouble()
+            else -> null
+        }
+
+        /**
+         * Adds a stat with a number value. Integral values are promoted to [Long], while floating point values are
+         * promoted to [Double].
+         */
+        fun addNumber(name: String, value: Number) {
+            promote(value)?.let { stats[name] = it }
+        }
+
+        /**
+         * Adds a stat with a string value.
+         */
+        fun addString(name: String, value: String) {
+            stats[name] = value
+        }
+
+        /**
+         * Adds a stat with a boolean value.
+         */
+        fun addBoolean(name: String, value: Boolean) {
+            stats[name] = value
+        }
+
+        /**
+         * Adds a stat with a bandwidth value.
+         */
+        fun addBandwidth(name: String, value: Bandwidth) {
+            stats[name] = value
+        }
+
+        /**
+         * Returns a JSON representation of this [NodeStatsBlock].
+         */
+        fun toJson(): OrderedJsonObject = OrderedJsonObject().apply {
+            stats.forEach { (name, value) ->
+                when (value) {
+                    is Bandwidth -> put(name, value.bps)
+                    else -> put(name, value)
+                }
+            }
+        }
     }
 }

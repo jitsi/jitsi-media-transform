@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.stats
 
+import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsSnapshot
 import org.jitsi.nlj.transform.node.outgoing.OutgoingStatisticsSnapshot
 
@@ -25,5 +26,5 @@ data class TransceiverStats(
     val incomingPacketStreamStats: PacketStreamStats.Snapshot,
     val outgoingStats: OutgoingStatisticsSnapshot,
     val outgoingPacketStreamStats: PacketStreamStats.Snapshot,
-    val bandwidthEstimatorStats: NodeStatsBlock
+    val bandwidthEstimatorStats: BandwidthEstimator.Statistics
 )

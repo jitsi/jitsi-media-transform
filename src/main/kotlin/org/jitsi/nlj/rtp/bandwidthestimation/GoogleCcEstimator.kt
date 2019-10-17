@@ -3,7 +3,6 @@ package org.jitsi.nlj.rtp.bandwidthestimation
 import java.time.Duration
 import java.time.Instant
 import kotlin.properties.Delegates
-import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.bps
@@ -82,9 +81,8 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         return sendSideBandwidthEstimation.latestEstimate.bps
     }
 
-    override fun getStats(now: Instant): NodeStatsBlock = NodeStatsBlock("GoogleCcEstimator").apply {
-        addNumber("latestLossEstimate", sendSideBandwidthEstimation.latestREMB)
-        addNumber("latestEstimate", sendSideBandwidthEstimation.latestEstimate)
+    override fun getStats(now: Instant): Statistics = Statistics("GoogleCcEstimator", getCurrentBw(now)).apply {
+        addNumber("latestDelayEstimate", sendSideBandwidthEstimation.latestREMB)
         addNumber("latestFractionLoss", sendSideBandwidthEstimation.latestFractionLoss)
         with(sendSideBandwidthEstimation.statistics) {
             update(now.toEpochMilli())
