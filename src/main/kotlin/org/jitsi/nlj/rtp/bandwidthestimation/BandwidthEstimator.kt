@@ -253,10 +253,7 @@ abstract class BandwidthEstimator(
          * Gets the value of a stat with a given name, if this [Statistics] has it and it is a [Number].
          * Otherwise returns 'null'.
          */
-        fun getNumber(name: String): Number? = when {
-            stats[name] is Number -> stats[name] as Number
-            else -> null
-        }
+        fun getNumber(name: String): Number? = stats[name] as? Number
 
         /**
          * Promotes integer values to [Long] and floating point values to [Double]. Returns a
