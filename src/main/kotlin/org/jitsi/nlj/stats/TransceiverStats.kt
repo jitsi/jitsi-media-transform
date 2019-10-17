@@ -26,5 +26,5 @@ data class TransceiverStats(
     val incomingPacketStreamStats: PacketStreamStats.Snapshot,
     val outgoingStats: OutgoingStatisticsSnapshot,
     val outgoingPacketStreamStats: PacketStreamStats.Snapshot,
-    val bandwidthEstimatorStats: BandwidthEstimator.Statistics
+    val bandwidthEstimatorStats: BandwidthEstimator.StatisticsSnapshot
 )

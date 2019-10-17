@@ -81,7 +81,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         return sendSideBandwidthEstimation.latestEstimate.bps
     }
 
-    override fun getStats(now: Instant): Statistics = Statistics("GoogleCcEstimator", getCurrentBw(now)).apply {
+    override fun getStats(now: Instant): StatisticsSnapshot = StatisticsSnapshot("GoogleCcEstimator", getCurrentBw(now)).apply {
         addNumber("latestDelayEstimate", sendSideBandwidthEstimation.latestREMB)
         addNumber("latestFractionLoss", sendSideBandwidthEstimation.latestFractionLoss)
         with(sendSideBandwidthEstimation.statistics) {

@@ -180,7 +180,7 @@ abstract class BandwidthEstimator(
      *
      * @param[now] The current time, when this function is called.
      */
-    abstract fun getStats(now: Instant): Statistics
+    abstract fun getStats(now: Instant): StatisticsSnapshot
 
     /** Reset the estimator to its initial state. */
     abstract fun reset(): Unit
@@ -239,7 +239,10 @@ abstract class BandwidthEstimator(
         listeners.remove(listener)
     }
 
-    class Statistics(algorithmName: String, currentEstimate: Bandwidth) {
+    /**
+     * Holds a snapshot of stats specific to the bandwidth estimator.
+     */
+    class StatisticsSnapshot(algorithmName: String, currentEstimate: Bandwidth) {
         private val stats = mutableMapOf<String, Any>().apply {
             addString("algorithmName", algorithmName)
             addBandwidth("currentEstimate", currentEstimate)
@@ -250,7 +253,7 @@ abstract class BandwidthEstimator(
         fun getValue(name: String): Any? = stats[name]
 
         /**
-         * Gets the value of a stat with a given name, if this [Statistics] has it and it is a [Number].
+         * Gets the value of a stat with a given name, if this [StatisticsSnapshot] has it and it is a [Number].
          * Otherwise returns 'null'.
          */
         fun getNumber(name: String): Number? = stats[name] as? Number
@@ -295,7 +298,7 @@ abstract class BandwidthEstimator(
         }
 
         /**
-         * Returns a JSON representation of this [Statistics] object.
+         * Returns a JSON representation of this [StatisticsSnapshot] object.
          */
         fun toJson(): OrderedJsonObject = OrderedJsonObject().apply {
             stats.forEach { (name, value) ->
