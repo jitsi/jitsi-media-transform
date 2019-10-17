@@ -298,7 +298,7 @@ abstract class BandwidthEstimator(
         }
 
         /**
-         * Returns a JSON representation of this [NodeStatsBlock].
+         * Returns a JSON representation of this [Statistics] object.
          */
         fun toJson(): OrderedJsonObject = OrderedJsonObject().apply {
             stats.forEach { (name, value) ->
