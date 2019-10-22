@@ -16,6 +16,8 @@
 
 package org.jitsi.nlj.stats
 
+import java.time.Clock
+import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
 import org.jitsi.nlj.rtcp.RtcpListener
 import org.jitsi.nlj.util.cdebug
@@ -38,7 +40,8 @@ private typealias SsrcAndTimestamp = Pair<Long, Long>
  * Tracks stats which are not necessarily tied to send or receive but the endpoint overall
  */
 class EndpointConnectionStats(
-    parentLogger: Logger
+    parentLogger: Logger,
+    private val clock: Clock = Clock.systemUTC()
 ) : RtcpListener {
     interface EndpointConnectionStatsListener {
         fun onRttUpdate(newRtt: Double)
@@ -50,7 +53,7 @@ class EndpointConnectionStats(
 
     // Per-SSRC, maps the compacted NTP timestamp found in an SR SenderInfo to
     //  the clock time (in milliseconds) at which it was transmitted
-    private val srSentTimes: MutableMap<SsrcAndTimestamp, Long> = LRUCache(MAX_SR_TIMESTAMP_HISTORY)
+    private val srSentTimes: MutableMap<SsrcAndTimestamp, Instant> = LRUCache(MAX_SR_TIMESTAMP_HISTORY)
     private val logger = parentLogger.createChildLogger(EndpointConnectionStats::class)
 
     /**
@@ -68,15 +71,17 @@ class EndpointConnectionStats(
         return Snapshot(rtt)
     }
 
+    // TODO: change this flow to pass Instant instead of Long
     override fun rtcpPacketReceived(packet: RtcpPacket, receivedTime: Long) {
+        val receivedInstant = Instant.ofEpochMilli(receivedTime)
         when (packet) {
             is RtcpSrPacket -> {
                 logger.cdebug { "Received SR packet with ${packet.reportBlocks.size} report blocks" }
-                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedTime, reportBlock) }
+                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedInstant, reportBlock) }
             }
             is RtcpRrPacket -> {
                 logger.cdebug { "Received RR packet with ${packet.reportBlocks.size} report blocks" }
-                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedTime, reportBlock) }
+                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedInstant, reportBlock) }
             }
         }
     }
@@ -85,22 +90,23 @@ class EndpointConnectionStats(
         when (packet) {
             is RtcpSrPacket -> {
                 logger.cdebug { "Tracking sent SR packet with compacted timestamp ${packet.senderInfo.compactedNtpTimestamp}" }
-                srSentTimes[Pair(packet.senderSsrc, packet.senderInfo.compactedNtpTimestamp)] =
-                        System.currentTimeMillis()
+                srSentTimes[Pair(packet.senderSsrc, packet.senderInfo.compactedNtpTimestamp)] = clock.instant()
             }
         }
     }
 
-    private fun processReportBlock(receivedTime: Long, reportBlock: RtcpReportBlock) {
+    private fun processReportBlock(receivedTime: Instant, reportBlock: RtcpReportBlock) {
         if (reportBlock.lastSrTimestamp > 0 && reportBlock.delaySinceLastSr > 0) {
             // We need to know when we sent the last SR
-            val srSentTime = srSentTimes.getOrDefault(SsrcAndTimestamp(reportBlock.ssrc, reportBlock.lastSrTimestamp), -1)
-            if (srSentTime > 0) {
+            srSentTimes[SsrcAndTimestamp(reportBlock.ssrc, reportBlock.lastSrTimestamp)]?.let { srSentTime ->
                 // The delaySinceLastSr value is given in 1/65536ths of a second, so divide it by 65.536 to get it
                 // in milliseconds
                 val remoteProcessingDelayMs = reportBlock.delaySinceLastSr / 65.536
-                rtt = receivedTime - srSentTime - remoteProcessingDelayMs
+                rtt = receivedTime.toEpochMilli() - srSentTime.toEpochMilli() - remoteProcessingDelayMs
                 endpointConnectionStatsListeners.forEach { it.onRttUpdate(rtt) }
+            } ?: run {
+                logger.cdebug { "No sent SR found for SSRC ${reportBlock.ssrc} and SR " +
+                    "timestamp ${reportBlock.lastSrTimestamp}" }
             }
         } else {
             logger.cdebug { "Report block for ssrc ${reportBlock.ssrc} didn't have SR data: " +
