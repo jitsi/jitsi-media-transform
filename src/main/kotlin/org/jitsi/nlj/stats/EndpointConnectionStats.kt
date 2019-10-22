@@ -53,7 +53,7 @@ class EndpointConnectionStats(
     private val endpointConnectionStatsListeners: MutableList<EndpointConnectionStatsListener> = CopyOnWriteArrayList()
 
     // Per-SSRC, maps the compacted NTP timestamp found in an SR SenderInfo to
-    //  the clock time (in milliseconds) at which it was transmitted
+    //  the clock time at which it was transmitted
     private val srSentTimes: MutableMap<SsrcAndTimestamp, Instant> = LRUCache(MAX_SR_TIMESTAMP_HISTORY)
     private val logger = parentLogger.createChildLogger(EndpointConnectionStats::class)
 
