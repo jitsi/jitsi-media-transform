@@ -37,10 +37,12 @@ class EndpointConnectionStatsTest : ShouldSpec() {
     private val clock: FakeClock = spy()
 
     private var mostRecentPublishedRtt: Double = -1.0
+    private var numRttUpdates: Int = 0
     private val stats = EndpointConnectionStats(StdoutLogger(), clock).also {
         it.addListener(object : EndpointConnectionStats.EndpointConnectionStatsListener {
             override fun onRttUpdate(newRtt: Double) {
                 mostRecentPublishedRtt = newRtt
+                numRttUpdates++
             }
         })
     }
@@ -74,6 +76,64 @@ class EndpointConnectionStatsTest : ShouldSpec() {
                     should("be updated correctly") {
                         mostRecentPublishedRtt shouldBe(10.0.plusOrMinus(.1))
                     }
+                }
+            }
+        }
+        "when a report block is received for which we can't find an SR" {
+            val reportBlock = mock<RtcpReportBlock> {
+                on { ssrc } doReturn 1234L
+                on { lastSrTimestamp } doReturn 100
+                on { delaySinceLastSr } doReturn 50.milliseconds.toDelaySinceLastSrFraction()
+            }
+
+            val rtcpPacket = mock<RtcpRrPacket> {
+                on { reportBlocks } doReturn listOf(reportBlock)
+            }
+
+            stats.rtcpPacketReceived(rtcpPacket, clock.instant().toEpochMilli())
+
+            "the rtt" {
+                should("not have been updated") {
+                    numRttUpdates shouldBe 0
+                }
+            }
+        }
+        "when a report block is received with no lastSrTimestamp" {
+            val reportBlock = mock<RtcpReportBlock> {
+                on { ssrc } doReturn 1234L
+                on { lastSrTimestamp } doReturn 0
+                on { delaySinceLastSr } doReturn 50.milliseconds.toDelaySinceLastSrFraction()
+            }
+
+            val rtcpPacket = mock<RtcpRrPacket> {
+                on { reportBlocks } doReturn listOf(reportBlock)
+            }
+
+            stats.rtcpPacketReceived(rtcpPacket, clock.instant().toEpochMilli())
+
+            "the rtt" {
+                should("not have been updated") {
+                    numRttUpdates shouldBe 0
+                }
+            }
+        }
+
+        "when a report block is received with no delaySinceLastSr" {
+            val reportBlock = mock<RtcpReportBlock> {
+                on { ssrc } doReturn 1234L
+                on { lastSrTimestamp } doReturn 100
+                on { delaySinceLastSr } doReturn 0
+            }
+
+            val rtcpPacket = mock<RtcpRrPacket> {
+                on { reportBlocks } doReturn listOf(reportBlock)
+            }
+
+            stats.rtcpPacketReceived(rtcpPacket, clock.instant().toEpochMilli())
+
+            "the rtt" {
+                should("not have been updated") {
+                    numRttUpdates shouldBe 0
                 }
             }
         }
