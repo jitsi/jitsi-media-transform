@@ -17,6 +17,7 @@
 package org.jitsi.nlj.stats
 
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
 import org.jitsi.nlj.rtcp.RtcpListener
@@ -103,6 +104,10 @@ class EndpointConnectionStats(
                 // in milliseconds
                 val remoteProcessingDelayMs = reportBlock.delaySinceLastSr / 65.536
                 rtt = receivedTime.toEpochMilli() - srSentTime.toEpochMilli() - remoteProcessingDelayMs
+                if (rtt > Duration.ofSeconds(7).toMillis()) {
+                    logger.warn("Suspiciously high rtt value: $rtt, remote processing delay was " +
+                        "$remoteProcessingDelayMs ms, srSentTime was $srSentTime, received time was $receivedTime")
+                }
                 endpointConnectionStatsListeners.forEach { it.onRttUpdate(rtt) }
             } ?: run {
                 logger.cdebug { "No sent SR found for SSRC ${reportBlock.ssrc} and SR " +
