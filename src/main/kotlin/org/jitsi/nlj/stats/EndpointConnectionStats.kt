@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import org.jitsi.nlj.rtcp.RtcpListener
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.createChildLogger
+import org.jitsi.nlj.util.toDoubleMillis
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpReportBlock
 import org.jitsi.rtp.rtcp.RtcpRrPacket
@@ -108,7 +109,7 @@ class EndpointConnectionStats(
             // The delaySinceLastSr value is given in 1/65536ths of a second, so divide it by .000065536 to get it
             // in nanoseconds
             val remoteProcessingDelay = Duration.ofNanos((reportBlock.delaySinceLastSr / .000065536).toLong())
-            rtt = (Duration.between(srSentTime, receivedTime) - remoteProcessingDelay).toMillis().toDouble()
+            rtt = (Duration.between(srSentTime, receivedTime) - remoteProcessingDelay).toDoubleMillis()
             if (rtt > Duration.ofSeconds(7).toMillis()) {
                 logger.warn("Suspiciously high rtt value: $rtt, remote processing delay was " +
                     "$remoteProcessingDelay ms, srSentTime was $srSentTime, received time was $receivedTime")
