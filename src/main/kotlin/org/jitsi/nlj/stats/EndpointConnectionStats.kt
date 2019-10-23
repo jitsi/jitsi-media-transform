@@ -100,13 +100,13 @@ class EndpointConnectionStats(
         if (reportBlock.lastSrTimestamp > 0 && reportBlock.delaySinceLastSr > 0) {
             // We need to know when we sent the last SR
             srSentTimes[SsrcAndTimestamp(reportBlock.ssrc, reportBlock.lastSrTimestamp)]?.let { srSentTime ->
-                // The delaySinceLastSr value is given in 1/65536ths of a second, so divide it by 65.536 to get it
-                // in milliseconds
-                val remoteProcessingDelayMs = reportBlock.delaySinceLastSr / 65.536
-                rtt = receivedTime.toEpochMilli() - srSentTime.toEpochMilli() - remoteProcessingDelayMs
+                // The delaySinceLastSr value is given in 1/65536ths of a second, so divide it by .000065536 to get it
+                // in nanoseconds
+                val remoteProcessingDelay = Duration.ofNanos((reportBlock.delaySinceLastSr / .000065536).toLong())
+                rtt = (Duration.between(srSentTime, receivedTime) - remoteProcessingDelay).toMillis().toDouble()
                 if (rtt > Duration.ofSeconds(7).toMillis()) {
                     logger.warn("Suspiciously high rtt value: $rtt, remote processing delay was " +
-                        "$remoteProcessingDelayMs ms, srSentTime was $srSentTime, received time was $receivedTime")
+                        "$remoteProcessingDelay ms, srSentTime was $srSentTime, received time was $receivedTime")
                 }
                 endpointConnectionStatsListeners.forEach { it.onRttUpdate(rtt) }
             } ?: run {
