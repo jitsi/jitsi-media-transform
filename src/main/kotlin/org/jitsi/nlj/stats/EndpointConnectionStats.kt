@@ -97,26 +97,26 @@ class EndpointConnectionStats(
     }
 
     private fun processReportBlock(receivedTime: Instant, reportBlock: RtcpReportBlock) {
-        if (reportBlock.lastSrTimestamp > 0 && reportBlock.delaySinceLastSr > 0) {
-            // We need to know when we sent the last SR
-            srSentTimes[SsrcAndTimestamp(reportBlock.ssrc, reportBlock.lastSrTimestamp)]?.let { srSentTime ->
-                // The delaySinceLastSr value is given in 1/65536ths of a second, so divide it by .000065536 to get it
-                // in nanoseconds
-                val remoteProcessingDelay = Duration.ofNanos((reportBlock.delaySinceLastSr / .000065536).toLong())
-                rtt = (Duration.between(srSentTime, receivedTime) - remoteProcessingDelay).toMillis().toDouble()
-                if (rtt > Duration.ofSeconds(7).toMillis()) {
-                    logger.warn("Suspiciously high rtt value: $rtt, remote processing delay was " +
-                        "$remoteProcessingDelay ms, srSentTime was $srSentTime, received time was $receivedTime")
-                }
-                endpointConnectionStatsListeners.forEach { it.onRttUpdate(rtt) }
-            } ?: run {
-                logger.cdebug { "No sent SR found for SSRC ${reportBlock.ssrc} and SR " +
-                    "timestamp ${reportBlock.lastSrTimestamp}" }
-            }
-        } else {
+        if (reportBlock.lastSrTimestamp == 0L && reportBlock.delaySinceLastSr == 0L) {
             logger.cdebug { "Report block for ssrc ${reportBlock.ssrc} didn't have SR data: " +
-                    "lastSrTimestamp was ${reportBlock.lastSrTimestamp}, " +
-                    "delaySinceLastSr was ${reportBlock.delaySinceLastSr}" }
+                "lastSrTimestamp was ${reportBlock.lastSrTimestamp}, " +
+                "delaySinceLastSr was ${reportBlock.delaySinceLastSr}" }
+            return
+        }
+        // We need to know when we sent the last SR
+        srSentTimes[SsrcAndTimestamp(reportBlock.ssrc, reportBlock.lastSrTimestamp)]?.let { srSentTime ->
+            // The delaySinceLastSr value is given in 1/65536ths of a second, so divide it by .000065536 to get it
+            // in nanoseconds
+            val remoteProcessingDelay = Duration.ofNanos((reportBlock.delaySinceLastSr / .000065536).toLong())
+            rtt = (Duration.between(srSentTime, receivedTime) - remoteProcessingDelay).toMillis().toDouble()
+            if (rtt > Duration.ofSeconds(7).toMillis()) {
+                logger.warn("Suspiciously high rtt value: $rtt, remote processing delay was " +
+                    "$remoteProcessingDelay ms, srSentTime was $srSentTime, received time was $receivedTime")
+            }
+            endpointConnectionStatsListeners.forEach { it.onRttUpdate(rtt) }
+        } ?: run {
+            logger.cdebug { "No sent SR found for SSRC ${reportBlock.ssrc} and SR " +
+                "timestamp ${reportBlock.lastSrTimestamp}" }
         }
     }
 }
