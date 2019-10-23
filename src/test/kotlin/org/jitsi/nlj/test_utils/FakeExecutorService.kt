@@ -1,17 +1,15 @@
 package org.jitsi.nlj.test_utils
 
-import com.nhaarman.mockitokotlin2.UseConstructor
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
-import org.mockito.Mockito.CALLS_REAL_METHODS
 
 internal abstract class FakeExecutorService : ExecutorService {
     private var jobs = JobsTimeline()
-    val clock: FakeClock = mock(stubOnly = true, useConstructor = UseConstructor.parameterless(), defaultAnswer = CALLS_REAL_METHODS)
+    val clock: FakeClock = stubOnlySpy()
 
     override fun execute(command: Runnable) {
         jobs.add(Job(command, clock.instant()))

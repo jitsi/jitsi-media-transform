@@ -1,6 +1,5 @@
 package org.jitsi.nlj.test_utils
 
-import com.nhaarman.mockitokotlin2.UseConstructor
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -9,7 +8,6 @@ import java.time.Instant
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import org.mockito.Mockito.CALLS_REAL_METHODS
 
 /**
  * A fake [ScheduledExecutorService] which gives control over when scheduled tasks are running without requiring a
@@ -17,7 +15,7 @@ import org.mockito.Mockito.CALLS_REAL_METHODS
  */
 internal abstract class FakeScheduledExecutorService : ScheduledExecutorService {
     private var jobs = JobsTimeline()
-    val clock: FakeClock = mock(stubOnly = true, useConstructor = UseConstructor.parameterless(), defaultAnswer = CALLS_REAL_METHODS)
+    val clock: FakeClock = stubOnlySpy()
 
     override fun scheduleAtFixedRate(command: Runnable, initialDelay: Long, period: Long, unit: TimeUnit): ScheduledFuture<*> {
         val future: ScheduledFuture<Unit> = mock(stubOnly = true)
