@@ -1,5 +1,5 @@
 /*
- * Copyright @ 2018 - Present, 8x8 Inc
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jitsi.nlj.rtp
 
-import org.jitsi.rtp.rtp.RtpPacket
-
 /**
- * A packet which we know contains video, but we've not yet
- * parsed (i.e. we don't know information gained from
- * parsing codec-specific data).
+ * A [VideoRtpPacket] which has been parsed and therefore
+ * contains more information, such as whether or not it's
+ * a keyframe
  */
-open class VideoRtpPacket(
+abstract class ParsedVideoPacket(
     buffer: ByteArray,
     offset: Int,
     length: Int
-) : RtpPacket(buffer, offset, length) {
+) : VideoRtpPacket(buffer, offset, length) {
 
-    override fun clone(): VideoRtpPacket {
-        return VideoRtpPacket(
-            cloneBuffer(BYTES_TO_LEAVE_AT_START_OF_PACKET),
-            BYTES_TO_LEAVE_AT_START_OF_PACKET,
-            length
-        )
-    }
+    abstract val isKeyframe: Boolean
+    abstract val spatialLayerIndex: Int
+    var qualityIndex: Int = -1
 }
