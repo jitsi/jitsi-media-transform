@@ -97,6 +97,8 @@ class TransportCcEngine(
             localReferenceTime = now
         }
 
+        var oldestKnownSeqNum: Int = -1
+
         for (packetReport in tccPacket) {
             val tccSeqNum = packetReport.seqNum
             val packetDetail = synchronized(sentPacketsSyncRoot) {
@@ -105,7 +107,12 @@ class TransportCcEngine(
 
             if (packetDetail == null) {
                 if (packetReport is ReceivedPacketReport) {
-                    logger.warn("Couldn't find packet detail for $tccSeqNum.")
+                    if (oldestKnownSeqNum == -1) {
+                        oldestKnownSeqNum = synchronized(sentPacketsSyncRoot) {
+                            sentPacketDetails.iterator().next().key
+                        }
+                    }
+                    logger.warn("Couldn't find packet detail for $tccSeqNum. Oldest known seqNum is $oldestKnownSeqNum")
                 }
                 continue
             }
