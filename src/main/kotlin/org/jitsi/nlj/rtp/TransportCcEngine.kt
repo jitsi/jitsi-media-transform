@@ -23,6 +23,7 @@ import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.PacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.ReceivedPacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.UnreceivedPacketReport
@@ -99,6 +100,9 @@ class TransportCcEngine(
             localReferenceTime = now
         }
 
+        // We have to remember the oldest known sequence number here, as we
+        // remove from sentPacketDetails inside this loop
+        val oldestKnownSeqNum = sentPacketDetails.oldestEntry()
         for (packetReport in tccPacket) {
             val tccSeqNum = packetReport.seqNum
             val packetDetail = synchronized(sentPacketsSyncRoot) {
@@ -127,8 +131,10 @@ class TransportCcEngine(
             }
         }
         if (missingPacketDetailSeqNums.isNotEmpty()) {
-            logger.warn("Couldn't find packet detail for the following TCC seq nums. " +
-                "Oldest known seqNum is ${sentPacketDetails.oldestEntry()}.  $missingPacketDetailSeqNums")
+            logger.warn("TCC packet contained sequence numbers:\n" +
+                "${tccPacket.iterator().asSequence().map(PacketReport::seqNum).joinToString()}\n" +
+                "Couldn't find packet detail for the seq nums: \n${missingPacketDetailSeqNums.joinToString()}\n" +
+                "Oldest known seqNum was $oldestKnownSeqNum.")
             missingPacketDetailSeqNums.clear()
         }
     }
