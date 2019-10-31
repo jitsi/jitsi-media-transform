@@ -23,6 +23,7 @@ import org.jitsi.utils.*;
  *
  * @author Boris Grozev
  * @author George Politis
+ * @author Jonathan Lennox
  */
 public class DePacketizer
 {
@@ -59,7 +60,7 @@ public class DePacketizer
 
     /**
      * A class that represents the VP8 Payload Descriptor structure defined
-     * in {@link "http://tools.ietf.org/html/draft-ietf-payload-vp8-10"}
+     * in {@link "https://tools.ietf.org/html/rfc7741"}
      */
     public static class VP8PayloadDescriptor
     {
