@@ -417,12 +417,19 @@ public class DePacketizer
          * @param off the offset in the byte buffer where the payload descriptor
          *            starts.
          * @param len the length of the payload descriptor in the byte buffer.
-         * @return the TL0PICIDX from the payload descriptor.
+         * @return the TL0PICIDX from the payload descriptor, or -1 if the packet
+         *  does not have one.
          */
         public static int getTL0PICIDX(byte[] buf, int off, int len)
         {
             int sz = getSize(buf, off, len);
             if (sz < 1)
+            {
+                return -1;
+            }
+
+            if (!isValid(buf, off, len)
+                || (buf[off] & X_BIT) == 0 || (buf[off + 1] & L_BIT) == 0)
             {
                 return -1;
             }
