@@ -75,6 +75,8 @@ class TransportCcEngine(
      */
     private val sentPacketDetails = LRUCache<Int, PacketDetail>(MAX_OUTGOING_PACKETS_HISTORY)
 
+    private val missingPacketDetailSeqNums = mutableListOf<Int>()
+
     /**
      * Called when an RTP sender has a new round-trip time estimate.
      */
@@ -97,8 +99,6 @@ class TransportCcEngine(
             localReferenceTime = now
         }
 
-        var oldestKnownSeqNum: Int = -1
-
         for (packetReport in tccPacket) {
             val tccSeqNum = packetReport.seqNum
             val packetDetail = synchronized(sentPacketsSyncRoot) {
@@ -107,12 +107,7 @@ class TransportCcEngine(
 
             if (packetDetail == null) {
                 if (packetReport is ReceivedPacketReport) {
-                    if (oldestKnownSeqNum == -1) {
-                        oldestKnownSeqNum = synchronized(sentPacketsSyncRoot) {
-                            sentPacketDetails.iterator().next().key
-                        }
-                    }
-                    logger.warn("Couldn't find packet detail for $tccSeqNum. Oldest known seqNum is $oldestKnownSeqNum")
+                    missingPacketDetailSeqNums.add(tccSeqNum)
                 }
                 continue
             }
@@ -130,6 +125,11 @@ class TransportCcEngine(
                         now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
                 }
             }
+        }
+        if (missingPacketDetailSeqNums.isNotEmpty()) {
+            logger.warn("Couldn't find packet detail for the following TCC seq nums. " +
+                "Oldest known seqNum is ${sentPacketDetails.oldestEntry()}.  $missingPacketDetailSeqNums")
+            missingPacketDetailSeqNums.clear()
         }
     }
 
@@ -157,5 +157,14 @@ class TransportCcEngine(
          * XXX this is an uninformed value.
          */
         private const val MAX_OUTGOING_PACKETS_HISTORY = 1000
+    }
+
+    private fun <K, V> LRUCache<K, V>.oldestEntry(): K? {
+        with(iterator()) {
+            if (hasNext()) {
+                return next().key
+            }
+        }
+        return null
     }
 }
