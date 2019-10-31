@@ -24,10 +24,36 @@ import org.jitsi.rtp.extensions.bytearray.hashCodeOfSegment
 import org.jitsi_modified.impl.neomedia.codec.video.vp8.DePacketizer
 
 class Vp8Packet(
-    data: ByteArray,
+    buffer: ByteArray,
     offset: Int,
     length: Int
-) : VideoRtpPacket(data, offset, length) {
+) : VideoRtpPacket(buffer, offset, length) {
+    override val isKeyframe: Boolean by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        DePacketizer.isKeyFrame(buffer, payloadOffset, payloadLength)
+    }
+
+    /**
+     * This is currently used as an overall spatial index, not an in-band spatial quality index a la vp9.  That is,
+     * this index will correspond to an overall simulcast layer index across multiple simulcast stream.  e.g.
+     * 180p stream packets will have 0, 360p -> 1, 720p -> 2
+     */
+    val spatialLayerIndex: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        if (isKeyframe) Vp8Utils.getSpatialLayerIndexFromKeyFrame(this) else -1
+    }
+
+    /**
+     * We alias qualityIndex to spatialLayerIndex for VP8.
+     */
+    override val qualityIndex: Int
+        get() = spatialLayerIndex
+
+    val isStartOfFrame: Boolean
+        get() = DePacketizer.VP8PayloadDescriptor.isStartOfFrame(buffer, payloadOffset)
+
+    /** End of VP8 frame is the marker bit. */
+    val isEndOfFrame: Boolean
+        get() = isMarked
+
     var TL0PICIDX: Int
             get() = DePacketizer.VP8PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
             set(value) {
@@ -46,20 +72,8 @@ class Vp8Packet(
             }
         }
 
-    var temporalLayerIndex: Int = -1
-    /**
-     * This is currently used as an overall spatial index, not an in-band spatial quality index a la vp9.  That is,
-     * this index will correspond to an overall simulcast layer index across multiple simulcast stream.  e.g.
-     * 180p stream packets will have 0, 360p -> 1, 720p -> 2
-     */
-    var spatialLayerIndex: Int = -1
-    init {
-        isKeyframe = DePacketizer.isKeyFrame(data, payloadOffset, payloadLength)
-        if (isKeyframe) {
-            spatialLayerIndex = Vp8Utils.getSpatialLayerIndexFromKeyFrame(this)
-        }
-        temporalLayerIndex = Vp8Utils.getTemporalLayerIdOfFrame(this)
-    }
+    val temporalLayerIndex: Int
+        get() = Vp8Utils.getTemporalLayerIdOfFrame(this)
 
     /**
      * For [Vp8Packet] the payload excludes the VP8 Payload Descriptor.
@@ -79,11 +93,6 @@ class Vp8Packet(
             cloneBuffer(BYTES_TO_LEAVE_AT_START_OF_PACKET),
             BYTES_TO_LEAVE_AT_START_OF_PACKET,
             length)
-        clone.isKeyframe = isKeyframe
-        // TODO can we ask the superclass to clone its own fields?
-        clone.qualityIndex = qualityIndex
-        clone.spatialLayerIndex = spatialLayerIndex
-        clone.temporalLayerIndex = temporalLayerIndex
 
         return clone
     }

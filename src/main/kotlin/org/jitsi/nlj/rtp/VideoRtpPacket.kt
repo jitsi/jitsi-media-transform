@@ -20,18 +20,18 @@ import org.jitsi.rtp.rtp.RtpPacket
 open class VideoRtpPacket(
     buffer: ByteArray,
     offset: Int,
-    length: Int
+    length: Int,
+    open val isKeyframe: Boolean = false,
+    open val qualityIndex: Int = -1
 ) : RtpPacket(buffer, offset, length) {
-    var isKeyframe = false
-    var qualityIndex = -1
 
     override fun clone(): VideoRtpPacket {
         val clone = VideoRtpPacket(
             cloneBuffer(BYTES_TO_LEAVE_AT_START_OF_PACKET),
             BYTES_TO_LEAVE_AT_START_OF_PACKET,
-            length)
-        clone.isKeyframe = isKeyframe
-        clone.qualityIndex = qualityIndex
+            length,
+            isKeyframe,
+            qualityIndex)
         return clone
     }
 }
