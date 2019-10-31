@@ -98,10 +98,9 @@ class TransportCcEngine(
         }
 
         for (packetReport in tccPacket) {
-            val packetDetail: PacketDetail?
             val tccSeqNum = packetReport.seqNum
-            synchronized(sentPacketsSyncRoot) {
-                packetDetail = sentPacketDetails.remove(tccSeqNum)
+            val packetDetail = synchronized(sentPacketsSyncRoot) {
+                sentPacketDetails.remove(tccSeqNum)
             }
 
             if (packetDetail == null) {
