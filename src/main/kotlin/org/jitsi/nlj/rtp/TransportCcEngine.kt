@@ -134,7 +134,7 @@ class TransportCcEngine(
             logger.warn("TCC packet contained sequence numbers: " +
                 "${tccPacket.iterator().asSequence().map(PacketReport::seqNum).joinToString()}. " +
                 "Couldn't find packet detail for the seq nums: ${missingPacketDetailSeqNums.joinToString()}. " +
-                "Oldest known seqNum was $oldestKnownSeqNum.")
+                (oldestKnownSeqNum?.let { "Oldest known seqNum was $it." } ?: run { "Sent packet details map was empty." }))
             missingPacketDetailSeqNums.clear()
         }
     }
