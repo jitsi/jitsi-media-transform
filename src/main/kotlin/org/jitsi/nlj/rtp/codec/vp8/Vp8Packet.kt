@@ -36,6 +36,7 @@ class Vp8Packet private constructor (
     offset: Int,
     length: Int,
     isKeyframe: Boolean?,
+    isStartOfFrame: Boolean?,
     spatialLayerIndex: Int?
 ) : ParsedVideoPacket(buffer, offset, length) {
 
@@ -43,9 +44,16 @@ class Vp8Packet private constructor (
         buffer: ByteArray,
         offset: Int,
         length: Int
-    ) : this(buffer, offset, length, null, null)
+    ) : this(buffer, offset, length, null, null, null)
 
     override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.isKeyFrame(this.buffer, offset, length)
+
+    val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP8PayloadDescriptor.isStartOfFrame(buffer, offset)
+
+    /** End of VP8 frame is the marker bit. */
+    val isEndOfFrame: Boolean
+        /** This uses [get] rather than initialization because [isMarked] is a var. */
+        get() = isMarked
 
     var TL0PICIDX: Int
         get() = DePacketizer.VP8PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
@@ -96,6 +104,7 @@ class Vp8Packet private constructor (
             BYTES_TO_LEAVE_AT_START_OF_PACKET,
             length,
             isKeyframe,
+            isStartOfFrame,
             qualityIndex
         )
     }
