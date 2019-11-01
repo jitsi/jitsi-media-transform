@@ -131,9 +131,9 @@ class TransportCcEngine(
             }
         }
         if (missingPacketDetailSeqNums.isNotEmpty()) {
-            logger.warn("TCC packet contained sequence numbers:\n" +
-                "${tccPacket.iterator().asSequence().map(PacketReport::seqNum).joinToString()}\n" +
-                "Couldn't find packet detail for the seq nums: \n${missingPacketDetailSeqNums.joinToString()}\n" +
+            logger.warn("TCC packet contained sequence numbers: " +
+                "${tccPacket.iterator().asSequence().map(PacketReport::seqNum).joinToString()}. " +
+                "Couldn't find packet detail for the seq nums: ${missingPacketDetailSeqNums.joinToString()}. " +
                 "Oldest known seqNum was $oldestKnownSeqNum.")
             missingPacketDetailSeqNums.clear()
         }
