@@ -44,7 +44,11 @@ class Vp8Packet private constructor (
         buffer: ByteArray,
         offset: Int,
         length: Int
-    ) : this(buffer, offset, length, null, null, null)
+    ) : this(buffer, offset, length,
+        isKeyframe = null,
+        isStartOfFrame = null,
+        spatialLayerIndex = null
+    )
 
     override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.isKeyFrame(this.buffer, offset, length)
 
@@ -103,9 +107,9 @@ class Vp8Packet private constructor (
             cloneBuffer(BYTES_TO_LEAVE_AT_START_OF_PACKET),
             BYTES_TO_LEAVE_AT_START_OF_PACKET,
             length,
-            isKeyframe,
-            isStartOfFrame,
-            qualityIndex
+            isKeyframe = isKeyframe,
+            isStartOfFrame = isStartOfFrame,
+            spatialLayerIndex = spatialLayerIndex
         )
     }
 
