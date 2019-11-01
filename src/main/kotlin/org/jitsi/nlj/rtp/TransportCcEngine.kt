@@ -102,7 +102,7 @@ class TransportCcEngine(
 
         // We have to remember the oldest known sequence number here, as we
         // remove from sentPacketDetails inside this loop
-        val oldestKnownSeqNum = sentPacketDetails.oldestEntry()
+        val oldestKnownSeqNum = synchronized(sentPacketsSyncRoot) { sentPacketDetails.oldestEntry() }
         for (packetReport in tccPacket) {
             val tccSeqNum = packetReport.seqNum
             val packetDetail = synchronized(sentPacketsSyncRoot) {
