@@ -61,7 +61,7 @@ class RtcpTermination(
                     // we want to forward in the same compound packet.  If we can, then we may need
                     // to turn this into a MultipleOutputNode
                     forwardedRtcp?.let {
-                        logger.cinfo { "Failed to forward a packet of type ${forwardedRtcp!!::class.simpleName} " +
+                        logger.cinfo { "Failed to forward a packet of type ${it::class.simpleName} " +
                             ". Replaced by ${rtcpPacket::class.simpleName}." }
                         numFailedToForward++
                     }
