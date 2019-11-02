@@ -79,8 +79,7 @@ class RtcpTerminationTest : ShouldSpec() {
 
                 should("remove all of the report blocks") {
                     rtcpTermination.onOutput { packetInfo ->
-                        println(packetInfo)
-                        with (packetInfo.packet as RtcpSrPacket) {
+                        with(packetInfo.packet as RtcpSrPacket) {
                             length shouldBe (RtcpHeader.SIZE_BYTES + SenderInfoParser.SIZE_BYTES)
                             reportCount shouldBe 0
                             reportBlocks.size shouldBe 0
