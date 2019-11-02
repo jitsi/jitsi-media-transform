@@ -19,17 +19,17 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
+import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpByePacket
-import org.jitsi.rtp.rtcp.RtcpHeader
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpRrPacket
 import org.jitsi.rtp.rtcp.RtcpSdesPacket
 import org.jitsi.rtp.rtcp.RtcpSrPacket
-import org.jitsi.rtp.rtcp.SenderInfoParser
+import org.jitsi.rtp.rtcp.RtcpSrPacketBuilder
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacket
@@ -79,18 +79,20 @@ class RtcpTermination(
             packetReceiveCounts.merge(rtcpPacket::class.simpleName!!, 1, Int::plus)
             rtcpEventNotifier.notifyRtcpReceived(rtcpPacket, packetInfo.receivedTime)
 
-            if (rtcpPacket is RtcpSrPacket) {
+            (forwardedRtcp as? RtcpSrPacket)?.let {
                 // NOTE(george) effectively eliminates any report blocks as we don't want to relay those
-                logger.cdebug { "saw an sr from ssrc=${rtcpPacket.senderSsrc}, timestamp=${rtcpPacket.senderInfo.rtpTimestamp}" }
-                val lengthBytes = RtcpHeader.SIZE_BYTES + SenderInfoParser.SIZE_BYTES
-                rtcpPacket.length = lengthBytes
-                // We can do this because we've already parsed the compound packet and we are discarding it anyway
-                rtcpPacket.lengthField = (lengthBytes / 4) - 1
+                logger.cdebug { "Saw an sr from ssrc=${rtcpPacket.senderSsrc}, timestamp=${it.senderInfo.rtpTimestamp}" }
+                forwardedRtcp = it.cloneWithoutReportBlocks()
             }
         }
         return if (forwardedRtcp != null) {
             // Manually cast to RtcpPacket as a workaround for https://youtrack.jetbrains.com/issue/KT-7186
             packetInfo.packet = forwardedRtcp as RtcpPacket
+            if (forwardedRtcp is RtcpSrPacket) {
+                // If we forwarded an SR, we cloned it to strip the report blocks
+                // so we can return the original buffer
+                BufferPool.returnBuffer(packetInfo.packet.buffer)
+            }
             packetInfo
         } else {
             packetDiscarded(packetInfo)
