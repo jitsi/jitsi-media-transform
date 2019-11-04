@@ -22,17 +22,30 @@ import org.jitsi.rtp.rtp.RtpPacket
  * parsed (i.e. we don't know information gained from
  * parsing codec-specific data).
  */
-open class VideoRtpPacket(
+open class VideoRtpPacket protected constructor(
     buffer: ByteArray,
     offset: Int,
-    length: Int
+    length: Int,
+    encodingIndex: Int?
 ) : RtpPacket(buffer, offset, length) {
+
+    constructor(
+        buffer: ByteArray,
+        offset: Int,
+        length: Int
+    ) : this(buffer, offset, length,
+        encodingIndex = null
+    )
+
+    /** The index of this packet relative to its track's RTPEncodings. */
+    var encodingIndex: Int = encodingIndex ?: -1
 
     override fun clone(): VideoRtpPacket {
         return VideoRtpPacket(
             cloneBuffer(BYTES_TO_LEAVE_AT_START_OF_PACKET),
             BYTES_TO_LEAVE_AT_START_OF_PACKET,
-            length
+            length,
+            encodingIndex = encodingIndex
         )
     }
 }

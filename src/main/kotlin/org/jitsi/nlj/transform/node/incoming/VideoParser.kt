@@ -50,7 +50,7 @@ class VideoParser(
                 is Vp8PayloadType -> {
                     val vp8Packet = rtpPacket.toOtherType(::Vp8Packet)
                     findRtpEncodingDesc(vp8Packet)?.let {
-                        vp8Packet.qualityIndex = it.index
+                        vp8Packet.encodingIndex = it.index
                     }
                     vp8Packet
                 }

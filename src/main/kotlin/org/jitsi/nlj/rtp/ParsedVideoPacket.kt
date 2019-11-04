@@ -24,10 +24,10 @@ package org.jitsi.nlj.rtp
 abstract class ParsedVideoPacket(
     buffer: ByteArray,
     offset: Int,
-    length: Int
-) : VideoRtpPacket(buffer, offset, length) {
+    length: Int,
+    encodingIndex: Int?
+) : VideoRtpPacket(buffer, offset, length, encodingIndex) {
 
     abstract val isKeyframe: Boolean
     abstract val spatialLayerIndex: Int
-    var qualityIndex: Int = -1
 }

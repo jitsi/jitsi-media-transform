@@ -37,8 +37,9 @@ class Vp8Packet private constructor (
     length: Int,
     isKeyframe: Boolean?,
     isStartOfFrame: Boolean?,
+    encodingIndex: Int?,
     spatialLayerIndex: Int?
-) : ParsedVideoPacket(buffer, offset, length) {
+) : ParsedVideoPacket(buffer, offset, length, encodingIndex) {
 
     constructor(
         buffer: ByteArray,
@@ -47,6 +48,7 @@ class Vp8Packet private constructor (
     ) : this(buffer, offset, length,
         isKeyframe = null,
         isStartOfFrame = null,
+        encodingIndex = null,
         spatialLayerIndex = null
     )
 
@@ -109,6 +111,7 @@ class Vp8Packet private constructor (
             length,
             isKeyframe = isKeyframe,
             isStartOfFrame = isStartOfFrame,
+            encodingIndex = encodingIndex,
             spatialLayerIndex = spatialLayerIndex
         )
     }
