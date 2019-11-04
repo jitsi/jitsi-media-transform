@@ -38,7 +38,7 @@ class Vp8Packet private constructor (
     isKeyframe: Boolean?,
     isStartOfFrame: Boolean?,
     encodingIndex: Int?,
-    spatialLayerIndex: Int?
+    height: Int?
 ) : ParsedVideoPacket(buffer, offset, length, encodingIndex) {
 
     constructor(
@@ -49,7 +49,7 @@ class Vp8Packet private constructor (
         isKeyframe = null,
         isStartOfFrame = null,
         encodingIndex = null,
-        spatialLayerIndex = null
+        height = null
     )
 
     override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.isKeyFrame(this.buffer, offset, length)
@@ -85,8 +85,8 @@ class Vp8Packet private constructor (
      * this index will correspond to an overall simulcast layer index across multiple simulcast stream.  e.g.
      * 180p stream packets will have 0, 360p -> 1, 720p -> 2
      */
-    override var spatialLayerIndex: Int = spatialLayerIndex ?: if (this.isKeyframe) {
-        Vp8Utils.getSpatialLayerIndexFromKeyFrame(this)
+    override var height: Int = height ?: if (this.isKeyframe) {
+        Vp8Utils.getHeightFromKeyFrame(this)
     } else {
         -1
     }
@@ -112,7 +112,7 @@ class Vp8Packet private constructor (
             isKeyframe = isKeyframe,
             isStartOfFrame = isStartOfFrame,
             encodingIndex = encodingIndex,
-            spatialLayerIndex = spatialLayerIndex
+            height = height
         )
     }
 

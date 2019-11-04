@@ -52,15 +52,19 @@ class Vp8Utils {
             }
         }
 
-        fun getSpatialLayerIndexFromKeyFrame(vp8Packet: RtpPacket): Int {
-            // Copied from VP8QUalityFilter#getSpatialLayerIndexFromKeyframe
+        fun getHeightFromKeyFrame(vp8Packet: RtpPacket): Int {
             val payloadDescriptorLen =
                 DePacketizer.VP8PayloadDescriptor.getSize(
                     vp8Packet.buffer,
                     vp8Packet.payloadOffset,
                     vp8Packet.payloadLength)
-            val height = DePacketizer.VP8KeyframeHeader.getHeight(
+            return DePacketizer.VP8KeyframeHeader.getHeight(
                 vp8Packet.buffer, vp8Packet.payloadOffset + payloadDescriptorLen + VP8_PAYLOAD_HEADER_LEN)
+        }
+
+        fun getSpatialLayerIndexFromKeyFrame(vp8Packet: RtpPacket): Int {
+            // Copied from VP8QUalityFilter#getSpatialLayerIndexFromKeyframe
+            val height = getHeightFromKeyFrame(vp8Packet)
             return when {
                 height >= MIN_HD_HEIGHT -> HD_LAYER_ID
                 height >= MIN_SD_HEIGHT -> SD_LAYER_ID
