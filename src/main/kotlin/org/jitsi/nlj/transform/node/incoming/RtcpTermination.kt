@@ -29,7 +29,6 @@ import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpRrPacket
 import org.jitsi.rtp.rtcp.RtcpSdesPacket
 import org.jitsi.rtp.rtcp.RtcpSrPacket
-import org.jitsi.rtp.rtcp.RtcpSrPacketBuilder
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbFirPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbPliPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacket
@@ -82,17 +81,20 @@ class RtcpTermination(
             (forwardedRtcp as? RtcpSrPacket)?.let {
                 // NOTE(george) effectively eliminates any report blocks as we don't want to relay those
                 logger.cdebug { "Saw an sr from ssrc=${rtcpPacket.senderSsrc}, timestamp=${it.senderInfo.rtpTimestamp}" }
-                forwardedRtcp = it.cloneWithoutReportBlocks()
+                forwardedRtcp = if (it.reportCount > 0) {
+                    it.cloneWithoutReportBlocks()
+                } else {
+                    it
+                }
             }
         }
         return if (forwardedRtcp != null) {
-            // Manually cast to RtcpPacket as a workaround for https://youtrack.jetbrains.com/issue/KT-7186
-            packetInfo.packet = forwardedRtcp as RtcpPacket
-            if (forwardedRtcp is RtcpSrPacket) {
-                // If we forwarded an SR, we cloned it to strip the report blocks
-                // so we can return the original buffer
+            if (forwardedRtcp?.buffer != packetInfo.packet.buffer) {
+                // We're not using the original packet's buffer, so we can return it to the pool
                 BufferPool.returnBuffer(packetInfo.packet.buffer)
             }
+            // Manually cast to RtcpPacket as a workaround for https://youtrack.jetbrains.com/issue/KT-7186
+            packetInfo.packet = forwardedRtcp as RtcpPacket
             packetInfo
         } else {
             packetDiscarded(packetInfo)
