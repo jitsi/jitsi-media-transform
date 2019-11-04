@@ -94,8 +94,7 @@ class RtcpTermination(
                 // We're not using the original packet's buffer, so we can return it to the pool
                 BufferPool.returnBuffer(packetInfo.packet.buffer)
             }
-            // Manually cast to RtcpPacket as a workaround for https://youtrack.jetbrains.com/issue/KT-7186
-            packetInfo.packet = forwardedRtcp as RtcpPacket
+            packetInfo.packet = it
             packetInfo
         } ?: run {
             packetDiscarded(packetInfo)
