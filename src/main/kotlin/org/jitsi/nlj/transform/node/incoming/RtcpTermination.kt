@@ -79,24 +79,25 @@ class RtcpTermination(
             rtcpEventNotifier.notifyRtcpReceived(rtcpPacket, packetInfo.receivedTime)
 
             (forwardedRtcp as? RtcpSrPacket)?.let {
-                // NOTE(george) effectively eliminates any report blocks as we don't want to relay those
                 logger.cdebug { "Saw an sr from ssrc=${rtcpPacket.senderSsrc}, timestamp=${it.senderInfo.rtpTimestamp}" }
                 forwardedRtcp = if (it.reportCount > 0) {
+                    // Eliminates any report blocks as we don't want to relay those
                     it.cloneWithoutReportBlocks()
                 } else {
                     it
                 }
             }
         }
-        return if (forwardedRtcp != null) {
-            if (forwardedRtcp?.buffer != packetInfo.packet.buffer) {
+
+        return forwardedRtcp?.let {
+            if (it.buffer != packetInfo.packet.buffer) {
                 // We're not using the original packet's buffer, so we can return it to the pool
                 BufferPool.returnBuffer(packetInfo.packet.buffer)
             }
             // Manually cast to RtcpPacket as a workaround for https://youtrack.jetbrains.com/issue/KT-7186
             packetInfo.packet = forwardedRtcp as RtcpPacket
             packetInfo
-        } else {
+        } ?: run {
             packetDiscarded(packetInfo)
             null
         }
