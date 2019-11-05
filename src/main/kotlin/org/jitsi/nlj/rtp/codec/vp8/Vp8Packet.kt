@@ -54,10 +54,10 @@ class Vp8Packet private constructor (
 
     override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.isKeyFrame(this.buffer, offset, length)
 
-    val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP8PayloadDescriptor.isStartOfFrame(buffer, offset)
+    override val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP8PayloadDescriptor.isStartOfFrame(buffer, offset)
 
     /** End of VP8 frame is the marker bit. */
-    val isEndOfFrame: Boolean
+    override val isEndOfFrame: Boolean
         /** This uses [get] rather than initialization because [isMarked] is a var. */
         get() = isMarked
 
