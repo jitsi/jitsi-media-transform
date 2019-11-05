@@ -43,7 +43,8 @@ class Vp8Parser(
         if (videoRtpPacket is Vp8Packet) {
             // If this was part of a keyframe, it will have already had it set
             if (videoRtpPacket.height > -1) {
-                // TODO: update if latest update is newer than previous
+                // TODO: handle case where new height is from a packet older than the
+                // latest height we've seen.
                 ssrcToHeight.putIfAbsent(videoRtpPacket.ssrc, videoRtpPacket.height)
             } else {
                 videoRtpPacket.height = ssrcToHeight[videoRtpPacket.ssrc] ?: -1
