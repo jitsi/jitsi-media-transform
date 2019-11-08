@@ -16,12 +16,24 @@
 
 package org.jitsi.nlj.stats
 
+import org.jitsi.nlj.util.NEVER
+import org.jitsi.nlj.util.latest
+import java.time.Instant
 import kotlin.math.max
 
 class PacketIOActivity {
+    var lastRtpPacketReceivedTimestamp: Instant = NEVER
+    var lastRtpPacketSentTimestamp: Instant = NEVER
+
+    val lastOverallRtpActivity: Instant
+        get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp)
+
+    @Deprecated(replaceWith = ReplaceWith("lastRtpPacketReceivedTimestamp"), message = "Deprecated")
     var lastPacketReceivedTimestampMs: Long = 0
+    @Deprecated(replaceWith = ReplaceWith("lastRtpPacketSentTimestamp"), message = "Deprecated")
     var lastPacketSentTimestampMs: Long = 0
 
+    @Deprecated(replaceWith = ReplaceWith("lastOverallRtpPactivity"), message = "Deprecated")
     val lastOverallActivityTimestampMs: Long
         get() {
             return max(lastPacketReceivedTimestampMs, lastPacketSentTimestampMs)
