@@ -19,11 +19,18 @@ package org.jitsi.nlj.stats
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.latest
 import java.time.Instant
+import kotlin.properties.Delegates.vetoable
 
 class PacketIOActivity {
-    var lastRtpPacketReceivedTimestamp: Instant = NEVER
-    var lastRtpPacketSentTimestamp: Instant = NEVER
-    var lastIceActivityTimestamp: Instant = NEVER
+    var lastRtpPacketReceivedTimestamp: Instant by vetoable(NEVER) { _, oldValue, newValue ->
+        newValue.isAfter(oldValue)
+    }
+    var lastRtpPacketSentTimestamp: Instant by vetoable(NEVER) { _, oldValue, newValue ->
+        newValue.isAfter(oldValue)
+    }
+    var lastIceActivityTimestamp: Instant by vetoable(NEVER) { _, oldValue, newValue ->
+        newValue.isAfter(oldValue)
+    }
 
     val lastOverallRtpActivity: Instant
         get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp)
