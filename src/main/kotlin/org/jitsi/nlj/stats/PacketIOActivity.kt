@@ -19,23 +19,35 @@ package org.jitsi.nlj.stats
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.latest
 import java.time.Instant
-import kotlin.math.max
 
 class PacketIOActivity {
     var lastRtpPacketReceivedTimestamp: Instant = NEVER
     var lastRtpPacketSentTimestamp: Instant = NEVER
+    var lastIceActivityTimestamp: Instant = NEVER
 
     val lastOverallRtpActivity: Instant
         get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp)
 
+    val latestOverallActivity: Instant
+        get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp, lastIceActivityTimestamp)
+
+    // Deprecated
+
     @Deprecated(replaceWith = ReplaceWith("lastRtpPacketReceivedTimestamp"), message = "Deprecated")
-    var lastPacketReceivedTimestampMs: Long = 0
+    var lastPacketReceivedTimestampMs: Long
+        set(value) {
+            lastRtpPacketReceivedTimestamp = Instant.ofEpochMilli(value)
+        }
+        get() = lastRtpPacketSentTimestamp.toEpochMilli()
+
     @Deprecated(replaceWith = ReplaceWith("lastRtpPacketSentTimestamp"), message = "Deprecated")
-    var lastPacketSentTimestampMs: Long = 0
+    var lastPacketSentTimestampMs: Long
+        set(value) {
+            lastRtpPacketSentTimestamp = Instant.ofEpochMilli(value)
+        }
+        get() = lastRtpPacketSentTimestamp.toEpochMilli()
 
     @Deprecated(replaceWith = ReplaceWith("lastOverallRtpPactivity"), message = "Deprecated")
     val lastOverallActivityTimestampMs: Long
-        get() {
-            return max(lastPacketReceivedTimestampMs, lastPacketSentTimestampMs)
-        }
+        get() = lastOverallRtpActivity.toEpochMilli()
 }
