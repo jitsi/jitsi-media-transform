@@ -128,7 +128,7 @@ class Transceiver(
      * this transceiver is associated with) to be processed by the receiver pipeline.
      */
     fun handleIncomingPacket(p: PacketInfo) {
-        packetIOActivity.lastPacketReceivedTimestampMs = System.currentTimeMillis()
+        packetIOActivity.lastRtpPacketReceivedTimestamp = clock.instant()
         rtpReceiver.enqueuePacket(p)
     }
 
@@ -137,7 +137,7 @@ class Transceiver(
      * passing them out the sender's outgoing pipeline
      */
     fun sendPacket(packetInfo: PacketInfo) {
-        packetIOActivity.lastPacketSentTimestampMs = System.currentTimeMillis()
+        packetIOActivity.lastRtpPacketSentTimestamp = clock.instant()
         rtpSender.processPacket(packetInfo)
     }
 
