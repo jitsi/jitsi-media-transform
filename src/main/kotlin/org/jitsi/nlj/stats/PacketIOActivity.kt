@@ -18,17 +18,18 @@ package org.jitsi.nlj.stats
 
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.latest
+import org.jitsi.nlj.util.threadSafeVetoable
 import java.time.Instant
-import kotlin.properties.Delegates.vetoable
 
+@Suppress("unused")
 class PacketIOActivity {
-    var lastRtpPacketReceivedTimestamp: Instant by vetoable(NEVER) { _, oldValue, newValue ->
+    var lastRtpPacketReceivedTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
-    var lastRtpPacketSentTimestamp: Instant by vetoable(NEVER) { _, oldValue, newValue ->
+    var lastRtpPacketSentTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
-    var lastIceActivityTimestamp: Instant by vetoable(NEVER) { _, oldValue, newValue ->
+    var lastIceActivityTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
 
