@@ -29,6 +29,14 @@ class PacketIOActivity {
     var lastRtpPacketSentTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
+
+    var lastSctpPacketReceivedTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
+        newValue.isAfter(oldValue)
+    }
+    var lastSctpPacketSentTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
+        newValue.isAfter(oldValue)
+    }
+
     var lastIceActivityTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
@@ -37,5 +45,6 @@ class PacketIOActivity {
         get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp)
 
     val latestOverallActivity: Instant
-        get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp, lastIceActivityTimestamp)
+        get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp, lastIceActivityTimestamp,
+                       lastSctpPacketReceivedTimestamp, lastSctpPacketSentTimestamp)
 }
