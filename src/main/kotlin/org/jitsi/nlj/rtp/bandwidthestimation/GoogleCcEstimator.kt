@@ -4,7 +4,6 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.properties.Delegates
 import org.jitsi.nlj.util.Bandwidth
-import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.nlj.util.kbps
@@ -53,10 +52,14 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         it.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
     }
 
-    override fun doProcessPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
-        if (sendTime != null && recvTime != null) {
+    override fun doProcessPacketTransmission(now: Instant, stats: PacketStats) {
+        /* Do nothing, Google CC doesn't care about packet transmission. */
+    }
+
+    override fun doProcessPacketArrival(now: Instant, stats: PacketStats, recvTime: Instant?, recvEcn: Byte) {
+        if (stats.sendTime != null && recvTime != null) {
             bitrateEstimatorAbsSendTime.incomingPacketInfo(now.toEpochMilli(),
-                    recvTime.toEpochMilli(), sendTime.toEpochMilli(), size.bytes.toInt())
+                    recvTime.toEpochMilli(), stats.sendTime.toEpochMilli(), stats.size.bytes.toInt())
         }
         sendSideBandwidthEstimation.updateReceiverEstimate(bitrateEstimatorAbsSendTime.latestEstimate)
         sendSideBandwidthEstimation.reportPacketArrived(now.toEpochMilli())
@@ -66,7 +69,7 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
-    override fun doProcessPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
+    override fun doProcessPacketLoss(now: Instant, stats: PacketStats) {
         sendSideBandwidthEstimation.reportPacketLost(now.toEpochMilli())
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
         reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)

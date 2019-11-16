@@ -71,12 +71,12 @@ class TransportCcEngine(
     private var localReferenceTime: Instant = NEVER
 
     /**
-     * Holds a key value pair of the packet sequence number and an object made
-     * up of the packet send time and the packet size.
+     * Holds a key value pair of the packet sequence number and the
+     * packet stats.
      */
-    private val sentPacketDetails = LRUCache<Int, PacketDetail>(MAX_OUTGOING_PACKETS_HISTORY)
+    private val sentPacketStats = LRUCache<Int, BandwidthEstimator.PacketStats>(MAX_OUTGOING_PACKETS_HISTORY)
 
-    private val missingPacketDetailSeqNums = mutableListOf<Int>()
+    private val missingPacketStatsSeqNums = mutableListOf<Int>()
 
     /**
      * Called when an RTP sender has a new round-trip time estimate.
@@ -102,23 +102,23 @@ class TransportCcEngine(
 
         // We have to remember the oldest known sequence number here, as we
         // remove from sentPacketDetails inside this loop
-        val oldestKnownSeqNum = synchronized(sentPacketsSyncRoot) { sentPacketDetails.oldestEntry() }
+        val oldestKnownSeqNum = synchronized(sentPacketsSyncRoot) { sentPacketStats.oldestEntry() }
         for (packetReport in tccPacket) {
             val tccSeqNum = packetReport.seqNum
-            val packetDetail = synchronized(sentPacketsSyncRoot) {
-                sentPacketDetails.remove(tccSeqNum)
+            val packetStats = synchronized(sentPacketsSyncRoot) {
+                sentPacketStats.remove(tccSeqNum)
             }
 
-            if (packetDetail == null) {
+            if (packetStats == null) {
                 if (packetReport is ReceivedPacketReport) {
-                    missingPacketDetailSeqNums.add(tccSeqNum)
+                    missingPacketStatsSeqNums.add(tccSeqNum)
                 }
                 continue
             }
 
             when (packetReport) {
                 is UnreceivedPacketReport ->
-                    bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
+                    bandwidthEstimator.processPacketLoss(now, packetStats)
 
                 is ReceivedPacketReport -> {
                     currArrivalTimestamp += packetReport.deltaDuration
@@ -126,38 +126,37 @@ class TransportCcEngine(
                     val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
                     bandwidthEstimator.processPacketArrival(
-                        now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
+                        now, packetStats, arrivalTimeInLocalClock)
                 }
             }
         }
-        if (missingPacketDetailSeqNums.isNotEmpty()) {
+        if (missingPacketStatsSeqNums.isNotEmpty()) {
             logger.warn("TCC packet contained received sequence numbers: " +
                 "${tccPacket.iterator().asSequence()
                     .filterIsInstance<ReceivedPacketReport>()
                     .map(PacketReport::seqNum)
                     .joinToString()}. " +
-                "Couldn't find packet detail for the seq nums: ${missingPacketDetailSeqNums.joinToString()}. " +
+                "Couldn't find packet stats for the seq nums: ${missingPacketStatsSeqNums.joinToString()}. " +
                 (oldestKnownSeqNum?.let { "Oldest known seqNum was $it." } ?: run { "Sent packet details map was empty." }))
-            missingPacketDetailSeqNums.clear()
+            missingPacketStatsSeqNums.clear()
         }
     }
 
-    fun mediaPacketSent(tccSeqNum: Int, length: DataSize) {
+    fun mediaPacketSent(
+        tccSeqNum: Int,
+        length: DataSize,
+        isRtx: Boolean = false,
+        isProbing: Boolean = false
+    ) {
         synchronized(sentPacketsSyncRoot) {
             val now = clock.instant()
-            sentPacketDetails.put(
-                tccSeqNum and 0xFFFF,
-                PacketDetail(length, now))
+            val modSeq = tccSeqNum and 0xFFFF
+            val stats = BandwidthEstimator.PacketStats(modSeq, length, now)
+            stats.isRtx = isRtx
+            stats.isProbing = isProbing
+            sentPacketStats.put(modSeq, stats)
         }
     }
-
-    /**
-     * [PacketDetail] is an object that holds the
-     * length(size) of the packet in [packetLength]
-     * and the time stamps of the outgoing packet
-     * in [packetSendTime]
-     */
-    private data class PacketDetail internal constructor(internal val packetLength: DataSize, internal val packetSendTime: Instant)
 
     companion object {
         /**
