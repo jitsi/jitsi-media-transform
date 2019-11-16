@@ -47,10 +47,11 @@ class TccSeqNumTagger(
 
             TccHeaderExtension.setSequenceNumber(ext, currTccSeqNum)
             val pt = streamInformationStore.rtpPayloadTypes[rtpPacket.payloadType.toByte()]
-            val isRtx = pt is RtxPayloadType
+            val isRtx = !packetInfo.isProbing && pt is RtxPayloadType
 
             transportCcEngine?.mediaPacketSent(currTccSeqNum,
                 rtpPacket.length.bytes,
+                isProbing = packetInfo.isProbing,
                 isRtx = isRtx)
             currTccSeqNum++
         }

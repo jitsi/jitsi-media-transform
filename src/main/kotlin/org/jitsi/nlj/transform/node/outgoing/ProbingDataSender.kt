@@ -143,7 +143,9 @@ class ProbingDataSender(
                 // encapsulating packets as RTX (with the proper ssrc and payload type) so we
                 // just need to find the packets to retransmit and forward them to the next node
                 // TODO(brian): do we need to clone it here?
-                packetsToResend.add(PacketInfo(packet.clone()))
+                val packetInfo = PacketInfo(packet.clone())
+                packetInfo.isProbing = true
+                packetsToResend.add(packetInfo)
             }
         }
         // TODO(brian): we're in a thread context mess here.  we'll be sending these out from the bandwidthprobing
@@ -173,7 +175,9 @@ class ProbingDataSender(
             paddingPacket.ssrc = senderSsrc
             paddingPacket.timestamp = currDummyTimestamp
             paddingPacket.sequenceNumber = currDummySeqNum
-            garbageDataSender.processPacket(PacketInfo(paddingPacket))
+            val packetInfo = PacketInfo(paddingPacket)
+            packetInfo.isProbing = true
+            garbageDataSender.processPacket(packetInfo)
 
             currDummySeqNum++
             bytesSent += packetLength
