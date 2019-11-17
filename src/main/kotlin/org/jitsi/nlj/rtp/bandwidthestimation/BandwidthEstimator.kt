@@ -98,6 +98,10 @@ abstract class BandwidthEstimator(
      * necessarily have any relationship to each other, but must be consistent
      * within themselves across all calls to functions of this [BandwidthEstimator].
      *
+     * All arrival and loss reports based on a single feedback message should have the
+     * same [now] value.  [feedbackComplete] should be called once all feedback reports
+     * based on a single feedback message have been processed.
+     *
      * @param[now] The current time, when this function is called.
      * @param[stats] [PacketStats] about this packet that was sent.
      * @param[recvTime] The time the packet was received, if known, or null.
@@ -139,6 +143,10 @@ abstract class BandwidthEstimator(
     /**
      * Inform the bandwidth estimator that a packet was lost.
      *
+     * All arrival and loss reports based on a single feedback message should have the
+     * same [now] value.  [feedbackComplete] should be called once all feedback reports
+     * based on a single feedback message have been processed.
+     *
      * @param[now] The current time, when this function is called.
      * @param[stats] [PacketStats] about this packet that was sent.
      */
@@ -158,6 +166,14 @@ abstract class BandwidthEstimator(
      * See that function for parameter details.
      */
     protected abstract fun doProcessPacketLoss(now: Instant, stats: PacketStats)
+
+    /**
+     * Inform the bandwidht estimator that a block of feedback is complete.
+     *
+     * @param[now] The current time, when this function is called.  This should match
+     *   the value passed to [processPacketArrival] and [processPacketLoss].
+     */
+    abstract fun feedbackComplete(now: Instant)
 
     /**
      * Inform the bandwidth estimator about a new round-trip time value

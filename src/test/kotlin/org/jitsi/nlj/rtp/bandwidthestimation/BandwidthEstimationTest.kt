@@ -179,6 +179,7 @@ class PacketReceiver(
         estimator.onRttUpdate(now, Duration.between(packet.sendTime, now))
         val stats = BandwidthEstimator.PacketStats(seq, packet.packetSize, packet.sendTime)
         estimator.processPacketArrival(now, stats, now)
+        estimator.feedbackComplete(now)
         seq++
         val bw = estimator.getCurrentBw(now)
         if (timeSeriesLogger.isTraceEnabled) {
