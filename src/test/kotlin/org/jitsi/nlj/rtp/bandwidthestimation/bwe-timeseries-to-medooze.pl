@@ -110,7 +110,6 @@ while (<>) {
 
 my $bzero = Math::BigFloat->new("0");
 my $b1e3 = Math::BigFloat->new("1e3");
-my $b1e6 = Math::BigFloat->new("1e6");
 
 # Convert ms to another unit, without loss of precision.
 sub ms_to_unit($$)
@@ -128,18 +127,13 @@ sub ms_to_unit($$)
     return $ms->bmul($unit)->bstr();
 }
 
-sub ns($)
-{
-    my ($val) = @_;
-    return ms_to_unit($val, $b1e6);
-}
-
 sub us($)
 {
     my ($val) = @_;
     return ms_to_unit($val, $b1e3);
 }
 
+# Dummy wrapper to make code clearer to read
 sub ms($)
 {
     my ($val) = @_;
