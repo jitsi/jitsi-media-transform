@@ -19,7 +19,7 @@ import org.jitsi.utils.*;
 
 /**
  * A depacketizer from VP8.
- * See {@link "http://tools.ietf.org/html/draft-ietf-payload-vp8-11"}
+ * See {@link "http://tools.ietf.org/html/rfc7741"}
  *
  * @author Boris Grozev
  * @author George Politis
@@ -441,7 +441,7 @@ public class DePacketizer
 
     /**
      * A class that represents the VP8 Payload Header structure defined
-     * in {@link "http://tools.ietf.org/html/draft-ietf-payload-vp8-10"}
+     * in {@link "http://tools.ietf.org/html/rfc7741"}
      */
     public static class VP8PayloadHeader
     {
