@@ -179,7 +179,8 @@ class TlsClientImpl(
                 logger.cerror {
                     StringBuffer().apply {
                         appendln("Alert raised: $alertLevel $alertDescription " +
-                            "(${AlertDescription.getName(alertDescription)})")
+                            "(${AlertDescription.getName(alertDescription)}). Message: $message " +
+                            "Cause: $cause")
                         val e = Exception()
                         for (el in e.stackTrace) {
                             appendln(el.toString())
