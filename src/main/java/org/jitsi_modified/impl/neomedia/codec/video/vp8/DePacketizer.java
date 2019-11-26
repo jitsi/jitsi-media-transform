@@ -149,6 +149,45 @@ public class DePacketizer
         }
 
         /**
+         * Sets the temporal layer index (TID), if there's room for it.
+         *
+         * @param buf the byte buffer that holds the VP8 packet.
+         * @param off the offset in the byte buffer where the VP8 packet starts.
+         * @param len the length of the VP8 packet.
+         * @param tid the temporal layer value to
+         * @return true if the layer was set successfully, false otherwise.
+         */
+        public static boolean setTemporalLayerIndex(byte[] buf, int off, int len, int tid)
+        {
+            if (tid < 0 || tid > 3)
+            {
+                throw new IllegalArgumentException("Bad tid value " + tid);
+            }
+
+            if (buf == null || buf.length < off + len || len < 2)
+            {
+                return false;
+            }
+
+            if ((buf[off] & X_BIT) == 0 || (buf[off + 1] & T_BIT) == 0)
+            {
+                return false;
+            }
+
+            int sz = getSize(buf, off, len);
+            if (buf.length < off + sz || sz < 1)
+            {
+                return false;
+            }
+
+            buf[off + sz - 1] = (byte)((tid << 6) | buf[off + sz - 1] & 0x3f);
+
+            return true;
+        }
+
+
+
+        /**
          * Returns a simple Payload Descriptor, with PartID = 0, the 'start
          * of partition' bit set according to <tt>startOfPartition</tt>, and
          * all other bits set to 0.
@@ -365,6 +404,20 @@ public class DePacketizer
         }
 
         /**
+         * Sets the '<tt>start of partition</tt>' bit in the
+         * VP8 Payload Descriptor at offset <tt>offset</tt> in <tt>input</tt>.
+         *
+         * @param input  input
+         * @param offset offset
+         * @param start whether it is start or not.
+         */
+        public static void setStartOfPartition(byte[] input, int offset, boolean start)
+        {
+            setBit(input, offset, S_BIT, start);
+        }
+
+
+        /**
          * Returns <tt>true</tt> if both the '<tt>start of partition</tt>' bit
          * is set and the <tt>PID</tt> fields has value 0 in the VP8 Payload
          * Descriptor at offset <tt>offset</tt> in <tt>input</tt>.
@@ -440,13 +493,13 @@ public class DePacketizer
 
 
     /**
-     * A class that represents the VP8 Payload Header structure defined
+     * A class that represents the VP8 Payload Header structure described
      * in {@link "http://tools.ietf.org/html/rfc7741"}
      */
     public static class VP8PayloadHeader
     {
         /**
-         * S bit of the Payload Descriptor.
+         * S bit of the Payload Header.
          */
         private static final byte S_BIT = (byte) 0x01;
 
@@ -464,6 +517,15 @@ public class DePacketizer
             // the current frame is an interframe. Defined in [RFC6386]
 
             return (input[offset] & S_BIT) == 0;
+        }
+
+        /* Sets the <tt>P</tt> (inverse key frame flag) field of the
+          * VP8 Payload header at offset <tt>offset</tt> in <tt>input</tt>.
+           * Sets P to 0 if keyFrame is false, or to 1 if keyFrame is true.
+         */
+        public static void setKeyFrame(byte[] input, int offset, boolean keyFrame)
+        {
+            setBit(input, offset, S_BIT, !keyFrame);
         }
     }
 
@@ -491,6 +553,21 @@ public class DePacketizer
         public static int getHeight(byte[] buf, int off)
         {
             return (((buf[off + 6] & 0xff) << 8) | buf[off + 5] & 0xff) & 0x3fff;
+        }
+    }
+
+    /**
+     * Utility - set the value of a bit within a byte.
+     */
+    private static void setBit(byte[] buf, int off, byte mask, boolean set)
+    {
+        if (set)
+        {
+            buf[off] |= mask;
+        }
+        else
+        {
+            buf[off] &= ~mask;
         }
     }
 }
