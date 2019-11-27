@@ -3,10 +3,11 @@
 # Parse the bandwidth estimation timeseries log output, and convert
 # to CSV in the format expected by https://github.com/medooze/bwe-stats-viewer.
 # Timeseries logging should be enabled for the relevant subclass of
-#  org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator, e.g.
+# org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator, e.g.
 #  timeseries.org.jitsi.nlj.rtp.bandwidthestimation.GoogleCcEstimator.level=ALL
 
-# Output files should be bwe-output.js.
+# Output files will be generated for each endpoint, in the current directory,
+# named $conf_name-$ep_id-$conf_time.csv
 
 use strict;
 use Math::BigFloat;
@@ -141,20 +142,22 @@ sub ms($)
     return $val;
 }
 
+# Descriptions of columns, from https://github.com/medooze/bwe-stats-viewer/blob/master/README.md
+
 # 0: Feedback timestamp for rtp packet
-# 1: Transport wide seq num of rtp packet [Not currently used for stats viewer]
-# 2: Feedback packet num [Not currently used for stats viewer]
+# 1: Transport wide seq num of rtp packet [Not currently used for stats viewer] [not populated]
+# 2: Feedback packet num [Not currently used for stats viewer] [not populated]
 # 3: total packet size
 # 4: Sent time for packet on sender clock
 # 5: Received timestamp for rtp packet pn receiver clock (or 0 if lost)
-# 6: Delta time with previous sent rtp packet (0 if lost) [Not currently used for stats viewer]
-# 7: Delta time with previous received timestamp (0 if lost) [Not currently used for stats viewer]
+# 6: Delta time with previous sent rtp packet (0 if lost) [Not currently used for stats viewer] [populated]
+# 7: Delta time with previous received timestamp (0 if lost) [Not currently used for stats viewer] [populated]
 # 8: Delta sent time - delta received time
-# 9: Raw Estimated bitrate [Not currently used for stats viewer]
+# 9: Raw Estimated bitrate [Not currently used for stats viewer] [not populated]
 # 10: Target bitrate for probing
 # 11: Available bitrate, adjusted bwe estimation reported back to the app (BWE minus RTX allocation based on packet loss)
 # 12: rtt
-# 13: mark flag of RTP packet [Not currently used for stats viewer]
+# 13: mark flag of RTP packet [Not currently used for stats viewer] [not populated]
 # 14: 1 if packet was a retransmission, 0 otherwise
 # 15: 1 if packet was for probing, 0 otherwise
 sub print_row($$$$$$$$$$$$$) {
