@@ -36,6 +36,9 @@ class PacketIOActivity {
     val lastOverallRtpActivity: Instant
         get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp)
 
+    val lastOverallReceivedActivity: Instant
+        get() = latest(lastRtpPacketReceivedTimestamp, lastIceActivityTimestamp)
+
     val latestOverallActivity: Instant
         get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp, lastIceActivityTimestamp)
 }
