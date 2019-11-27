@@ -79,6 +79,6 @@ class Vp8Utils {
 
         fun getTemporalLayerIdOfFrame(vp8Packet: RtpPacket) =
             DePacketizer.VP8PayloadDescriptor.getTemporalLayerIndex(
-                vp8Packet.buffer, vp8Packet.payloadOffset, vp8Packet.length)
+                vp8Packet.buffer, vp8Packet.payloadOffset, vp8Packet.payloadLength)
     }
 }
