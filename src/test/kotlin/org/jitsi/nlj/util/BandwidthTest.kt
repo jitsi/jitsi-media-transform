@@ -20,6 +20,7 @@ import io.kotlintest.matchers.beGreaterThan
 import io.kotlintest.seconds
 import io.kotlintest.should
 import io.kotlintest.shouldBe
+import io.kotlintest.shouldThrow
 import io.kotlintest.specs.ShouldSpec
 
 class BandwidthTest : ShouldSpec() {
@@ -57,6 +58,14 @@ class BandwidthTest : ShouldSpec() {
             should("work correctly") {
                 1.megabytes.per(1.seconds) shouldBe 8.mbps
             }
+        }
+        "creation from a string" {
+            should("work correctly") {
+                Bandwidth.fromString("10mbps") shouldBe 10.mbps
+                Bandwidth.fromString("10bps") shouldBe 10.bps
+                Bandwidth.fromString("10kbps") shouldBe 10.kbps
+            }
+            shouldThrow<IllegalArgumentException> { Bandwidth.fromString("10foos") }
         }
     }
 }
