@@ -64,6 +64,7 @@ class BandwidthTest : ShouldSpec() {
                 Bandwidth.fromString("10mbps") shouldBe 10.mbps
                 Bandwidth.fromString("10bps") shouldBe 10.bps
                 Bandwidth.fromString("10kbps") shouldBe 10.kbps
+                Bandwidth.fromString("10 kbps") shouldBe 10.kbps
             }
             shouldThrow<IllegalArgumentException> { Bandwidth.fromString("10foos") }
         }

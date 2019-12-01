@@ -116,11 +116,12 @@ class Bandwidth(bps: Double) : Comparable<Bandwidth> {
         fun fromString(str: String): Bandwidth {
             val (digits, notDigits) = str.partition { it.isDigit() }
             val amount = digits.toInt()
-            return when (notDigits) {
+            val unit = notDigits.trim()
+            return when (unit) {
                 "bps" -> amount.bps
                 "kbps" -> amount.kbps
                 "mbps" -> amount.mbps
-                else -> throw IllegalArgumentException("Unrecognized unit $notDigits")
+                else -> throw IllegalArgumentException("Unrecognized unit $unit")
             }
         }
     }
