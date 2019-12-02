@@ -116,7 +116,7 @@ class Bandwidth(bps: Double) : Comparable<Bandwidth> {
         fun fromString(str: String): Bandwidth {
             val (digits, notDigits) = str.partition { it.isDigit() }
             val amount = digits.toInt()
-            val unit = notDigits.trim()
+            val unit = notDigits.trim().toLowerCase()
             return when (unit) {
                 "bps" -> amount.bps
                 "kbps" -> amount.kbps
