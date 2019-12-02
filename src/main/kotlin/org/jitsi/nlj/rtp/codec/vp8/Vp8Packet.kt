@@ -52,6 +52,7 @@ class Vp8Packet private constructor (
         height = null
     )
 
+    /** Due to the format of the VP8 payload, this value is only reliable for packets where [isStartOfFrame] is true. */
     override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.isKeyFrame(this.buffer, payloadOffset, payloadLength)
 
     override val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP8PayloadDescriptor.isStartOfFrame(buffer, payloadOffset)
