@@ -65,6 +65,7 @@ class BandwidthTest : ShouldSpec() {
                 Bandwidth.fromString("10bps") shouldBe 10.bps
                 Bandwidth.fromString("10kbps") shouldBe 10.kbps
                 Bandwidth.fromString("10 kbps") shouldBe 10.kbps
+                Bandwidth.fromString("10 KbPs") shouldBe 10.kbps
             }
             should("throw on an invalid unit") {
                 shouldThrow<IllegalArgumentException> { Bandwidth.fromString("10foos") }
