@@ -24,8 +24,7 @@ import java.time.Duration
  * of bits per second.
  */
 class Bandwidth(bps: Double) : Comparable<Bandwidth> {
-    var bps: Double = bps
-        private set
+    val bps: Double = bps
 
     val kbps: Double = bps / 1000
     val mbps: Double = bps / (1000 * 1000)
