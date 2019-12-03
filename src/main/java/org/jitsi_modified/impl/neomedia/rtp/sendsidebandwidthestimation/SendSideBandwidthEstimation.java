@@ -234,14 +234,6 @@ public class SendSideBandwidthEstimation
 
         double timeoutExperimentProbability = SendSideBandwidthEstimationConfig.timeoutExperimentProbability();
 
-        System.out.println("Got config values:\n" +
-                "lossExperimentProbability: " + lossExperimentProbability + "\n" +
-                "low_loss_threshold: " + low_loss_threshold_ + "\n" +
-                "high_loss_threshold: " + high_loss_threshold_ + "\n" +
-                "bitrate_threshold_bps: " + bitrate_threshold_bps_ + "\n" +
-                "timeoutExperimentProbability: " + timeoutExperimentProbability
-        );
-
         in_timeout_experiment_
             = kRandom.nextFloat() < timeoutExperimentProbability;
 
