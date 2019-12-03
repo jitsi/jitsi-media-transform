@@ -58,7 +58,7 @@ class SendSideBandwidthEstimationConfig {
         fun defaultHighLossThreshold(): Double = defaultHighLossThresholdProp.value
 
         /**
-         * The property that specifies the bitrate threshold (in kbps) when the
+         * The property that specifies the bitrate threshold when the
          * loss probability experiment is *not* active.
          */
         private val defaultBitrateThresholdProp = property<Bandwidth> {
@@ -138,7 +138,7 @@ class SendSideBandwidthEstimationConfig {
         fun experimentalHighLossThreshold(): Double = experimentalHighLossThresholdProp.value
 
         /**
-         * The property that specifies the bitrate threshold (in kbps) when the
+         * The property that specifies the bitrate threshold when the
          * loss probability experiment is active.
          */
         private val experimentalBitrateThresholdProp = multiProperty<Bandwidth> {
