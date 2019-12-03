@@ -27,7 +27,7 @@ import org.jitsi.utils.config.dsl.property
 class SendSideBandwidthEstimationConfig {
     companion object {
         private const val LEGACY_BASE_NAME =
-            "org.jitsi.impl.neomedia.rtp.sendsidebandwidthestimation.sendsidebandwidthestimation"
+            "org.jitsi.impl.neomedia.rtp.sendsidebandwidthestimation.SendSideBandwidthEstimation"
 
         /**
          * The property that specifies the low-loss threshold
