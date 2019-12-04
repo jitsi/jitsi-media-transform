@@ -102,10 +102,6 @@ class SendSideBandwidthEstimationConfig {
                 readOnce()
                 name("jmt.bwe.send-side.loss-experiment.low-loss-threshold")
             }
-            newProperty {
-                readOnce()
-                name("jmt.bwe.send-side.low-loss-threshold")
-            }
         }
 
         @JvmStatic
@@ -128,10 +124,6 @@ class SendSideBandwidthEstimationConfig {
                 readOnce()
                 name("jmt.bwe.send-side.loss-experiment.high-loss-threshold")
             }
-            newProperty {
-                readOnce()
-                name("jmt.bwe.send-side.high-loss-threshold")
-            }
         }
 
         @JvmStatic
@@ -149,12 +141,6 @@ class SendSideBandwidthEstimationConfig {
             newProperty {
                 name("jmt.bwe.send-side.loss-experiment.bitrate-threshold")
                 readOnce()
-                retrievedAs<String>() convertedBy(Bandwidth.Companion::fromString)
-            }
-            newProperty {
-                name("jmt.bwe.send-side.bitrate-threshold")
-                readOnce()
-                fromConfig(JitsiConfig.newConfig)
                 retrievedAs<String>() convertedBy(Bandwidth.Companion::fromString)
             }
         }
