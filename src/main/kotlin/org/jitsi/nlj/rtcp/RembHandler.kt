@@ -18,16 +18,21 @@ package org.jitsi.nlj.rtcp
 
 import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.util.bps
+import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbRembPacket
+import org.jitsi.utils.logging2.Logger
 import java.util.concurrent.CopyOnWriteArrayList
 
-class RembHandler : RtcpListener {
+class RembHandler(parentLogger: Logger) : RtcpListener {
+    private val logger = parentLogger.createChildLogger(RembHandler::class)
+
     private val bweUpdateListeners: MutableList<BandwidthEstimator.Listener> =
         CopyOnWriteArrayList()
 
     override fun rtcpPacketReceived(packet: RtcpPacket?, receivedTime: Long) {
         if (packet is RtcpFbRembPacket) {
+            logger.debug { "Received REMB packet" }
             onRembPacket(packet)
         }
     }
@@ -37,6 +42,7 @@ class RembHandler : RtcpListener {
     }
 
     private fun onRembPacket(rembPacket: RtcpFbRembPacket) {
+        logger.debug { "Updating bandwidth to ${rembPacket.bitrate.bps}" }
         bweUpdateListeners.forEach { it.bandwidthEstimationChanged(rembPacket.bitrate.bps) }
     }
 }
