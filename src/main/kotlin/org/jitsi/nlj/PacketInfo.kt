@@ -91,6 +91,11 @@ open class PacketInfo @JvmOverloads constructor(
     var shouldDiscard: Boolean = false
 
     /**
+     * Whether this packet was generated to be a probing packet.
+     */
+    var isProbing: Boolean = false
+
+    /**
      * The ID of the endpoint associated with this packet (i.e. the source endpoint).
      */
     var endpointId: String? = null

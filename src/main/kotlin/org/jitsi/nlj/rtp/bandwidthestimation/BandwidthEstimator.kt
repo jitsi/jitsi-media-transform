@@ -59,6 +59,31 @@ abstract class BandwidthEstimator(
     abstract var maxBw: Bandwidth
 
     /**
+     * Inform the bandwidth estimator about a packet that has been sent.
+     */
+    fun processPacketTransmission(
+        now: Instant,
+        stats: PacketStats
+    ) {
+        if (timeSeriesLogger.isTraceEnabled) {
+            val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_transmission", now)
+            stats.addToTimeSeriesPoint(point)
+            timeSeriesLogger.trace(point)
+        }
+        doProcessPacketTransmission(now, stats)
+    }
+
+    /**
+     * A subclass's implementation of [processPacketTransmission].
+     *
+     * See that function for parameter details.
+     */
+    protected abstract fun doProcessPacketTransmission(
+        now: Instant,
+        stats: PacketStats
+    )
+
+    /**
      * Inform the bandwidth estimator about a packet that has arrived at its
      * destination.
      *
@@ -69,43 +94,38 @@ abstract class BandwidthEstimator(
      * It is possible (e.g., if feedback was lost) that neither
      * [processPacketArrival] nor [processPacketLoss] is called for a given [seq].
      *
-     * The clocks reported by [now], [sendTime], and [recvTime] do not
+     * The clocks reported by [now], [stats.sendTime], and [recvTime] do not
      * necessarily have any relationship to each other, but must be consistent
      * within themselves across all calls to functions of this [BandwidthEstimator].
      *
+     * All arrival and loss reports based on a single feedback message should have the
+     * same [now] value.  [feedbackComplete] should be called once all feedback reports
+     * based on a single feedback message have been processed.
+     *
      * @param[now] The current time, when this function is called.
-     * @param[sendTime] The time the packet was sent, if known, or null.
+     * @param[stats] [PacketStats] about this packet that was sent.
      * @param[recvTime] The time the packet was received, if known, or null.
-     * @param[seq] A 16-bit sequence number of packets processed by this
-     *  [BandwidthEstimator].
-     * @param[size] The size of the packet.
-     * @param[ecn] The ECN markings with which the packet was received.
+     * @param[recvEcn] The ECN markings with which the packet was received.
      */
     fun processPacketArrival(
         now: Instant,
-        sendTime: Instant?,
+        stats: PacketStats,
         recvTime: Instant?,
-        seq: Int,
-        size: DataSize,
-        ecn: Byte = 0
+        recvEcn: Byte = 0
     ) {
         if (timeSeriesLogger.isTraceEnabled) {
             val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_arrival", now)
-            if (sendTime != null) {
-                point.addField("sendTime", sendTime.formatMilli())
-            }
+            stats.addToTimeSeriesPoint(point)
             if (recvTime != null) {
                 point.addField("recvTime", recvTime.formatMilli())
             }
-            point.addField("seq", seq)
-            point.addField("size", size.bytes)
-            if (ecn != 0.toByte()) {
-                point.addField("ecn", ecn)
+            if (recvEcn != 0.toByte()) {
+                point.addField("recvEcn", recvEcn)
             }
             timeSeriesLogger.trace(point)
         }
 
-        doProcessPacketArrival(now, sendTime, recvTime, seq, size, ecn)
+        doProcessPacketArrival(now, stats, recvTime, recvEcn)
     }
 
     /**
@@ -115,32 +135,29 @@ abstract class BandwidthEstimator(
      */
     protected abstract fun doProcessPacketArrival(
         now: Instant,
-        sendTime: Instant?,
+        stats: PacketStats,
         recvTime: Instant?,
-        seq: Int,
-        size: DataSize,
-        ecn: Byte = 0
+        recvEcn: Byte = 0
     )
 
     /**
      * Inform the bandwidth estimator that a packet was lost.
      *
+     * All arrival and loss reports based on a single feedback message should have the
+     * same [now] value.  [feedbackComplete] should be called once all feedback reports
+     * based on a single feedback message have been processed.
+     *
      * @param[now] The current time, when this function is called.
-     * @param[sendTime] The time the packet was sent, if known, or null.
-     * @param[seq] A 16-bit sequence number of packets processed by this
-     *  [BandwidthEstimator].
+     * @param[stats] [PacketStats] about this packet that was sent.
      */
-    fun processPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
+    fun processPacketLoss(now: Instant, stats: PacketStats) {
         if (timeSeriesLogger.isTraceEnabled) {
             val point = diagnosticContext.makeTimeSeriesPoint("bwe_packet_loss", now)
-            if (sendTime != null) {
-                point.addField("sendTime", sendTime.formatMilli())
-            }
-            point.addField("seq", seq)
+            stats.addToTimeSeriesPoint(point)
             timeSeriesLogger.trace(point)
         }
 
-        doProcessPacketLoss(now, sendTime, seq)
+        doProcessPacketLoss(now, stats)
     }
 
     /**
@@ -148,7 +165,15 @@ abstract class BandwidthEstimator(
      *
      * See that function for parameter details.
      */
-    protected abstract fun doProcessPacketLoss(now: Instant, sendTime: Instant?, seq: Int)
+    protected abstract fun doProcessPacketLoss(now: Instant, stats: PacketStats)
+
+    /**
+     * Inform the bandwidht estimator that a block of feedback is complete.
+     *
+     * @param[now] The current time, when this function is called.  This should match
+     *   the value passed to [processPacketArrival] and [processPacketLoss].
+     */
+    abstract fun feedbackComplete(now: Instant)
 
     /**
      * Inform the bandwidth estimator about a new round-trip time value
@@ -237,6 +262,45 @@ abstract class BandwidthEstimator(
     @Synchronized
     fun removeListener(listener: Listener) {
         listeners.remove(listener)
+    }
+
+    /**
+     * Information about a sent packet, as reported to a [BandwidthEstimator].
+     */
+    data class PacketStats(
+        /**
+         * A 16-bit sequence number of packets processed by this
+         *  [BandwidthEstimator].
+         */
+        val seq: Int,
+        /**
+         * The size of the packet.
+         */
+        val size: DataSize,
+        /**
+         * The time the packet was sent, if known, or null.
+         */
+        val sendTime: Instant?
+    ) {
+        /**
+         * Whether the sent packet was a retransmission
+         */
+        var isRtx: Boolean = false
+
+        /**
+         * Whether the sent packet was a bandwidth probe
+         */
+        var isProbing: Boolean = false
+
+        fun addToTimeSeriesPoint(point: DiagnosticContext.TimeSeriesPoint) {
+            if (sendTime != null) {
+                point.addField("sendTime", sendTime.formatMilli())
+            }
+            point.addField("seq", seq)
+            point.addField("size", size.bytes)
+            point.addField("rtx", isRtx)
+            point.addField("probing", isProbing)
+        }
     }
 
     /**

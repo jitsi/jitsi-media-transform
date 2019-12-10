@@ -16,6 +16,7 @@
 package org.jitsi.nlj.transform.node.outgoing
 
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.format.RtxPayloadType
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.rtp.TransportCcEngine
 import org.jitsi.nlj.stats.NodeStatsBlock
@@ -27,7 +28,7 @@ import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
 
 class TccSeqNumTagger(
     private val transportCcEngine: TransportCcEngine? = null,
-    streamInformationStore: ReadOnlyStreamInformationStore
+    private val streamInformationStore: ReadOnlyStreamInformationStore
 ) : TransformerNode("TCC sequence number tagger") {
     private var currTccSeqNum: Int = 1
     private var tccExtensionId: Int? = null
@@ -45,7 +46,13 @@ class TccSeqNumTagger(
                 ?: rtpPacket.addHeaderExtension(tccExtId, TccHeaderExtension.DATA_SIZE_BYTES)
 
             TccHeaderExtension.setSequenceNumber(ext, currTccSeqNum)
-            transportCcEngine?.mediaPacketSent(currTccSeqNum, rtpPacket.length.bytes)
+            val pt = streamInformationStore.rtpPayloadTypes[rtpPacket.payloadType.toByte()]
+            val isRtx = !packetInfo.isProbing && pt is RtxPayloadType
+
+            transportCcEngine?.mediaPacketSent(currTccSeqNum,
+                rtpPacket.length.bytes,
+                isProbing = packetInfo.isProbing,
+                isRtx = isRtx)
             currTccSeqNum++
         }
 
