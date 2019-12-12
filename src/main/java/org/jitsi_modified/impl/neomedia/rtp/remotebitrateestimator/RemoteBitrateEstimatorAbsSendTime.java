@@ -206,7 +206,29 @@ public class RemoteBitrateEstimatorAbsSendTime
         long sendTimeMs,
         int payloadSize)
     {
-        long sendTime24bits = convertMsTo24Bits(sendTimeMs);
+        incomingPacketInfoAbsSendTime(
+                nowMs,
+                arrivalTimeMs,
+                convertMsTo24Bits(sendTimeMs),
+                payloadSize);
+    }
+
+    /**
+     * Notifies this instance of an incoming packet.
+     *
+     * @param nowMs the current time when this method is called
+     * @param arrivalTimeMs the arrival time of the packet in millis.
+     * @param sendTime24bits the send time of the packet in the native 24-bit
+     * format of the abs-send-time RTP header extension (6.18 fixed point, in
+     * seconds).
+     * @param payloadSize the payload size of the packet.
+     */
+    public void incomingPacketInfoAbsSendTime(
+        long nowMs,
+        long arrivalTimeMs,
+        long sendTime24bits,
+        int payloadSize)
+    {
 
         // Shift up send time to use the full 32 bits that inter_arrival
         // works with, so wrapping works properly.
@@ -218,7 +240,7 @@ public class RemoteBitrateEstimatorAbsSendTime
                 .makeTimeSeriesPoint("in_pkt", nowMs)
                 .addField("rbe_id", hashCode())
                 .addField("recv_ts_ms", arrivalTimeMs)
-                .addField("send_ts_ms", sendTimeMs)
+                .addField("timestamp", timestamp)
                 .addField("pkt_sz_bytes", payloadSize));
         }
 
