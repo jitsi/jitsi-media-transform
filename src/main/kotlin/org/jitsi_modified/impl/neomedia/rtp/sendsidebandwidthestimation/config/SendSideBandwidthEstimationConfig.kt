@@ -105,14 +105,14 @@ class SendSideBandwidthEstimationConfig {
              * then we'll check for an experimental value in the new config file,
              * then we'll fall back to the default value
              */
-            class ExperimentalLosLossThresholdProperty : LegacyFallbackConfigProperty<Double>(
+            class ExperimentalLowLossThresholdProperty : LegacyFallbackConfigProperty<Double>(
                 Double::class,
                 legacyName = "$LEGACY_BASE_NAME.lowLossThreshold",
                 newName = "jmt.bwe.send-side.loss-experiment.low-loss-threshold",
                 readOnce = true
             )
             private val experimentalLowLossThresholdProp =
-                ExperimentalLosLossThresholdProperty()
+                ExperimentalLowLossThresholdProperty()
 
             @JvmStatic
             fun experimentalLowLossThreshold(): Double = experimentalLowLossThresholdProp.value
