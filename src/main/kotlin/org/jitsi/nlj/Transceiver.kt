@@ -118,6 +118,7 @@ class Transceiver(
         rtcpEventNotifier.addRtcpEventListener(transportCcEngine)
 
         endpointConnectionStats.addListener(rtpSender)
+        endpointConnectionStats.addListener(rtpReceiver)
     }
 
     fun onBandwidthEstimateChanged(listener: BandwidthEstimator.Listener) {

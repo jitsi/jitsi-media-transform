@@ -33,6 +33,7 @@ import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.Collections
 
@@ -111,5 +112,9 @@ class RemoteBandwidthEstimator(
 
     private fun Long.toInstant(): Instant {
         return Instant.ofEpochMilli(this / 1_000_000).plusNanos(this % 1_000_000)
+    }
+
+    fun onRttUpdate(newRttMs: Double) {
+        bwe.onRttUpdate(clock.instant(), Duration.ofNanos((newRttMs * 1000_000).toLong()))
     }
 }

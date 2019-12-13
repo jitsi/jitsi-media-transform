@@ -256,4 +256,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
     override fun tearDown() {
         NodeTeardownVisitor().visit(inputTreeRoot)
     }
+
+    override fun onRttUpdate(newRtt: Double) {
+        remoteBandwidthEstimator.onRttUpdate(newRtt)
+    }
 }
