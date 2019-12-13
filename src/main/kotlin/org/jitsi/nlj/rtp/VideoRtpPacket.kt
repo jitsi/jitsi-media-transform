@@ -26,7 +26,7 @@ open class VideoRtpPacket protected constructor(
     buffer: ByteArray,
     offset: Int,
     length: Int,
-    encodingIndex: Int?
+    qualityIndex: Int?
 ) : RtpPacket(buffer, offset, length) {
 
     constructor(
@@ -34,18 +34,18 @@ open class VideoRtpPacket protected constructor(
         offset: Int,
         length: Int
     ) : this(buffer, offset, length,
-        encodingIndex = null
+        qualityIndex = null
     )
 
     /** The index of this packet relative to its track's RTPEncodings. */
-    var encodingIndex: Int = encodingIndex ?: -1
+    var qualityIndex: Int = qualityIndex ?: -1
 
     override fun clone(): VideoRtpPacket {
         return VideoRtpPacket(
             cloneBuffer(BYTES_TO_LEAVE_AT_START_OF_PACKET),
             BYTES_TO_LEAVE_AT_START_OF_PACKET,
             length,
-            encodingIndex = encodingIndex
+            qualityIndex = qualityIndex
         )
     }
 }

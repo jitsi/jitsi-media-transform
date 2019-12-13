@@ -112,7 +112,7 @@ class Vp8Packet private constructor (
             length,
             isKeyframe = isKeyframe,
             isStartOfFrame = isStartOfFrame,
-            encodingIndex = encodingIndex,
+            encodingIndex = qualityIndex,
             height = height
         )
     }
