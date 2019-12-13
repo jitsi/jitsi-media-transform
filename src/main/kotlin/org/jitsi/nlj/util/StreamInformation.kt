@@ -169,6 +169,8 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         synchronized(payloadTypesLock) {
             _rtpPayloadTypes.clear()
             supportsPli = false
+            supportsRemb = false
+            supportsTcc = false
             payloadTypeHandlers.forEach { it(_rtpPayloadTypes) }
         }
     }
