@@ -31,6 +31,7 @@ import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateEstimatorAbsSendTime
 import java.time.Clock
+import java.util.Collections
 
 /**
  * Estimates the available bandwidth for the incoming stream using the abs-send-time extension.
@@ -50,7 +51,7 @@ class RemoteBandwidthEstimator(
     }
     private var astExtId: Int? = null
     private var rbe: RemoteBitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(diagnosticContext, logger)
-    private val ssrcs = LRUCache<Long, Int>(MAX_SSRCS, true)
+    private val ssrcs = Collections.newSetFromMap(LRUCache<Long, Boolean>(MAX_SSRCS, true /* accessOrder */))
     private var numRembsCreated = 0
     private var numPacketsWithoutAbsSendTime = 0
 
@@ -70,9 +71,9 @@ class RemoteBandwidthEstimator(
 
     override fun observe(packetInfo: PacketInfo) {
         if (!enabled) return
-        val rtpPacket: RtpPacket = packetInfo.packet as? RtpPacket ?: return
 
         astExtId?.let {
+            val rtpPacket = packetInfo.packetAs<RtpPacket>()
             rtpPacket.getHeaderExtension(it)?.let { ext ->
                 val sendTimeAbsSendTime = AbsSendTimeHeaderExtension.getTime(ext).toLong()
                 rbe.incomingPacketInfoAbsSendTime(
@@ -80,7 +81,7 @@ class RemoteBandwidthEstimator(
                     sendTimeAbsSendTime,
                     packetInfo.receivedTime,
                     rtpPacket.length)
-                ssrcs[rtpPacket.ssrc] = 0
+                ssrcs.add(rtpPacket.ssrc)
             }
         } ?: numPacketsWithoutAbsSendTime++
     }
@@ -94,12 +95,12 @@ class RemoteBandwidthEstimator(
 
     fun createRemb(): RtcpFbRembPacket? {
         // REMB based BWE is not configured.
-        if (!enabled or (astExtId == null)) return null
+        if (!enabled || astExtId == null) return null
 
         // The estimator does not yet have a valid value.
         if (rbe.latestEstimate == -1L) return null
 
         numRembsCreated++
-        return RtcpFbRembPacketBuilder(brBps = rbe.latestEstimate, ssrcs = ssrcs.keys.toList()).build()
+        return RtcpFbRembPacketBuilder(brBps = rbe.latestEstimate, ssrcs = ssrcs.toList()).build()
     }
 }

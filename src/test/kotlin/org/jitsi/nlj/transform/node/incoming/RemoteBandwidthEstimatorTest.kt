@@ -2,7 +2,6 @@ package org.jitsi.nlj.transform.node.incoming
 
 import com.nhaarman.mockitokotlin2.spy
 import io.kotlintest.IsolationMode
-import io.kotlintest.Spec
 import io.kotlintest.matchers.numerics.shouldBeGreaterThan
 import io.kotlintest.shouldBe
 import io.kotlintest.shouldNotBe
@@ -26,7 +25,6 @@ class RemoteBandwidthEstimatorTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
     private val clock: FakeClock = spy()
-    private val streamInformationStore = StreamInformationStoreImpl()
     private val astExtensionId = 3
     // REMB is enabled by having at least one payload type which has "transport-cc" signaled as a rtcp-fb, and TCC is
     // disabled.
@@ -34,15 +32,12 @@ class RemoteBandwidthEstimatorTest : ShouldSpec() {
     private val vp9PayloadTypeWithTcc = Vp9PayloadType(101, emptyMap(), setOf("transport-cc"))
     private val packetInterval = 10.ms()
     private val ssrc = 1234L
-
-    private lateinit var remoteBandwidthEstimator: RemoteBandwidthEstimator
-
-    override fun beforeSpec(spec: Spec) {
-        super.beforeSpec(spec)
-        streamInformationStore.addRtpExtensionMapping(RtpExtension(astExtensionId.toByte(), RtpExtensionType.ABS_SEND_TIME))
-        streamInformationStore.addRtpPayloadType(vp8PayloadType)
-        remoteBandwidthEstimator = RemoteBandwidthEstimator(streamInformationStore, StdoutLogger(), clock = clock)
+    private val streamInformationStore = StreamInformationStoreImpl().apply {
+        addRtpExtensionMapping(RtpExtension(astExtensionId.toByte(), RtpExtensionType.ABS_SEND_TIME))
+        addRtpPayloadType(vp8PayloadType)
     }
+
+    private val remoteBandwidthEstimator = RemoteBandwidthEstimator(streamInformationStore, StdoutLogger(), clock = clock)
 
     init {
         "when REMB is not signaled" {
