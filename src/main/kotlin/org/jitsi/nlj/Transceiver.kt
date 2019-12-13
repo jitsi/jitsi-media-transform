@@ -108,7 +108,8 @@ class Transceiver(
             backgroundExecutor,
             { rtpSender.getPacketStreamStats().bitrate },
             streamInformationStore,
-            logger
+            logger,
+            diagnosticContext
         )
 
     init {

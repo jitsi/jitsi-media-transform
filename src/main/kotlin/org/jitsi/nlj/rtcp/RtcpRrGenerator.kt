@@ -49,11 +49,15 @@ private data class SenderInfo(
 /**
  * Retrieves statistics about incoming streams and creates RTCP RR packets.  Since RR packets are created based on
  * time (and not on a number of incoming packets received, etc.) it does not live within the packet pipelines.
+ *
+ * @param additionalPacketSupplier A function which supplies additional RTCP packets (such as REMB) to be sent together
+ * with RRs.
  */
 class RtcpRrGenerator(
     private val backgroundExecutor: ScheduledExecutorService,
     private val rtcpSender: (RtcpPacket) -> Unit = {},
-    private val incomingStatisticsTracker: IncomingStatisticsTracker
+    private val incomingStatisticsTracker: IncomingStatisticsTracker,
+    private val additionalPacketSupplier: () -> List<RtcpPacket>
 ) : RtcpListener {
     var running: Boolean = true
 
@@ -100,8 +104,14 @@ class RtcpRrGenerator(
                 ))
             }
             if (reportBlocks.isNotEmpty()) {
-                val rrPacket = RtcpRrPacketBuilder(reportBlocks = reportBlocks).build()
-                rtcpSender(rrPacket)
+                // TODO send one compound packet.
+                RtcpRrPacketBuilder(reportBlocks = reportBlocks).build().apply {
+                    rtcpSender(this)
+                }
+
+                additionalPacketSupplier().forEach {
+                    rtcpSender(it)
+                }
             }
             backgroundExecutor.schedule(this::doWork, 1, TimeUnit.SECONDS)
         }
