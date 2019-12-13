@@ -196,20 +196,20 @@ public class RemoteBitrateEstimatorAbsSendTime
      * Notifies this instance of an incoming packet.
      *
      * @param nowMs the current time when this method is called
-     * @param arrivalTimeMs the arrival time of the packet in millis.
      * @param sendTimeMs the send time of the packet in millis
+     * @param arrivalTimeMs the arrival time of the packet in millis.
      * @param payloadSize the payload size of the packet.
      */
     public void incomingPacketInfo(
         long nowMs,
-        long arrivalTimeMs,
         long sendTimeMs,
+        long arrivalTimeMs,
         int payloadSize)
     {
         incomingPacketInfoAbsSendTime(
                 nowMs,
-                arrivalTimeMs,
                 convertMsTo24Bits(sendTimeMs),
+                arrivalTimeMs,
                 payloadSize);
     }
 
@@ -225,8 +225,8 @@ public class RemoteBitrateEstimatorAbsSendTime
      */
     public void incomingPacketInfoAbsSendTime(
         long nowMs,
-        long arrivalTimeMs,
         long sendTime24bits,
+        long arrivalTimeMs,
         int payloadSize)
     {
 
