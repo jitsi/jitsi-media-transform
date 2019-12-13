@@ -29,7 +29,7 @@ import org.jitsi_modified.impl.neomedia.codec.video.vp8.DePacketizer
  * or not its a keyframe and what its spatial layer index is,
  * so the constructor allows passing in those values if
  * they're already known.  If they're null, this instance
- * will do the parsing itself
+ * will do the parsing itself.
  */
 class Vp8Packet private constructor (
     buffer: ByteArray,
