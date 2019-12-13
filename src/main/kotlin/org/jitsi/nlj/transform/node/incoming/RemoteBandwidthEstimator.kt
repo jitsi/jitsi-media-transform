@@ -17,9 +17,12 @@ package org.jitsi.nlj.transform.node.incoming
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtp.RtpExtensionType.ABS_SEND_TIME
+import org.jitsi.nlj.rtp.bandwidthestimation.AbsSendTimeBandwidthEstimator
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
+import org.jitsi.nlj.util.bps
+import org.jitsi.nlj.util.bytes
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.nlj.util.observableWhenChanged
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbRembPacket
@@ -29,8 +32,8 @@ import org.jitsi.rtp.rtp.header_extensions.AbsSendTimeHeaderExtension
 import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
-import org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator.RemoteBitrateEstimatorAbsSendTime
 import java.time.Clock
+import java.time.Instant
 import java.util.Collections
 
 /**
@@ -50,7 +53,7 @@ class RemoteBandwidthEstimator(
         _, _, newValue -> logger.debug { "Setting enabled=$newValue." }
     }
     private var astExtId: Int? = null
-    private var rbe: RemoteBitrateEstimatorAbsSendTime = RemoteBitrateEstimatorAbsSendTime(diagnosticContext, logger)
+    private var bwe = AbsSendTimeBandwidthEstimator(diagnosticContext, logger)
     private val ssrcs = Collections.newSetFromMap(LRUCache<Long, Boolean>(MAX_SSRCS, true /* accessOrder */))
     private var numRembsCreated = 0
     private var numPacketsWithoutAbsSendTime = 0
@@ -75,12 +78,13 @@ class RemoteBandwidthEstimator(
         astExtId?.let {
             val rtpPacket = packetInfo.packetAs<RtpPacket>()
             rtpPacket.getHeaderExtension(it)?.let { ext ->
-                val sendTimeAbsSendTime = AbsSendTimeHeaderExtension.getTime(ext).toLong()
-                rbe.incomingPacketInfoAbsSendTime(
-                    clock.millis(),
-                    sendTimeAbsSendTime,
-                    packetInfo.receivedTime,
-                    rtpPacket.length)
+                val sendTimeNanos = AbsSendTimeHeaderExtension.getTime(ext)
+                bwe.processPacketArrival(
+                    clock.instant(),
+                    sendTimeNanos.toInstant(),
+                    Instant.ofEpochMilli(packetInfo.receivedTime),
+                    rtpPacket.sequenceNumber,
+                    rtpPacket.length.bytes)
                 ssrcs.add(rtpPacket.ssrc)
             }
         } ?: numPacketsWithoutAbsSendTime++
@@ -97,10 +101,15 @@ class RemoteBandwidthEstimator(
         // REMB based BWE is not configured.
         if (!enabled || astExtId == null) return null
 
+        val currentBw = bwe.getCurrentBw(clock.instant())
         // The estimator does not yet have a valid value.
-        if (rbe.latestEstimate == -1L) return null
+        if (currentBw < 0.bps) return null
 
         numRembsCreated++
-        return RtcpFbRembPacketBuilder(brBps = rbe.latestEstimate, ssrcs = ssrcs.toList()).build()
+        return RtcpFbRembPacketBuilder(brBps = currentBw.bps.toLong(), ssrcs = ssrcs.toList()).build()
+    }
+
+    private fun Long.toInstant(): Instant {
+        return Instant.ofEpochMilli(this / 1_000_000).plusNanos(this % 1_000_000)
     }
 }
