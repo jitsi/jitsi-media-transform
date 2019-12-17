@@ -35,6 +35,7 @@ import org.jitsi.rtp.UnparsedPacket
 class DtlsTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
     private val debugEnabled = true
+    private val pcapEnabled = false
     private val logger = StdoutLogger()
 
     fun debug(s: String) {
@@ -58,19 +59,23 @@ class DtlsTest : ShouldSpec() {
         val clientSender = ProtocolSender(dtlsClient)
         val clientReceiver = ProtocolReceiver(dtlsClient)
 
-        val pcapWriter = PcapWriter(logger, "/tmp/dtls-test.pcap")
+        val pcapWriter = PcapWriter(logger, if (pcapEnabled) "/tmp/dtls-test.pcap" else "/dev/null")
 
         // The server and client senders are connected directly to their
         // peer's receiver
         serverSender.attach(object : ConsumerNode("server network") {
             override fun consume(packetInfo: PacketInfo) {
-                pcapWriter.processPacket(packetInfo)
+                if (pcapEnabled) {
+                    pcapWriter.processPacket(packetInfo)
+                }
                 clientReceiver.processPacket(packetInfo)
             }
         })
         clientSender.attach(object : ConsumerNode("client network") {
             override fun consume(packetInfo: PacketInfo) {
-                pcapWriter.processPacket(packetInfo)
+                if (pcapEnabled) {
+                    pcapWriter.processPacket(packetInfo)
+                }
                 serverReceiver.processPacket(packetInfo)
             }
         })
