@@ -59,23 +59,19 @@ class DtlsTest : ShouldSpec() {
         val clientSender = ProtocolSender(dtlsClient)
         val clientReceiver = ProtocolReceiver(dtlsClient)
 
-        val pcapWriter = PcapWriter(logger, if (pcapEnabled) "/tmp/dtls-test.pcap" else "/dev/null")
+        val pcapWriter = if (pcapEnabled) PcapWriter(logger, "/tmp/dtls-test.pcap") else null
 
         // The server and client senders are connected directly to their
         // peer's receiver
         serverSender.attach(object : ConsumerNode("server network") {
             override fun consume(packetInfo: PacketInfo) {
-                if (pcapEnabled) {
-                    pcapWriter.processPacket(packetInfo)
-                }
+                pcapWriter?.processPacket(packetInfo)
                 clientReceiver.processPacket(packetInfo)
             }
         })
         clientSender.attach(object : ConsumerNode("client network") {
             override fun consume(packetInfo: PacketInfo) {
-                if (pcapEnabled) {
-                    pcapWriter.processPacket(packetInfo)
-                }
+                pcapWriter?.processPacket(packetInfo)
                 serverReceiver.processPacket(packetInfo)
             }
         })
