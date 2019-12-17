@@ -16,13 +16,14 @@
 package org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.service.configuration.*;
-import org.jitsi.service.libjitsi.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
 import org.jitsi.utils.logging2.*;
 
+import java.time.*;
 import java.util.*;
+
+import static org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.config.SendSideBandwidthEstimationConfig.*;
 
 /**
  * Implements the send-side bandwidth estimation described in
@@ -34,51 +35,6 @@ import java.util.*;
  */
 public class SendSideBandwidthEstimation
 {
-    /**
-     * The name of the property that specifies the low-loss threshold
-     * (expressed as a proportion of lost packets).
-     * See {@link #low_loss_threshold_}.
-     */
-    public final static String LOW_LOSS_THRESHOLD_PNAME
-        = SendSideBandwidthEstimation.class.getName() + ".lowLossThreshold";
-
-    /**
-     * The name of the property that specifies the high-loss threshold
-     * (expressed as a proportion of lost packets).
-     * See {@link #high_loss_threshold_}.
-     */
-    public final static String HIGH_LOSS_THRESHOLD_PNAME
-        = SendSideBandwidthEstimation.class.getName() + ".highLossThreshold";
-
-    /**
-     * The name of the property that specifies the bitrate threshold (in kbps).
-     * See {@link #bitrate_threshold_bps_}.
-     */
-    public final static String BITRATE_THRESHOLD_KBPS_PNAME
-        = SendSideBandwidthEstimation.class.getName() + ".bitrateThresholdKbps";
-
-    /**
-     * The name of the property that specifies the probability of enabling the
-     * loss-based experiment.
-     */
-    public final static String LOSS_EXPERIMENT_PROBABILITY_PNAME
-        = SendSideBandwidthEstimation.class.getName()
-        + ".lossExperimentProbability";
-
-    /**
-     * The name of the property that specifies the probability of enabling the
-     * timeout experiment.
-     */
-    public final static String TIMEOUT_EXPERIMENT_PROBABILITY_PNAME
-        = SendSideBandwidthEstimation.class.getName()
-        + ".timeoutExperimentProbability";
-
-    /**
-     * The ConfigurationService to get config values from.
-     */
-    private static final ConfigurationService
-        cfg = LibJitsi.getConfigurationService();
-
     /**
      * send_side_bandwidth_estimation.cc
      */
@@ -133,31 +89,6 @@ public class SendSideBandwidthEstimation
     private static final long kTimeoutIntervalMs = 1000;
 
     /**
-     * send_side_bandwidth_estimation.cc
-     */
-    private static final float kDefaultLowLossThreshold = 0.02f;
-
-    /**
-     * send_side_bandwidth_estimation.cc
-     */
-    private static final float kDefaultHighLossThreshold = 0.1f;
-
-    /**
-     * send_side_bandwidth_estimation.cc
-     */
-    private static final int kDefaultBitrateThresholdKbps = 0;
-
-    /**
-     * Disable the loss experiment by default.
-     */
-    private static final float kDefaultLossExperimentProbability = 0;
-
-    /**
-     * Disable the timeout experiment by default.
-     */
-    private static final float kDefaultTimeoutExperimentProbability = 0;
-
-    /**
      * The random number generator for all instances of this class.
      */
     private static final Random kRandom = new Random();
@@ -178,12 +109,12 @@ public class SendSideBandwidthEstimation
     /**
      * send_side_bandwidth_estimation.h
      */
-    private final float low_loss_threshold_;
+    private final double low_loss_threshold_;
 
     /**
      * send_side_bandwidth_estimation.h
      */
-    private final float high_loss_threshold_;
+    private final double high_loss_threshold_;
 
     /**
      * send_side_bandwidth_estimation.h
@@ -273,9 +204,10 @@ public class SendSideBandwidthEstimation
     private final DiagnosticContext diagnosticContext;
 
     /**
-     * The most recent RTT calculation we've received for our connection with the remote endpoint
+     * The most recent RTT calculation we've received for our connection with
+     * the remote endpoint in milliseconds.
      */
-    private long rtt;
+    private long rttMs;
 
     /**
      * The instance that holds stats for this instance.
@@ -288,30 +220,23 @@ public class SendSideBandwidthEstimation
         logger = parentLogger.createChildLogger(getClass().getName());
         this.diagnosticContext = diagnosticContext;
 
-        float lossExperimentProbability = (float) cfg.getDouble(
-            LOSS_EXPERIMENT_PROBABILITY_PNAME,
-            kDefaultLossExperimentProbability);
+        double lossExperimentProbability = Config.lossExperimentProbability();
 
         if (kRandom.nextFloat() < lossExperimentProbability)
         {
-            low_loss_threshold_ = (float) cfg.getDouble(
-                LOW_LOSS_THRESHOLD_PNAME, kDefaultLowLossThreshold);
-            high_loss_threshold_ = (float) cfg.getDouble(
-                HIGH_LOSS_THRESHOLD_PNAME, kDefaultHighLossThreshold);
-            bitrate_threshold_bps_ = 1000 * cfg.getInt(
-                BITRATE_THRESHOLD_KBPS_PNAME, kDefaultBitrateThresholdKbps);
+            low_loss_threshold_ = Config.experimentalLowLossThreshold();
+            high_loss_threshold_ = Config.experimentalHighLossThreshold();
+            bitrate_threshold_bps_ = 1000 * Config.experimentalBitrateThresholdKbps();
         }
         else
         {
-            low_loss_threshold_ = kDefaultLowLossThreshold;
-            high_loss_threshold_ = kDefaultHighLossThreshold;
-            bitrate_threshold_bps_ = 1000 * kDefaultBitrateThresholdKbps;
+            low_loss_threshold_ = Config.defaultLowLossThreshold();
+            high_loss_threshold_ = Config.defaultHighLossThreshold();
+            bitrate_threshold_bps_ = 1000 * Config.defaultBitrateThresholdKbps();
         }
 
 
-        float timeoutExperimentProbability = (float) cfg.getDouble(
-            TIMEOUT_EXPERIMENT_PROBABILITY_PNAME,
-            kDefaultTimeoutExperimentProbability);
+        double timeoutExperimentProbability = Config.timeoutExperimentProbability();
 
         in_timeout_experiment_
             = kRandom.nextFloat() < timeoutExperimentProbability;
@@ -440,7 +365,7 @@ public class SendSideBandwidthEstimation
                     // rtt.
                     if (!has_decreased_since_last_fraction_loss_ &&
                         (now - time_last_decrease_ms_) >=
-                            (kBweDecreaseIntervalMs + getRtt()))
+                            (kBweDecreaseIntervalMs + getRttMs()))
                     {
                         time_last_decrease_ms_ = now;
 
@@ -641,27 +566,25 @@ public class SendSideBandwidthEstimation
         return statistics;
     }
 
-    public void onRttUpdate(double newRtt)
+    public void onRttUpdate(Duration newRtt)
     {
-        //TODO(brian): does it make sense to use rtt as a long in here? which is more approriate, double or long?
-        // we should make all types for rtt consistent
-        this.rtt = (long)newRtt;
+        this.rttMs = newRtt.toMillis();
     }
 
     /**
-     * Returns the last calculated RTT to the endpoint.
-     * @return the last calculated RTT to the endpoint.
+     * Returns the last calculated RTT to the endpoint in milliseconds.
+     * @return the last calculated RTT to the endpoint in milliseconds.
      */
-    private synchronized long getRtt()
+    private synchronized long getRttMs()
     {
-        if (rtt < 0 || rtt > 1000)
+        if (rttMs < 0 || rttMs > 1000)
         {
             logger.warn("RTT not calculated, or has a suspiciously high value ("
-                + rtt + "). Using the default of 100ms.");
-            rtt = 100;
+                + rttMs + "). Using the default of 100ms.");
+            rttMs = 100;
         }
 
-        return rtt;
+        return rttMs;
     }
 
     private class Pair<T>
@@ -840,8 +763,8 @@ public class SendSideBandwidthEstimation
                                 bitrate_)
                             .addField("bwe_incoming",
                                 bwe_incoming_)
-                            .addField("rtt",
-                                rtt));
+                            .addField("rtt_ms",
+                                    rttMs));
                     }
                 }
 

@@ -20,6 +20,7 @@ import io.kotlintest.matchers.beGreaterThan
 import io.kotlintest.seconds
 import io.kotlintest.should
 import io.kotlintest.shouldBe
+import io.kotlintest.shouldThrow
 import io.kotlintest.specs.ShouldSpec
 
 class BandwidthTest : ShouldSpec() {
@@ -40,6 +41,33 @@ class BandwidthTest : ShouldSpec() {
                 1.mbps / 4.mbps shouldBe 0.25
             }
         }
+        "operation-assign operations on bandwidths" {
+            should("work correctly") {
+                var b = 1.mbps
+                b += 0.5.mbps
+                b shouldBe 1.5.mbps
+                b.kbps shouldBe 1500.0
+                b.bps shouldBe 1_500_000.0
+
+                b = 1.mbps
+                b -= 0.5.mbps
+                b shouldBe 0.5.mbps
+                b.kbps shouldBe 500.0
+                b.bps shouldBe 500_000.0
+
+                b = 1.mbps
+                b *= 2.0
+                b shouldBe 2.0.mbps
+                b.kbps shouldBe 2_000.0
+                b.bps shouldBe 2_000_000.0
+
+                b = 1.mbps
+                b /= 2.0
+                b shouldBe 0.5.mbps
+                b.kbps shouldBe 500.0
+                b.bps shouldBe 500_000.0
+            }
+        }
         "printing bandwidths" {
             should("print as the most appropriate unit") {
                 2_500_000.bps.toString() shouldBe "2.5 mbps"
@@ -56,6 +84,18 @@ class BandwidthTest : ShouldSpec() {
         "creation from 'per'" {
             should("work correctly") {
                 1.megabytes.per(1.seconds) shouldBe 8.mbps
+            }
+        }
+        "creation from a string" {
+            should("work correctly") {
+                Bandwidth.fromString("10mbps") shouldBe 10.mbps
+                Bandwidth.fromString("10bps") shouldBe 10.bps
+                Bandwidth.fromString("10kbps") shouldBe 10.kbps
+                Bandwidth.fromString("10 kbps") shouldBe 10.kbps
+                Bandwidth.fromString("10 KbPs") shouldBe 10.kbps
+            }
+            should("throw on an invalid unit") {
+                shouldThrow<IllegalArgumentException> { Bandwidth.fromString("10foos") }
             }
         }
     }
