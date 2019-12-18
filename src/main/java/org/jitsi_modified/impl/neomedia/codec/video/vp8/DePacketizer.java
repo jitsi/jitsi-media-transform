@@ -16,6 +16,7 @@
 package org.jitsi_modified.impl.neomedia.codec.video.vp8;
 
 import org.jitsi.utils.*;
+import org.jitsi.rtp.extensions.ByteKt;
 
 /**
  * A depacketizer from VP8.
@@ -413,7 +414,7 @@ public class DePacketizer
          */
         public static void setStartOfPartition(byte[] input, int offset, boolean start)
         {
-            setBit(input, offset, S_BIT, start);
+            input[offset] = ByteKt.putBitWithMask(input[offset], S_BIT, start);
         }
 
 
@@ -525,7 +526,7 @@ public class DePacketizer
          */
         public static void setKeyFrame(byte[] input, int offset, boolean keyFrame)
         {
-            setBit(input, offset, S_BIT, !keyFrame);
+            input[offset] = ByteKt.putBitWithMask(input[offset], S_BIT, !keyFrame);
         }
     }
 
@@ -553,21 +554,6 @@ public class DePacketizer
         public static int getHeight(byte[] buf, int off)
         {
             return (((buf[off + 6] & 0xff) << 8) | buf[off + 5] & 0xff) & 0x3fff;
-        }
-    }
-
-    /**
-     * Utility - set the value of a bit within a byte.
-     */
-    private static void setBit(byte[] buf, int off, byte mask, boolean set)
-    {
-        if (set)
-        {
-            buf[off] |= mask;
-        }
-        else
-        {
-            buf[off] &= ~mask;
         }
     }
 }
