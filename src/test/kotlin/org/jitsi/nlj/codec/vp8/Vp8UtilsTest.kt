@@ -33,7 +33,7 @@ class Vp8UtilsTest : ShouldSpec() {
                     row(32760, 1, -9),
                     row(1234, 1234, 0)
                 ) { a, b, expected ->
-                    Vp8Utils.getPictureIdDelta(a, b) shouldBe expected
+                    Vp8Utils.getExtendedPictureIdDelta(a, b) shouldBe expected
                 }
             }
         }
@@ -46,7 +46,7 @@ class Vp8UtilsTest : ShouldSpec() {
                     row(1, -9, 32760),
                     row(1234, 0, 1234)
                 ) { start, delta, expected ->
-                    Vp8Utils.applyPictureIdDelta(start, delta) shouldBe expected
+                    Vp8Utils.applyExtendedPictureIdDelta(start, delta) shouldBe expected
                 }
             }
         }
