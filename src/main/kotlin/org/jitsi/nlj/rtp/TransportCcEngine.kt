@@ -156,7 +156,9 @@ class TransportCcEngine(
         }
     }
 
-    /** Trim old sent packet details from the map.  Caller should be synchronized on [sentPacketsSyncRoot]. */
+    /** Trim old sent packet details from the map.  Caller should be synchronized on [sentPacketsSyncRoot].
+     * Return false if [newSeq] is too old to be put in the map (shouldn't happen for TCC unless something
+     * very weird has happened with threading).*/
     private fun cleanupSentPacketDetails(newSeq: Int): Boolean {
         if (sentPacketDetails.isEmpty()) {
             return true
@@ -177,13 +179,14 @@ class TransportCcEngine(
             return false
         }
 
-        val it = sentPacketDetails.navigableKeySet().iterator()
-        while (it.hasNext()) {
-            val key = it.next()
-            if (isOlderSequenceNumberThan(key, threshold)) {
-                it.remove()
-            } else {
-                break
+        with(sentPacketDetails.navigableKeySet().iterator()) {
+            while (hasNext()) {
+                val key = next()
+                if (isOlderSequenceNumberThan(key, threshold)) {
+                    remove()
+                } else {
+                    break
+                }
             }
         }
 
@@ -194,9 +197,13 @@ class TransportCcEngine(
         synchronized(sentPacketsSyncRoot) {
             val now = clock.instant()
             val seq = tccSeqNum and 0xFFFF
-            if (cleanupSentPacketDetails(seq)) {
-                sentPacketDetails.put(seq, PacketDetail(length, now))
+            if (!cleanupSentPacketDetails(seq)) {
+                /* Very old seq? Something odd is happening with whatever is
+                 * generating tccSeqNum values.
+                 */
+                return
             }
+            sentPacketDetails.put(seq, PacketDetail(length, now))
         }
     }
 
@@ -217,6 +224,12 @@ class TransportCcEngine(
         internal val packetLength: DataSize,
         internal val packetSendTime: Instant
     ) {
+        /**
+         * [state] represents the state of this packet detail with regards to the
+         * reception of a TCC feedback from the remote side.  [PacketDetail]s start out
+         * as [unreported]: once we receive a TCC feedback from the remote side referring
+         * to this packet, the state will transition to either [reportedLost] or [reportedReceived].
+         */
         var state = PacketDetailState.unreported
     }
 
