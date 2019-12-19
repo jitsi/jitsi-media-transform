@@ -201,6 +201,8 @@ class TransportCcEngine(
                 /* Very old seq? Something odd is happening with whatever is
                  * generating tccSeqNum values.
                  */
+                logger.warn("Not inserting very old TCC seq num $seq ($tccSeqNum), latest is " +
+                    "${sentPacketDetails.firstKey()}")
                 return
             }
             sentPacketDetails.put(seq, PacketDetail(length, now))
