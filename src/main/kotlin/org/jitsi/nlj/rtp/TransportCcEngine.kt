@@ -18,6 +18,7 @@ package org.jitsi.nlj.rtp
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ConcurrentSkipListMap
 import org.jitsi.nlj.rtcp.RtcpListener
 import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.util.DataSize
@@ -27,6 +28,9 @@ import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.PacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.ReceivedPacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.UnreceivedPacketReport
+import org.jitsi.rtp.util.RtpUtils.Companion.applySequenceNumberDelta
+import org.jitsi.rtp.util.RtpUtils.Companion.getSequenceNumberDelta
+import org.jitsi.rtp.util.RtpUtils.Companion.isOlderSequenceNumberThan
 import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
 
@@ -74,7 +78,7 @@ class TransportCcEngine(
      * Holds a key value pair of the packet sequence number and an object made
      * up of the packet send time and the packet size.
      */
-    private val sentPacketDetails = LRUCache<Int, PacketDetail>(MAX_OUTGOING_PACKETS_HISTORY)
+    private val sentPacketDetails = ConcurrentSkipListMap<Int, PacketDetail>(::getSequenceNumberDelta)
 
     private val missingPacketDetailSeqNums = mutableListOf<Int>()
 
@@ -100,37 +104,47 @@ class TransportCcEngine(
             localReferenceTime = now
         }
 
-        // We have to remember the oldest known sequence number here, as we
-        // remove from sentPacketDetails inside this loop
-        val oldestKnownSeqNum = synchronized(sentPacketsSyncRoot) { sentPacketDetails.oldestEntry() }
         for (packetReport in tccPacket) {
             val tccSeqNum = packetReport.seqNum
             val packetDetail = synchronized(sentPacketsSyncRoot) {
-                sentPacketDetails.remove(tccSeqNum)
+                sentPacketDetails.get(tccSeqNum)
             }
 
             if (packetDetail == null) {
                 if (packetReport is ReceivedPacketReport) {
+                    currArrivalTimestamp += packetReport.deltaDuration
                     missingPacketDetailSeqNums.add(tccSeqNum)
                 }
                 continue
             }
 
             when (packetReport) {
-                is UnreceivedPacketReport ->
-                    bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
-
+                is UnreceivedPacketReport -> {
+                    if (packetDetail.state == PacketDetailState.unreported) {
+                        bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
+                        packetDetail.state = PacketDetailState.reportedLost
+                    }
+                }
                 is ReceivedPacketReport -> {
                     currArrivalTimestamp += packetReport.deltaDuration
 
-                    val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
+                    when (packetDetail.state) {
+                        PacketDetailState.unreported, PacketDetailState.reportedLost -> {
+                            val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
-                    bandwidthEstimator.processPacketArrival(
-                        now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
+                            /* TODO: BandwidthEstimator should have an API for "previously reported lost packet has arrived"
+                             * for the reportedLost case. */
+                            bandwidthEstimator.processPacketArrival(
+                                now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
+                            packetDetail.state = PacketDetailState.reportedReceived
+                        }
+                    }
                 }
             }
         }
         if (missingPacketDetailSeqNums.isNotEmpty()) {
+            val oldestKnownSeqNum = synchronized(sentPacketsSyncRoot) { sentPacketDetails.firstKey() }
+
             logger.warn("TCC packet contained received sequence numbers: " +
                 "${tccPacket.iterator().asSequence()
                     .filterIsInstance<ReceivedPacketReport>()
@@ -142,13 +156,55 @@ class TransportCcEngine(
         }
     }
 
+    /** Trim old sent packet details from the map.  Caller should be synchronized on [sentPacketsSyncRoot]. */
+    private fun cleanupSentPacketDetails(newSeq: Int): Boolean {
+        if (sentPacketDetails.isEmpty()) {
+            return true
+        }
+
+        val latestSeq = sentPacketDetails.lastKey()
+
+        /* If our sequence numbers have jumped by a quarter of the number space, reset the map. */
+        val seqJump = getSequenceNumberDelta(newSeq, latestSeq)
+        if (seqJump >= 0x4000 || seqJump <= -0x4000) {
+            sentPacketDetails.clear()
+            return true
+        }
+
+        val threshold = applySequenceNumberDelta(latestSeq, -MAX_OUTGOING_PACKETS_HISTORY)
+
+        if (isOlderSequenceNumberThan(newSeq, threshold)) {
+            return false
+        }
+
+        val it = sentPacketDetails.navigableKeySet().iterator()
+        while (it.hasNext()) {
+            val key = it.next()
+            if (isOlderSequenceNumberThan(key, threshold)) {
+                it.remove()
+            } else {
+                break
+            }
+        }
+
+        return true
+    }
+
     fun mediaPacketSent(tccSeqNum: Int, length: DataSize) {
         synchronized(sentPacketsSyncRoot) {
             val now = clock.instant()
-            sentPacketDetails.put(
-                tccSeqNum and 0xFFFF,
-                PacketDetail(length, now))
+            val seq = tccSeqNum and 0xFFFF
+            if (cleanupSentPacketDetails(seq)) {
+                sentPacketDetails.put(seq, PacketDetail(length, now))
+            }
         }
+    }
+
+    /**
+     * [PacketDetailState] is the state of a [PacketDetail]
+     */
+    private enum class PacketDetailState {
+        unreported, reportedLost, reportedReceived
     }
 
     /**
@@ -157,7 +213,12 @@ class TransportCcEngine(
      * and the time stamps of the outgoing packet
      * in [packetSendTime]
      */
-    private data class PacketDetail internal constructor(internal val packetLength: DataSize, internal val packetSendTime: Instant)
+    private data class PacketDetail internal constructor(
+        internal val packetLength: DataSize,
+        internal val packetSendTime: Instant
+    ) {
+        var state = PacketDetailState.unreported
+    }
 
     companion object {
         /**
