@@ -31,8 +31,9 @@ import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.UnreceivedPacketReport
 import org.jitsi.rtp.util.RtpUtils.Companion.applySequenceNumberDelta
 import org.jitsi.rtp.util.RtpUtils.Companion.getSequenceNumberDelta
 import org.jitsi.rtp.util.RtpUtils.Companion.isOlderSequenceNumberThan
-import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
+import org.json.simple.JSONObject
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Implements transport-cc functionality.
@@ -58,6 +59,11 @@ class TransportCcEngine(
      * Used to synchronize access to [.sentPacketDetails].
      */
     private val sentPacketsSyncRoot = Any()
+
+    val numDuplicateReports = AtomicInteger()
+    val numPacketsReportedAfterLost = AtomicInteger()
+    val numPacketsUnreported = AtomicInteger()
+    val numMissingPacketReports = AtomicInteger()
 
     /**
      * The reference time of the remote clock. This is used to rebase the
@@ -114,6 +120,7 @@ class TransportCcEngine(
                 if (packetReport is ReceivedPacketReport) {
                     currArrivalTimestamp += packetReport.deltaDuration
                     missingPacketDetailSeqNums.add(tccSeqNum)
+                    numMissingPacketReports.getAndIncrement()
                 }
                 continue
             }
@@ -130,6 +137,10 @@ class TransportCcEngine(
 
                     when (packetDetail.state) {
                         PacketDetailState.unreported, PacketDetailState.reportedLost -> {
+                            if (packetDetail.state == PacketDetailState.reportedLost) {
+                                numPacketsReportedAfterLost.getAndIncrement()
+                            }
+
                             val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
                             /* TODO: BandwidthEstimator should have an API for "previously reported lost packet has arrived"
@@ -138,6 +149,9 @@ class TransportCcEngine(
                                 now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
                             packetDetail.state = PacketDetailState.reportedReceived
                         }
+
+                        PacketDetailState.reportedReceived ->
+                            numDuplicateReports.getAndIncrement()
                     }
                 }
             }
@@ -183,6 +197,10 @@ class TransportCcEngine(
             while (hasNext()) {
                 val key = next()
                 if (isOlderSequenceNumberThan(key, threshold)) {
+                    var details = sentPacketDetails.get(key)
+                    if (details?.state == PacketDetailState.unreported) {
+                        numPacketsUnreported.getAndIncrement()
+                    }
                     remove()
                 } else {
                     break
@@ -207,6 +225,14 @@ class TransportCcEngine(
             }
             sentPacketDetails.put(seq, PacketDetail(length, now))
         }
+    }
+
+    fun getStatistics(): StatisticsSnapshot {
+        return StatisticsSnapshot(numDuplicateReports.get(),
+            numPacketsReportedAfterLost.get(),
+            numPacketsUnreported.get(),
+            numMissingPacketReports.get()
+        )
     }
 
     /**
@@ -235,6 +261,22 @@ class TransportCcEngine(
         var state = PacketDetailState.unreported
     }
 
+    data class StatisticsSnapshot(
+        val numDuplicateReports: Int,
+        val numPacketsReportedAfterLost: Int,
+        val numPacketsUnreported: Int,
+        val numMissingPacketReports: Int
+    ) {
+        fun toJson(): JSONObject {
+            return JSONObject().also {
+                it.put("numDuplicateReports", numDuplicateReports)
+                it.put("numPacketsReportedAfterLost", numPacketsReportedAfterLost)
+                it.put("numPacketsUnreported", numPacketsUnreported)
+                it.put("numMissingPacketReports", numMissingPacketReports)
+            }
+        }
+    }
+
     companion object {
         /**
          * The maximum number of received packets and their timestamps to save.
@@ -242,14 +284,5 @@ class TransportCcEngine(
          * XXX this is an uninformed value.
          */
         private const val MAX_OUTGOING_PACKETS_HISTORY = 1000
-    }
-
-    private fun <K, V> LRUCache<K, V>.oldestEntry(): K? {
-        with(iterator()) {
-            if (hasNext()) {
-                return next().key
-            }
-        }
-        return null
     }
 }
