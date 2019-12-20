@@ -202,7 +202,7 @@ class TransportCcEngine(
                  * generating tccSeqNum values.
                  */
                 logger.warn("Not inserting very old TCC seq num $seq ($tccSeqNum), latest is " +
-                    "${sentPacketDetails.firstKey()}")
+                    "${sentPacketDetails.lastKey()}")
                 return
             }
             sentPacketDetails.put(seq, PacketDetail(length, now))
