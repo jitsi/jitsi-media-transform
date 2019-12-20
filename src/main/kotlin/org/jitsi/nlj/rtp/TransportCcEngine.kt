@@ -197,8 +197,7 @@ class TransportCcEngine(
             while (hasNext()) {
                 val key = next()
                 if (isOlderSequenceNumberThan(key, threshold)) {
-                    var details = sentPacketDetails.get(key)
-                    if (details?.state == PacketDetailState.unreported) {
+                    if (sentPacketDetails.get(key)?.state == PacketDetailState.unreported) {
                         numPacketsUnreported.getAndIncrement()
                     }
                     remove()
