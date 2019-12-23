@@ -32,6 +32,7 @@ import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketCacher
 import org.jitsi.nlj.transform.node.PacketStreamStatsNode
+import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.transform.node.SrtpTransformerNode
 import org.jitsi.nlj.transform.node.outgoing.AbsSendTime
 import org.jitsi.nlj.transform.node.outgoing.OutgoingStatisticsTracker
@@ -86,6 +87,7 @@ class RtpSenderImpl(
 
     private val srtpEncryptWrapper = SrtpTransformerNode("SRTP encrypt")
     private val srtcpEncryptWrapper = SrtpTransformerNode("SRTCP encrypt")
+    public val pcapWriter = PcapWriter(parentLogger)
     private val outgoingPacketCache = PacketCacher()
     private val absSendTime = AbsSendTime(streamInformationStore)
     private val statsTracker = OutgoingStatisticsTracker()
@@ -114,6 +116,7 @@ class RtpSenderImpl(
             node(absSendTime)
             node(statsTracker)
             node(TccSeqNumTagger(transportCcEngine, streamInformationStore))
+            node(pcapWriter)
             node(srtpEncryptWrapper)
             node(packetStreamStats.createNewNode())
             node(outputPipelineTerminationNode)
@@ -145,6 +148,7 @@ class RtpSenderImpl(
                 packetInfo
             }
             node(rtcpSrUpdater)
+            node(pcapWriter)
             node(srtcpEncryptWrapper)
             node(packetStreamStats.createNewNode())
             node(outputPipelineTerminationNode)
@@ -160,7 +164,7 @@ class RtpSenderImpl(
     override fun onRttUpdate(newRtt: Double) {
         nackHandler.onRttUpdate(newRtt)
         keyframeRequester.onRttUpdate(newRtt)
-        transportCcEngine?.onRttUpdate(Duration.ofNanos((newRtt*1e6).toLong()))
+        transportCcEngine?.onRttUpdate(Duration.ofNanos((newRtt * 1e6).toLong()))
     }
 
     /**

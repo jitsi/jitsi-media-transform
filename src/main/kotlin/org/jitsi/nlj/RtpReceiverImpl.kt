@@ -32,6 +32,7 @@ import org.jitsi.nlj.transform.NodeTeardownVisitor
 import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketStreamStatsNode
+import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.transform.node.RtpParser
 import org.jitsi.nlj.transform.node.SrtpTransformerNode
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
@@ -100,6 +101,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker)
     private val rtcpTermination = RtcpTermination(rtcpEventNotifier, logger)
     private val rembHandler = RembHandler(logger)
+    public val pcapWriter = PcapWriter(parentLogger)
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
@@ -153,6 +155,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         // check for different discard conditions (i.e. checking the audio level for silence)
                         node(audioLevelReader)
                         node(srtpDecryptWrapper)
+                        node(pcapWriter)
                         node(statsTracker)
                         demux("Media type") {
                             packetPath {
@@ -184,6 +187,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                     predicate = PacketPredicate(Packet::looksLikeRtcp)
                     path = pipeline {
                         node(srtcpDecryptWrapper)
+                        node(pcapWriter)
                         node(CompoundRtcpParser())
                         node(silenceDiscarder.rtcpNode)
                         node(rtcpTermination)

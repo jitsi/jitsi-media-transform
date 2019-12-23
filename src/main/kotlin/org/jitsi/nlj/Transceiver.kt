@@ -87,7 +87,7 @@ class Transceiver(
 
     private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger)
 
-    private val rtpSender: RtpSender = RtpSenderImpl(
+    private val rtpSender: RtpSenderImpl = RtpSenderImpl(
         id,
         transportCcEngine,
         rtcpEventNotifier,
@@ -97,7 +97,7 @@ class Transceiver(
         logger,
         diagnosticContext
     )
-    private val rtpReceiver: RtpReceiver =
+    private val rtpReceiver: RtpReceiverImpl =
         RtpReceiverImpl(
             id,
             { rtcpPacket ->
@@ -286,6 +286,13 @@ class Transceiver(
     fun teardown() {
         rtpReceiver.tearDown()
         rtpSender.tearDown()
+    }
+
+    fun setFeature(feature: TranceiverFeatures, b: Boolean) {
+        when (feature) {
+            TranceiverFeatures.INGRESS_DUMP -> rtpReceiver.pcapWriter.enabled = b
+            TranceiverFeatures.EGRESS_DUMP -> rtpSender.pcapWriter.enabled = b
+        }
     }
 
     companion object {

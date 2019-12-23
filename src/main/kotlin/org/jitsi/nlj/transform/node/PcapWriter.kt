@@ -38,6 +38,7 @@ class PcapWriter(
     parentLogger: Logger,
     filePath: String = "/tmp/${Random().nextLong()}.pcap}"
 ) : ObserverNode("PCAP writer") {
+    public var enabled = false
     private val logger = parentLogger.createChildLogger(PcapWriter::class)
     private val handle by lazy {
         Pcaps.openDead(DataLinkType.EN10MB, 65536)
@@ -52,6 +53,10 @@ class PcapWriter(
     }
 
     override fun observe(packetInfo: PacketInfo) {
+        if (!enabled) {
+            return
+        }
+
         val udpPayload = UnknownPacket.Builder()
         // We can't pass offset/limit values to udpPayload.rawData, so we need to create an array that contains
         // only exactly what we want to write
