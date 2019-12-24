@@ -288,10 +288,10 @@ class Transceiver(
         rtpSender.tearDown()
     }
 
-    fun setFeature(feature: TranceiverFeatures, b: Boolean) {
+    fun setFeature(feature: TransceiverFeatures, enabled: Boolean) {
         when (feature) {
-            TranceiverFeatures.INGRESS_DUMP -> rtpReceiver.pcapWriter.enabled = b
-            TranceiverFeatures.EGRESS_DUMP -> rtpSender.pcapWriter.enabled = b
+            TransceiverFeatures.INGRESS_DUMP -> rtpReceiver.pcapWriter.enabled = enabled
+            TransceiverFeatures.EGRESS_DUMP -> rtpSender.pcapWriter.enabled = enabled
         }
     }
 

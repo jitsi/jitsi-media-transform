@@ -38,7 +38,7 @@ class PcapWriter(
     parentLogger: Logger,
     filePath: String = "/tmp/${Random().nextLong()}.pcap}"
 ) : ObserverNode("PCAP writer") {
-    public var enabled = false
+    var enabled = false
     private val logger = parentLogger.createChildLogger(PcapWriter::class)
     private val handle by lazy {
         Pcaps.openDead(DataLinkType.EN10MB, 65536)
