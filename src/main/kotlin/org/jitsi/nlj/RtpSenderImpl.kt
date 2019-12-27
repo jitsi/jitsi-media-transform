@@ -87,7 +87,7 @@ class RtpSenderImpl(
 
     private val srtpEncryptWrapper = SrtpTransformerNode("SRTP encrypt")
     private val srtcpEncryptWrapper = SrtpTransformerNode("SRTCP encrypt")
-    public val pcapWriter = PcapWriter(parentLogger)
+    private val pcapWriter = PcapWriter(parentLogger)
     private val outgoingPacketCache = PacketCacher()
     private val absSendTime = AbsSendTime(streamInformationStore)
     private val statsTracker = OutgoingStatisticsTracker()
@@ -255,5 +255,11 @@ class RtpSenderImpl(
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
+    }
+
+    override fun setFeature(rtpSenderFeature: RtpSenderFeature, enabled: Boolean) {
+        when (rtpSenderFeature) {
+            RtpSenderFeature.PCAP_DUMP -> pcapWriter.enabled = enabled
+        }
     }
 }

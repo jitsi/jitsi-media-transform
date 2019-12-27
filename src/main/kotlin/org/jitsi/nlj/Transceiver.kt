@@ -87,7 +87,7 @@ class Transceiver(
 
     private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger)
 
-    private val rtpSender: RtpSenderImpl = RtpSenderImpl(
+    private val rtpSender: RtpSender = RtpSenderImpl(
         id,
         transportCcEngine,
         rtcpEventNotifier,
@@ -97,7 +97,7 @@ class Transceiver(
         logger,
         diagnosticContext
     )
-    private val rtpReceiver: RtpReceiverImpl =
+    private val rtpReceiver: RtpReceiver =
         RtpReceiverImpl(
             id,
             { rtcpPacket ->
@@ -290,8 +290,8 @@ class Transceiver(
 
     fun setFeature(feature: TransceiverFeatures, enabled: Boolean) {
         when (feature) {
-            TransceiverFeatures.INGRESS_DUMP -> rtpReceiver.pcapWriter.enabled = enabled
-            TransceiverFeatures.EGRESS_DUMP -> rtpSender.pcapWriter.enabled = enabled
+            TransceiverFeatures.INGRESS_DUMP -> rtpReceiver.setFeature(RtpReceiverFeature.PCAP_DUMP, enabled)
+            TransceiverFeatures.EGRESS_DUMP -> rtpSender.setFeature(RtpSenderFeature.PCAP_DUMP, enabled)
         }
     }
 
