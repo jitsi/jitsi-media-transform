@@ -3,7 +3,7 @@ package org.jitsi.nlj.rtp
 import com.nhaarman.mockitokotlin2.mock
 import io.kotlintest.IsolationMode
 import io.kotlintest.shouldBe
-import io.kotlintest.specs.ShouldSpec
+import io.kotlintest.specs.FunSpec
 import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.test_utils.FakeClock
@@ -11,7 +11,7 @@ import org.jitsi.nlj.util.bytes
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacketBuilder
 import java.util.logging.Level
 
-class TransportCcEngineTest : ShouldSpec() {
+class TransportCcEngineTest : FunSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
     private val bandwidthEstimator: BandwidthEstimator = mock()
@@ -21,8 +21,9 @@ class TransportCcEngineTest : ShouldSpec() {
     private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger, clock)
 
     init {
-        "foo" {
+        test("Missing packet reports") {
             transportCcEngine.mediaPacketSent(4, 1300.bytes)
+
             val tccPacket = with(RtcpFbTccPacketBuilder(mediaSourceSsrc = 123, feedbackPacketSeqNum = 0)) {
                 SetBase(1, 100)
                 AddReceivedPacket(1, 100)
@@ -34,59 +35,75 @@ class TransportCcEngineTest : ShouldSpec() {
 
             transportCcEngine.rtcpPacketReceived(tccPacket, clock.instant().toEpochMilli())
 
-            var stats = transportCcEngine.getStatistics()
+            with(transportCcEngine.getStatistics()) {
+                numMissingPacketReports shouldBe 3
+                numDuplicateReports shouldBe 0
+                numPacketsReportedAfterLost shouldBe 0
+                numPacketsUnreported shouldBe 0
+            }
+        }
+        test("Duplicate packet reports") {
+            transportCcEngine.mediaPacketSent(4, 1300.bytes)
 
-            stats.numMissingPacketReports shouldBe 3
-            stats.numDuplicateReports shouldBe 0
-            stats.numPacketsReportedAfterLost shouldBe 0
-            stats.numPacketsUnreported shouldBe 0
-
-            transportCcEngine.mediaPacketSent(5, 1300.bytes)
-            transportCcEngine.mediaPacketSent(6, 1300.bytes)
-
-            val tccPacket2 = with(RtcpFbTccPacketBuilder(mediaSourceSsrc = 123, feedbackPacketSeqNum = 1)) {
+            val tccPacket = with(RtcpFbTccPacketBuilder(mediaSourceSsrc = 123, feedbackPacketSeqNum = 1)) {
                 SetBase(4, 130)
                 AddReceivedPacket(4, 130)
-                AddReceivedPacket(6, 150)
+                build()
+            }
+            transportCcEngine.rtcpPacketReceived(tccPacket, clock.instant().toEpochMilli())
+
+            val tccPacket2 = with(RtcpFbTccPacketBuilder(mediaSourceSsrc = 123, feedbackPacketSeqNum = 2)) {
+                SetBase(4, 130)
+                AddReceivedPacket(4, 130)
+                build()
+            }
+            transportCcEngine.rtcpPacketReceived(tccPacket2, clock.instant().toEpochMilli())
+
+            with(transportCcEngine.getStatistics()) {
+                numMissingPacketReports shouldBe 0
+                numDuplicateReports shouldBe 1
+                numPacketsReportedAfterLost shouldBe 0
+                numPacketsUnreported shouldBe 0
+            }
+        }
+        test("Packets reported after lost") {
+            transportCcEngine.mediaPacketSent(4, 1300.bytes)
+            transportCcEngine.mediaPacketSent(5, 1300.bytes)
+
+            val tccPacket = with(RtcpFbTccPacketBuilder(mediaSourceSsrc = 123, feedbackPacketSeqNum = 1)) {
+                SetBase(4, 130)
+                AddReceivedPacket(5, 130)
+                build()
+            }
+            transportCcEngine.rtcpPacketReceived(tccPacket, clock.instant().toEpochMilli())
+
+            val tccPacket2 = with(RtcpFbTccPacketBuilder(mediaSourceSsrc = 123, feedbackPacketSeqNum = 2)) {
+                SetBase(4, 130)
+                AddReceivedPacket(4, 130)
                 build()
             }
 
             transportCcEngine.rtcpPacketReceived(tccPacket2, clock.instant().toEpochMilli())
 
-            stats = transportCcEngine.getStatistics()
-
-            stats.numMissingPacketReports shouldBe 3
-            stats.numDuplicateReports shouldBe 1
-            stats.numPacketsReportedAfterLost shouldBe 0
-            stats.numPacketsUnreported shouldBe 0
-
-            val tccPacket3 = with(RtcpFbTccPacketBuilder(mediaSourceSsrc = 123, feedbackPacketSeqNum = 3)) {
-                SetBase(5, 140)
-                AddReceivedPacket(5, 140)
-                AddReceivedPacket(6, 150)
-                build()
+            with(transportCcEngine.getStatistics()) {
+                numMissingPacketReports shouldBe 0
+                numDuplicateReports shouldBe 0
+                numPacketsReportedAfterLost shouldBe 1
+                numPacketsUnreported shouldBe 0
             }
+        }
+        test("Packet unreported") {
+            transportCcEngine.mediaPacketSent(4, 1300.bytes)
+            /* Force the report of sequence 4 to roll off the packet history */
+            transportCcEngine.mediaPacketSent(1005, 1300.bytes)
+            transportCcEngine.mediaPacketSent(1006, 1300.bytes)
 
-            transportCcEngine.rtcpPacketReceived(tccPacket3, clock.instant().toEpochMilli())
-
-            stats = transportCcEngine.getStatistics()
-
-            stats.numMissingPacketReports shouldBe 3
-            stats.numDuplicateReports shouldBe 2
-            stats.numPacketsReportedAfterLost shouldBe 1
-            stats.numPacketsUnreported shouldBe 0
-
-            transportCcEngine.mediaPacketSent(7, 1300.bytes)
-            /* Force the report of sequence 7 to roll off the packet history */
-            transportCcEngine.mediaPacketSent(1008, 1300.bytes)
-            transportCcEngine.mediaPacketSent(1009, 1300.bytes)
-
-            stats = transportCcEngine.getStatistics()
-
-            stats.numMissingPacketReports shouldBe 3
-            stats.numDuplicateReports shouldBe 2
-            stats.numPacketsReportedAfterLost shouldBe 1
-            stats.numPacketsUnreported shouldBe 1
+            with(transportCcEngine.getStatistics()) {
+                numMissingPacketReports shouldBe 0
+                numDuplicateReports shouldBe 0
+                numPacketsReportedAfterLost shouldBe 0
+                numPacketsUnreported shouldBe 1
+            }
         }
     }
 }
