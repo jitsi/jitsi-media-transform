@@ -38,11 +38,11 @@ class PcapWriter(
     parentLogger: Logger,
     filePath: String = "/tmp/${Random().nextLong()}.pcap}"
 ) : ObserverNode("PCAP writer") {
-    var enabled = false
     private val logger = parentLogger.createChildLogger(PcapWriter::class)
-    private val handle by lazy {
+    private val lazyHandle = lazy {
         Pcaps.openDead(DataLinkType.EN10MB, 65536)
     }
+    private val handle by lazyHandle
     private val writer by lazy {
         logger.cinfo { "Pcap writer writing to file $filePath" }
         handle.dumpOpen(filePath)
@@ -53,9 +53,6 @@ class PcapWriter(
     }
 
     override fun observe(packetInfo: PacketInfo) {
-        if (!enabled) {
-            return
-        }
 
         val udpPayload = UnknownPacket.Builder()
         // We can't pass offset/limit values to udpPayload.rawData, so we need to create an array that contains
@@ -90,5 +87,11 @@ class PcapWriter(
                 .build()
 
         writer.dump(eth)
+    }
+
+    fun close() {
+        if (lazyHandle.isInitialized()) {
+            handle.close()
+        }
     }
 }
