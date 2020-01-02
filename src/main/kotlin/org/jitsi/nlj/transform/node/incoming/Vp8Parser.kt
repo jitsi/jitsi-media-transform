@@ -50,7 +50,7 @@ class Vp8Parser(
                 videoRtpPacket.height = ssrcToHeight[videoRtpPacket.ssrc] ?: -1
             }
             if (videoRtpPacket.isKeyframe) {
-                logger.cdebug { "Received a keyframe for ssrc ${videoRtpPacket.ssrc} ${videoRtpPacket.sequenceNumber} ${videoRtpPacket.pictureId} ${videoRtpPacket.temporalLayerIndex} ${videoRtpPacket.TL0PICIDX}" }
+                logger.cdebug { "Received a keyframe for ssrc ${videoRtpPacket.ssrc} ${videoRtpPacket.sequenceNumber}" }
                 numKeyframes++
             }
         }
