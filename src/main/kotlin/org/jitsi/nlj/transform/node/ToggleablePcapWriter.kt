@@ -23,12 +23,8 @@ import java.util.Date
 class ToggleablePcapWriter(
     val parentLogger: Logger,
     val prefix: String
-) : ObserverNode("Toggleable pcap writer: $prefix") {
+) {
     private var pcapWriter: PcapWriter? = null
-
-    override fun observe(packetInfo: PacketInfo) {
-        pcapWriter?.processPacket(packetInfo)
-    }
 
     fun enable() {
         if (pcapWriter == null) { PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap") }
@@ -38,6 +34,14 @@ class ToggleablePcapWriter(
         pcapWriter?.also {
             pcapWriter = null
             it.close()
+        }
+    }
+
+    fun newObserverNode(): ObserverNode {
+        return object : ObserverNode("Toggleable pcap writer: $prefix") {
+            override fun observe(packetInfo: PacketInfo) {
+                pcapWriter?.processPacket(packetInfo)
+            }
         }
     }
 }

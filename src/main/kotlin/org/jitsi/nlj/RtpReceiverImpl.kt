@@ -155,7 +155,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         // check for different discard conditions (i.e. checking the audio level for silence)
                         node(audioLevelReader)
                         node(srtpDecryptWrapper)
-                        node(toggleablePcapWriter)
+                        node(toggleablePcapWriter.newObserverNode())
                         node(statsTracker)
                         demux("Media type") {
                             packetPath {
@@ -187,7 +187,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                     predicate = PacketPredicate(Packet::looksLikeRtcp)
                     path = pipeline {
                         node(srtcpDecryptWrapper)
-                        node(toggleablePcapWriter)
+                        node(toggleablePcapWriter.newObserverNode())
                         node(CompoundRtcpParser())
                         node(silenceDiscarder.rtcpNode)
                         node(rtcpTermination)
