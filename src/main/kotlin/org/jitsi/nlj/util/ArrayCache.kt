@@ -17,10 +17,10 @@
 package org.jitsi.nlj.util
 
 import java.lang.Integer.max
+import java.time.Clock
 import java.util.concurrent.atomic.AtomicInteger
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
-import org.jitsi.utils.TimeProvider
 
 /**
  * Implements a fixed-sized cache based on a pre-filled array. The main use-case is the outgoing RTP packet cache.
@@ -34,7 +34,7 @@ open class ArrayCache<T>(
     /**
      * The function to use to clone items. The cache always saves copies of the items that are inserted.
      */
-    private val timeProvider: TimeProvider = TimeProvider()
+    private val clock: Clock = Clock.systemUTC()
 ) : NodeStatsProducer {
     private val cache: Array<Container> = Array(size) { Container() }
     protected val syncRoot = Any()
@@ -95,7 +95,7 @@ open class ArrayCache<T>(
         cache[position].item?.let { discardItem(it) }
         cache[position].item = cloneItem(item)
         cache[position].index = index
-        cache[position].timeAdded = timeProvider.currentTimeMillis()
+        cache[position].timeAdded = clock.millis()
         return true
     }
 
