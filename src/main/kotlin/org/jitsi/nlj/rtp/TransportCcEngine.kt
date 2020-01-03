@@ -118,17 +118,17 @@ class TransportCcEngine(
 
             when (packetReport) {
                 is UnreceivedPacketReport -> {
-                    if (packetDetail.state == PacketDetailState.unreported) {
-                        bandwidthEstimator.processPacketLoss(now, packetDetail.packetSendTime, tccSeqNum)
-                        packetDetail.state = PacketDetailState.reportedLost
+                    if (packetDetail.item!!.state == PacketDetailState.unreported) {
+                        bandwidthEstimator.processPacketLoss(now, Instant.ofEpochMilli(packetDetail.timeAdded), tccSeqNum)
+                        packetDetail.item!!.state = PacketDetailState.reportedLost
                     }
                 }
                 is ReceivedPacketReport -> {
                     currArrivalTimestamp += packetReport.deltaDuration
 
-                    when (packetDetail.state) {
+                    when (packetDetail.item!!.state) {
                         PacketDetailState.unreported, PacketDetailState.reportedLost -> {
-                            if (packetDetail.state == PacketDetailState.reportedLost) {
+                            if (packetDetail.item!!.state == PacketDetailState.reportedLost) {
                                 numPacketsReportedAfterLost.getAndIncrement()
                             }
 
@@ -137,8 +137,8 @@ class TransportCcEngine(
                             /* TODO: BandwidthEstimator should have an API for "previously reported lost packet has arrived"
                              * for the reportedLost case. */
                             bandwidthEstimator.processPacketArrival(
-                                now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
-                            packetDetail.state = PacketDetailState.reportedReceived
+                                now, Instant.ofEpochMilli(packetDetail.timeAdded), arrivalTimeInLocalClock, tccSeqNum, packetDetail.item!!.packetLength)
+                            packetDetail.item!!.state = PacketDetailState.reportedReceived
                         }
 
                         PacketDetailState.reportedReceived ->
@@ -164,9 +164,8 @@ class TransportCcEngine(
     }
 
     fun mediaPacketSent(tccSeqNum: Int, length: DataSize) {
-        val now = clock.instant()
         val seq = tccSeqNum and 0xFFFF
-        if (!sentPacketDetails.insert(seq, PacketDetail(length, now))) {
+        if (!sentPacketDetails.insert(seq, PacketDetail(length))) {
             /* Very old seq? Something odd is happening with whatever is
              * generating tccSeqNum values.
              */
@@ -198,8 +197,7 @@ class TransportCcEngine(
      * in [packetSendTime]
      */
     private data class PacketDetail internal constructor(
-        internal val packetLength: DataSize,
-        internal val packetSendTime: Instant
+        internal val packetLength: DataSize
     ) {
         /**
          * [state] represents the state of this packet detail with regards to the
@@ -242,11 +240,11 @@ class TransportCcEngine(
         /**
          * Gets a packet with a given RTP sequence number from the cache.
          */
-        fun get(sequenceNumber: Int): PacketDetail? {
+        fun get(sequenceNumber: Int): Container? {
             // Note that we use [interpret] because we don't want the ROC to get out of sync because of funny requests
             // (TCCs)
             val index = rfc3711IndexTracker.interpret(sequenceNumber)
-            return super.getContainer(index)?.item
+            return super.getContainer(index)
         }
 
         fun insert(seq: Int, packetDetail: PacketDetail): Boolean {
