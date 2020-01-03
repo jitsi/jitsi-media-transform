@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj
 
-import ToggleablePcapWriter
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.rtcp.CompoundRtcpParser
@@ -35,6 +34,7 @@ import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketStreamStatsNode
 import org.jitsi.nlj.transform.node.RtpParser
 import org.jitsi.nlj.transform.node.SrtpTransformerNode
+import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.transform.node.incoming.PaddingTermination
@@ -84,7 +84,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
      */
     getSendBitrate: () -> Long,
     streamInformationStore: ReadOnlyStreamInformationStore,
-    parentLogger: Logger
+    parentLogger: Logger,
+    pcapWriter: PcapWriter
 ) : RtpReceiver() {
     private val logger = parentLogger.createChildLogger(RtpReceiverImpl::class)
     private var running: Boolean = true
@@ -101,7 +102,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker)
     private val rtcpTermination = RtcpTermination(rtcpEventNotifier, logger)
     private val rembHandler = RembHandler(logger)
-    private val toggleablePcapWriter = ToggleablePcapWriter(logger, id)
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
@@ -155,7 +155,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         // check for different discard conditions (i.e. checking the audio level for silence)
                         node(audioLevelReader)
                         node(srtpDecryptWrapper)
-                        node(toggleablePcapWriter.newObserverNode())
+                        node(pcapWriter.newObserverNode())
                         node(statsTracker)
                         demux("Media type") {
                             packetPath {
@@ -187,7 +187,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                     predicate = PacketPredicate(Packet::looksLikeRtcp)
                     path = pipeline {
                         node(srtcpDecryptWrapper)
-                        node(toggleablePcapWriter.newObserverNode())
+                        node(pcapWriter.newObserverNode())
                         node(CompoundRtcpParser())
                         node(silenceDiscarder.rtcpNode)
                         node(rtcpTermination)
@@ -250,11 +250,5 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun tearDown() {
         NodeTeardownVisitor().visit(inputTreeRoot)
-    }
-
-    override fun setFeature(rtpReceiverFeature: RtpReceiverFeature, enabled: Boolean) {
-        when (rtpReceiverFeature) {
-            RtpReceiverFeature.PCAP_DUMP -> if (enabled) toggleablePcapWriter.enable() else toggleablePcapWriter.disable()
-        }
     }
 }

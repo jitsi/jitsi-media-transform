@@ -25,6 +25,7 @@ import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
+import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.util.LocalSsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.rtp.rtcp.RtcpPacket
@@ -53,7 +54,8 @@ class ReceiverFactory {
                 backgroundExecutor = backgroundExecutor,
                 getSendBitrate = { 0L },
                 streamInformationStore = streamInformationStore,
-                parentLogger = logger
+                parentLogger = logger,
+                pcapWriter = PcapWriter()
             )
             receiver.setSrtpTransformers(SrtpTransformerFactory.createSrtpTransformers(srtpData))
 

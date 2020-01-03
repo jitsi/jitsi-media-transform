@@ -17,6 +17,5 @@
 package org.jitsi.nlj
 
 enum class TransceiverFeatures {
-    EGRESS_DUMP,
-    INGRESS_DUMP
+    PCAP_DUMP
 }

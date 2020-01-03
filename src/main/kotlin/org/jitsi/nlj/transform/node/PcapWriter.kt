@@ -16,11 +16,9 @@
 package org.jitsi.nlj.transform.node
 
 import java.net.Inet4Address
-import java.util.Random
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.util.cinfo
-import org.jitsi.nlj.util.createChildLogger
-import org.jitsi.utils.logging2.Logger
+import org.pcap4j.core.PcapDumper
+import org.pcap4j.core.PcapHandle
 import org.pcap4j.core.Pcaps
 import org.pcap4j.packet.EthernetPacket
 import org.pcap4j.packet.IpV4Packet
@@ -34,25 +32,15 @@ import org.pcap4j.packet.namednumber.IpVersion
 import org.pcap4j.packet.namednumber.UdpPort
 import org.pcap4j.util.MacAddress
 
-class PcapWriter(
-    parentLogger: Logger,
-    filePath: String = "/tmp/${Random().nextLong()}.pcap}"
-) : ObserverNode("PCAP writer") {
-    private val logger = parentLogger.createChildLogger(PcapWriter::class)
-    private val lazyHandle = lazy {
-        Pcaps.openDead(DataLinkType.EN10MB, 65536)
-    }
-    private val handle by lazyHandle
-    private val writer by lazy {
-        logger.cinfo { "Pcap writer writing to file $filePath" }
-        handle.dumpOpen(filePath)
-    }
+class PcapWriter {
+    var handle: PcapHandle? = null
+    var writer: PcapDumper? = null
 
     companion object {
         private val localhost = Inet4Address.getByName("127.0.0.1") as Inet4Address
     }
 
-    override fun observe(packetInfo: PacketInfo) {
+    fun observeInternal(packetInfo: PacketInfo) {
 
         val udpPayload = UnknownPacket.Builder()
         // We can't pass offset/limit values to udpPayload.rawData, so we need to create an array that contains
@@ -86,12 +74,28 @@ class PcapWriter(
                 .payloadBuilder(ipPacket)
                 .build()
 
-        writer.dump(eth)
+        writer?.dump(eth)
     }
 
-    fun close() {
-        if (lazyHandle.isInitialized()) {
-            handle.close()
+    @Synchronized fun enable(filePath: String): PcapWriter {
+        if (handle == null) handle = Pcaps.openDead(DataLinkType.EN10MB, 65536)
+        if (writer == null) writer = handle?.dumpOpen(filePath)
+        return this
+    }
+
+    @Synchronized fun disable(): PcapWriter {
+        writer?.close()
+        writer = null
+        handle?.close()
+        handle = null
+        return this
+    }
+
+    fun newObserverNode(): ObserverNode {
+        return object : ObserverNode("PCAP writer") {
+            override fun observe(packetInfo: PacketInfo) {
+                writer?.also { observeInternal(packetInfo) }
+            }
         }
     }
 }

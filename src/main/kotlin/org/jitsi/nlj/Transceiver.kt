@@ -18,6 +18,7 @@ package org.jitsi.nlj
 import java.time.Clock
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
+import java.util.Date
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
@@ -31,6 +32,7 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.stats.PacketIOActivity
 import org.jitsi.nlj.stats.TransceiverStats
 import org.jitsi.nlj.transform.NodeStatsProducer
+import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.util.LocalSsrcAssociation
 import org.jitsi.nlj.util.SsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
@@ -73,6 +75,7 @@ class Transceiver(
     val packetIOActivity = PacketIOActivity()
     private val endpointConnectionStats = EndpointConnectionStats(logger)
     private val streamInformationStore = StreamInformationStoreImpl()
+    private val pcapWriter = PcapWriter()
     /**
      * A central place to subscribe to be notified on the reception or transmission of RTCP packets for
      * this transceiver.  This is intended to be used by internal entities: mainly logic for things like generating
@@ -95,6 +98,7 @@ class Transceiver(
         backgroundExecutor,
         streamInformationStore,
         logger,
+        pcapWriter,
         diagnosticContext
     )
     private val rtpReceiver: RtpReceiver =
@@ -108,7 +112,8 @@ class Transceiver(
             backgroundExecutor,
             { rtpSender.getPacketStreamStats().bitrate },
             streamInformationStore,
-            logger
+            logger,
+            pcapWriter
         )
 
     init {
@@ -290,8 +295,7 @@ class Transceiver(
 
     fun setFeature(feature: TransceiverFeatures, enabled: Boolean) {
         when (feature) {
-            TransceiverFeatures.INGRESS_DUMP -> rtpReceiver.setFeature(RtpReceiverFeature.PCAP_DUMP, enabled)
-            TransceiverFeatures.EGRESS_DUMP -> rtpSender.setFeature(RtpSenderFeature.PCAP_DUMP, enabled)
+            TransceiverFeatures.PCAP_DUMP -> if (enabled) pcapWriter.enable("/tmp/$id-${Date().toInstant()}.pcap") else pcapWriter.disable()
         }
     }
 
