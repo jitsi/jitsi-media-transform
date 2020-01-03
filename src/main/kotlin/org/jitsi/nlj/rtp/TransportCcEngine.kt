@@ -53,11 +53,6 @@ class TransportCcEngine(
      */
     private val logger: Logger = parentLogger.createChildLogger(javaClass.name)
 
-    /**
-     * Used to synchronize access to [.sentPacketDetails].
-     */
-    private val sentPacketsSyncRoot = Any()
-
     val numDuplicateReports = AtomicInteger()
     val numPacketsReportedAfterLost = AtomicInteger()
     val numPacketsUnreported = AtomicInteger()
@@ -110,9 +105,7 @@ class TransportCcEngine(
 
         for (packetReport in tccPacket) {
             val tccSeqNum = packetReport.seqNum
-            val packetDetail = synchronized(sentPacketsSyncRoot) {
-                sentPacketDetails.get(tccSeqNum)
-            }
+            val packetDetail = sentPacketDetails.get(tccSeqNum)
 
             if (packetDetail == null) {
                 if (packetReport is ReceivedPacketReport) {
@@ -171,17 +164,15 @@ class TransportCcEngine(
     }
 
     fun mediaPacketSent(tccSeqNum: Int, length: DataSize) {
-        synchronized(sentPacketsSyncRoot) {
-            val now = clock.instant()
-            val seq = tccSeqNum and 0xFFFF
-            if (!sentPacketDetails.insert(seq, PacketDetail(length, now))) {
-                /* Very old seq? Something odd is happening with whatever is
-                 * generating tccSeqNum values.
-                 */
-                logger.warn("Not inserting very old TCC seq num $seq ($tccSeqNum), latest is " +
-                    "${sentPacketDetails.lastIndex}, size is ${sentPacketDetails.size}")
-                return
-            }
+        val now = clock.instant()
+        val seq = tccSeqNum and 0xFFFF
+        if (!sentPacketDetails.insert(seq, PacketDetail(length, now))) {
+            /* Very old seq? Something odd is happening with whatever is
+             * generating tccSeqNum values.
+             */
+            logger.warn("Not inserting very old TCC seq num $seq ($tccSeqNum), latest is " +
+                "${sentPacketDetails.lastIndex}, size is ${sentPacketDetails.size}")
+            return
         }
     }
 
