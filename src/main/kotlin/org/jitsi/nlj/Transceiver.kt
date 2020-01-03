@@ -264,6 +264,7 @@ class Transceiver(
             addJson("Bandwidth Estimation", bandwidthEstimator.getStats(clock.instant()).toJson())
             addBlock(rtpReceiver.getNodeStats())
             addBlock(rtpSender.getNodeStats())
+            addJson("transportCcEngine", transportCcEngine.getStatistics().toJson())
         }
     }
 

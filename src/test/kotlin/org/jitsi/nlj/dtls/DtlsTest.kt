@@ -19,11 +19,6 @@ package org.jitsi.nlj.dtls
 import io.kotlintest.IsolationMode
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.transform.node.ConsumerNode
@@ -31,10 +26,16 @@ import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.transform.node.incoming.ProtocolReceiver
 import org.jitsi.nlj.transform.node.outgoing.ProtocolSender
 import org.jitsi.rtp.UnparsedPacket
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 class DtlsTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
     private val debugEnabled = true
+    private val pcapEnabled = false
     private val logger = StdoutLogger()
 
     fun debug(s: String) {
@@ -58,19 +59,19 @@ class DtlsTest : ShouldSpec() {
         val clientSender = ProtocolSender(dtlsClient)
         val clientReceiver = ProtocolReceiver(dtlsClient)
 
-        val pcapWriter = PcapWriter(logger, "/tmp/dtls-test.pcap")
+        val pcapWriter = if (pcapEnabled) PcapWriter(logger, "/tmp/dtls-test.pcap") else null
 
         // The server and client senders are connected directly to their
         // peer's receiver
         serverSender.attach(object : ConsumerNode("server network") {
             override fun consume(packetInfo: PacketInfo) {
-                pcapWriter.processPacket(packetInfo)
+                pcapWriter?.processPacket(packetInfo)
                 clientReceiver.processPacket(packetInfo)
             }
         })
         clientSender.attach(object : ConsumerNode("client network") {
             override fun consume(packetInfo: PacketInfo) {
-                pcapWriter.processPacket(packetInfo)
+                pcapWriter?.processPacket(packetInfo)
                 serverReceiver.processPacket(packetInfo)
             }
         })
@@ -108,12 +109,13 @@ class DtlsTest : ShouldSpec() {
         debug("Client connecting")
         dtlsClient.start()
         debug("Client connected, sending message")
+        // Ensure the server has fully established things on its side as well before we send the
+        // message by waiting for the server accept thread to finish
+        serverThread.join()
         val clientToServerMessage = "Hello, world"
         dtlsClient.sendApplicationData(PacketInfo(UnparsedPacket(clientToServerMessage.toByteArray())))
 
         serverReceivedData.get(5, TimeUnit.SECONDS) shouldBe clientToServerMessage
         clientReceivedData.get(5, TimeUnit.SECONDS) shouldBe serverToClientMessage
-
-        serverThread.join()
     }
 }

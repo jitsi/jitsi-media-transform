@@ -1,6 +1,5 @@
 package org.jitsi.nlj.transform.node.incoming
 
-import com.nhaarman.mockitokotlin2.spy
 import io.kotlintest.IsolationMode
 import io.kotlintest.Spec
 import io.kotlintest.matchers.numerics.shouldBeGreaterThan
@@ -22,7 +21,7 @@ import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
 class TccGeneratorNodeTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val clock: FakeClock = spy()
+    private val clock: FakeClock = FakeClock()
     private val tccPackets = mutableListOf<RtcpPacket>()
     private val onTccReady = { tccPacket: RtcpPacket -> tccPackets.add(tccPacket); Unit }
     private val streamInformationStore = StreamInformationStoreImpl()
