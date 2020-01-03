@@ -217,9 +217,6 @@ class TransportCcEngine(
          * to this packet, the state will transition to either [reportedLost] or [reportedReceived].
          */
         var state = PacketDetailState.unreported
-
-        /** Dummy non-clone for the sake of [PacketDetailTracker]'s use of [ArrayCache]. */
-        fun nonClone(): PacketDetail = this
     }
 
     data class StatisticsSnapshot(
@@ -238,7 +235,9 @@ class TransportCcEngine(
         }
     }
 
-    private inner class PacketDetailTracker : ArrayCache<PacketDetail>(MAX_OUTGOING_PACKETS_HISTORY, PacketDetail::nonClone) {
+    private inner class PacketDetailTracker : ArrayCache<PacketDetail>(MAX_OUTGOING_PACKETS_HISTORY,
+        /* We don't want to clone [PacketDetail] objects that get put in the tracker. */
+        { it }) {
         override fun discardItem(item: PacketDetail) {
             numPacketsUnreported.getAndIncrement()
         }
