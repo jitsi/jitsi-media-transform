@@ -33,11 +33,11 @@ class ToggleablePcapWriter(
         when (event) {
             is FeatureToggleEvent -> {
                 if (event.feature == Features.TRANSCEIVER_PCAP_DUMP) {
-                    pcapWriter = if (pcapWriter == null && event.enabled) {
-                        PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
-                    } else {
+                    if (pcapWriter == null && event.enabled) {
+                        pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
+                    } else if (pcapWriter != null && !event.enabled) {
                         pcapWriter?.close()
-                        null
+                        pcapWriter = null
                     }
                 }
             }
