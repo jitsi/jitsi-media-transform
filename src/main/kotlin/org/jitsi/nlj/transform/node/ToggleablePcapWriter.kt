@@ -29,15 +29,27 @@ class ToggleablePcapWriter(
 ) {
     private var pcapWriter: PcapWriter? = null
 
+    @Synchronized fun enable() {
+        if (pcapWriter == null) {
+            pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
+        }
+    }
+
+    @Synchronized fun disable() {
+        if (pcapWriter != null) {
+            pcapWriter?.close()
+            pcapWriter = null
+        }
+    }
+
     @Synchronized fun handleEventInternal(event: Event) {
         when (event) {
             is FeatureToggleEvent -> {
                 if (event.feature == Features.TRANSCEIVER_PCAP_DUMP) {
-                    if (pcapWriter == null && event.enable) {
-                        pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
-                    } else if (pcapWriter != null && !event.enable) {
-                        pcapWriter?.close()
-                        pcapWriter = null
+                    if (event.enable) {
+                        enable()
+                    } else {
+                        disable()
                     }
                 }
             }
@@ -52,6 +64,11 @@ class ToggleablePcapWriter(
 
             override fun handleEvent(event: Event) {
                 handleEventInternal(event)
+            }
+
+            override fun detachNext() {
+                super.detachNext()
+                disable()
             }
         }
     }
