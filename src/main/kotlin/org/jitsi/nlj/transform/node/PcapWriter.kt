@@ -53,7 +53,6 @@ class PcapWriter(
     }
 
     override fun observe(packetInfo: PacketInfo) {
-
         val udpPayload = UnknownPacket.Builder()
         // We can't pass offset/limit values to udpPayload.rawData, so we need to create an array that contains
         // only exactly what we want to write
