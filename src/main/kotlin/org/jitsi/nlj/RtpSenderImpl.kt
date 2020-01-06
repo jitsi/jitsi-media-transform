@@ -15,6 +15,7 @@
  */
 package org.jitsi.nlj
 
+import ToggleablePcapWriter
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -32,7 +33,6 @@ import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketCacher
 import org.jitsi.nlj.transform.node.PacketStreamStatsNode
-import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.nlj.transform.node.SrtpTransformerNode
 import org.jitsi.nlj.transform.node.outgoing.AbsSendTime
 import org.jitsi.nlj.transform.node.outgoing.OutgoingStatisticsTracker
@@ -68,7 +68,6 @@ class RtpSenderImpl(
     val backgroundExecutor: ScheduledExecutorService,
     private val streamInformationStore: StreamInformationStore,
     parentLogger: Logger,
-    pcapWriter: PcapWriter,
     diagnosticContext: DiagnosticContext = DiagnosticContext()
 ) : RtpSender() {
     protected val logger = parentLogger.createChildLogger(RtpSenderImpl::class)
@@ -88,6 +87,7 @@ class RtpSenderImpl(
 
     private val srtpEncryptWrapper = SrtpTransformerNode("SRTP encrypt")
     private val srtcpEncryptWrapper = SrtpTransformerNode("SRTCP encrypt")
+    private val toggleablePcapWriter = ToggleablePcapWriter(logger, id)
     private val outgoingPacketCache = PacketCacher()
     private val absSendTime = AbsSendTime(streamInformationStore)
     private val statsTracker = OutgoingStatisticsTracker()
@@ -116,7 +116,7 @@ class RtpSenderImpl(
             node(absSendTime)
             node(statsTracker)
             node(TccSeqNumTagger(transportCcEngine, streamInformationStore))
-            node(pcapWriter.newObserverNode())
+            node(toggleablePcapWriter.newObserverNode())
             node(srtpEncryptWrapper)
             node(packetStreamStats.createNewNode())
             node(outputPipelineTerminationNode)
@@ -148,7 +148,7 @@ class RtpSenderImpl(
                 packetInfo
             }
             node(rtcpSrUpdater)
-            node(pcapWriter.newObserverNode())
+            node(toggleablePcapWriter.newObserverNode())
             node(srtcpEncryptWrapper)
             node(packetStreamStats.createNewNode())
             node(outputPipelineTerminationNode)
@@ -255,5 +255,11 @@ class RtpSenderImpl(
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
+    }
+
+    override fun setFeature(rtpSenderFeature: RtpSenderFeature, enabled: Boolean) {
+        when (rtpSenderFeature) {
+            RtpSenderFeature.PCAP_DUMP -> if (enabled) toggleablePcapWriter.enable() else toggleablePcapWriter.disable()
+        }
     }
 }

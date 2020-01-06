@@ -48,4 +48,5 @@ abstract class RtpReceiver :
     abstract fun getPacketStreamStats(): PacketStreamStats.Snapshot
 
     abstract fun tearDown()
+    abstract fun setFeature(rtpReceiverFeature: RtpReceiverFeature, enabled: Boolean)
 }
