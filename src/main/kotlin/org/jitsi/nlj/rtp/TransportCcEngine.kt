@@ -251,7 +251,7 @@ class TransportCcEngine(
 
         fun insert(seq: Int, packetDetail: PacketDetail): Boolean {
             val index = rfc3711IndexTracker.update(seq)
-            return super.insertItem(packetDetail, index)
+            return super.insertItem(packetDetail, index, packetDetail.packetSendTime.toEpochMilli())
         }
     }
 
