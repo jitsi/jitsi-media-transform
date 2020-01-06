@@ -26,4 +26,4 @@ class SetLocalSsrcEvent(val mediaType: MediaType, val ssrc: Long) : Event
 
 class BandwidthEstimationChangedEvent(val bandwidthBps: Long) : Event
 
-class FeatureToggleEvent(val feature: Features, val enabled: Boolean) : Event
+class FeatureToggleEvent(val feature: Features, val enable: Boolean) : Event
