@@ -230,8 +230,7 @@ class TransportCcEngine(
         MAX_OUTGOING_PACKETS_HISTORY,
         /* We don't want to clone [PacketDetail] objects that get put in the tracker. */
         { it },
-        true,
-        clock
+        clock = clock
     ) {
         override fun discardItem(item: PacketDetail) {
             numPacketsUnreported.getAndIncrement()
