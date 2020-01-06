@@ -40,5 +40,4 @@ abstract class RtpSender :
     abstract fun getPacketStreamStats(): PacketStreamStats.Snapshot
     abstract fun requestKeyframe(mediaSsrc: Long? = null)
     abstract fun tearDown()
-    abstract fun setFeature(rtpSenderFeature: RtpSenderFeature, enabled: Boolean)
 }

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import org.jitsi.nlj.Event
+import org.jitsi.nlj.FeatureToggleEvent
+import org.jitsi.nlj.Features
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.transform.node.PcapWriter
@@ -26,14 +29,18 @@ class ToggleablePcapWriter(
 ) {
     private var pcapWriter: PcapWriter? = null
 
-    fun enable() {
-        if (pcapWriter == null) { PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap") }
-    }
-
-    fun disable() {
-        pcapWriter?.also {
-            pcapWriter = null
-            it.close()
+    @Synchronized fun handleEventInternal(event: Event) {
+        when (event) {
+            is FeatureToggleEvent -> {
+                if (event.feature == Features.TRANCEIVER_PCAP_DUMP) {
+                    pcapWriter = if (pcapWriter == null && event.enabled) {
+                        PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
+                    } else {
+                        pcapWriter?.close()
+                        null
+                    }
+                }
+            }
         }
     }
 
@@ -41,6 +48,10 @@ class ToggleablePcapWriter(
         return object : ObserverNode("Toggleable pcap writer: $prefix") {
             override fun observe(packetInfo: PacketInfo) {
                 pcapWriter?.processPacket(packetInfo)
+            }
+
+            override fun handleEvent(event: Event) {
+                handleEventInternal(event)
             }
         }
     }

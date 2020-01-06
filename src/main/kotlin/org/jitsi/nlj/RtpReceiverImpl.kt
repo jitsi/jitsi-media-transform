@@ -101,7 +101,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker)
     private val rtcpTermination = RtcpTermination(rtcpEventNotifier, logger)
     private val rembHandler = RembHandler(logger)
-    private val toggleablePcapWriter = ToggleablePcapWriter(logger, id)
+    private val toggleablePcapWriter = ToggleablePcapWriter(logger, "$id-rx")
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
@@ -250,11 +250,5 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun tearDown() {
         NodeTeardownVisitor().visit(inputTreeRoot)
-    }
-
-    override fun setFeature(rtpReceiverFeature: RtpReceiverFeature, enabled: Boolean) {
-        when (rtpReceiverFeature) {
-            RtpReceiverFeature.PCAP_DUMP -> if (enabled) toggleablePcapWriter.enable() else toggleablePcapWriter.disable()
-        }
     }
 }

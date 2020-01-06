@@ -288,11 +288,10 @@ class Transceiver(
         rtpSender.tearDown()
     }
 
-    fun setFeature(feature: TransceiverFeatures, enabled: Boolean) {
-        when (feature) {
-            TransceiverFeatures.INGRESS_DUMP -> rtpReceiver.setFeature(RtpReceiverFeature.PCAP_DUMP, enabled)
-            TransceiverFeatures.EGRESS_DUMP -> rtpSender.setFeature(RtpSenderFeature.PCAP_DUMP, enabled)
-        }
+    fun setFeature(feature: Features, enabled: Boolean) {
+        val featureToggleEvent = FeatureToggleEvent(feature, enabled)
+        rtpReceiver.handleEvent(featureToggleEvent)
+        rtpSender.handleEvent(featureToggleEvent)
     }
 
     companion object {
