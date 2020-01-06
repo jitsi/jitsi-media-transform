@@ -32,7 +32,7 @@ class ToggleablePcapWriter(
     @Synchronized fun handleEventInternal(event: Event) {
         when (event) {
             is FeatureToggleEvent -> {
-                if (event.feature == Features.TRANCEIVER_PCAP_DUMP) {
+                if (event.feature == Features.TRANSCEIVER_PCAP_DUMP) {
                     pcapWriter = if (pcapWriter == null && event.enabled) {
                         PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
                     } else {

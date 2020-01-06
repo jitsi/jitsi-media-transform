@@ -17,5 +17,5 @@
 package org.jitsi.nlj
 
 enum class Features {
-    TRANCEIVER_PCAP_DUMP
+    TRANSCEIVER_PCAP_DUMP
 }

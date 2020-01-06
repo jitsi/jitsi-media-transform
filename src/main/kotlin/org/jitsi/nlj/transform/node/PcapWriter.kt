@@ -43,10 +43,13 @@ class PcapWriter(
         Pcaps.openDead(DataLinkType.EN10MB, 65536)
     }
     private val handle by lazyHandle
-    private val writer by lazy {
+
+    private val lazyWriter = lazy {
         logger.cinfo { "Pcap writer writing to file $filePath" }
         handle.dumpOpen(filePath)
     }
+
+    private val writer by lazyWriter
 
     companion object {
         private val localhost = Inet4Address.getByName("127.0.0.1") as Inet4Address
@@ -89,11 +92,11 @@ class PcapWriter(
     }
 
     fun close() {
-        if (writer.isOpen) {
+        if (lazyHandle.isInitialized() && writer.isOpen) {
             writer.close()
         }
 
-        if (lazyHandle.isInitialized()) {
+        if (lazyHandle.isInitialized() && handle.isOpen) {
             handle.close()
         }
     }
