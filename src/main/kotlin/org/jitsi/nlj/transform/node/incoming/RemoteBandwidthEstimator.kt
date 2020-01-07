@@ -19,6 +19,7 @@ import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SetLocalSsrcEvent
 import org.jitsi.nlj.rtp.RtpExtensionType.ABS_SEND_TIME
+import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.rtp.bandwidthestimation.GoogleCcEstimator
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
@@ -61,7 +62,7 @@ class RemoteBandwidthEstimator(
      * We use the full [GoogleCcEstimator] here, but we don't notify it of packet loss, effectively using only the
      * delay-based part.
      */
-    private var bwe = GoogleCcEstimator(diagnosticContext, logger)
+    private val bwe: BandwidthEstimator by lazy { GoogleCcEstimator(diagnosticContext, logger) }
     private val ssrcs: MutableSet<Long> = LRUCache.lruSet(MAX_SSRCS, true /* accessOrder */)
     private var numRembsCreated = 0
     private var numPacketsWithoutAbsSendTime = 0
