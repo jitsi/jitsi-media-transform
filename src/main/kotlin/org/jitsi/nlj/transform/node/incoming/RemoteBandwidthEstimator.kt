@@ -72,16 +72,21 @@ class RemoteBandwidthEstimator(
         private const val MAX_SSRCS: Int = 8
     }
 
+    override fun handleEvent(event: Event) {
+        if (event is SetLocalSsrcEvent && event.mediaType == MediaType.VIDEO) {
+            localSsrc = event.ssrc
+        }
+    }
+
     override fun observe(packetInfo: PacketInfo) {
         if (!enabled) return
 
         astExtId?.let {
             val rtpPacket = packetInfo.packetAs<RtpPacket>()
             rtpPacket.getHeaderExtension(it)?.let { ext ->
-                val sendTimeNanos = AbsSendTimeHeaderExtension.getTime(ext)
                 bwe.processPacketArrival(
                     clock.instant(),
-                    sendTimeNanos.toInstant(),
+                    AbsSendTimeHeaderExtension.getTime(ext),
                     Instant.ofEpochMilli(packetInfo.receivedTime),
                     rtpPacket.sequenceNumber,
                     rtpPacket.length.bytes)
