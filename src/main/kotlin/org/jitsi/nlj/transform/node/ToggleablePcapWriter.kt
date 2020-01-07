@@ -36,8 +36,8 @@ class ToggleablePcapWriter(
     }
 
     @Synchronized fun disable() {
+        pcapWriter?.close()
         if (pcapWriter != null) {
-            pcapWriter?.close()
             pcapWriter = null
         }
     }
@@ -66,8 +66,8 @@ class ToggleablePcapWriter(
                 handleEventInternal(event)
             }
 
-            override fun detachNext() {
-                super.detachNext()
+            override fun stop() {
+                super.stop()
                 disable()
             }
         }
