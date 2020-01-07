@@ -92,7 +92,7 @@ class PcapWriter(
     }
 
     fun close() {
-        if (lazyHandle.isInitialized() && writer.isOpen) {
+        if (lazyWriter.isInitialized() && writer.isOpen) {
             writer.close()
         }
 
