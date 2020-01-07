@@ -35,13 +35,12 @@ import org.jitsi.utils.logging2.Logger
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.util.Collections
 
 /**
  * Estimates the available bandwidth for the incoming stream using the abs-send-time extension.
  */
 class RemoteBandwidthEstimator(
-    streamInformationStore: ReadOnlyStreamInformationStore,
+    private val streamInformationStore: ReadOnlyStreamInformationStore,
     parentLogger: Logger,
     diagnosticContext: DiagnosticContext = DiagnosticContext(),
     private val clock: Clock = Clock.systemUTC()
@@ -55,7 +54,7 @@ class RemoteBandwidthEstimator(
     }
     private var astExtId: Int? = null
     private var bwe = AbsSendTimeBandwidthEstimator(diagnosticContext, logger)
-    private val ssrcs = Collections.newSetFromMap(LRUCache<Long, Boolean>(MAX_SSRCS, true /* accessOrder */))
+    private val ssrcs: MutableSet<Long> = LRUCache.lruSet(MAX_SSRCS, true /* accessOrder */)
     private var numRembsCreated = 0
     private var numPacketsWithoutAbsSendTime = 0
 
