@@ -49,7 +49,6 @@ class ToggleablePcapWriter(
     fun newObserverNode(): ObserverNode {
         return object : ObserverNode("Toggleable pcap writer: $prefix") {
             override fun observe(packetInfo: PacketInfo) {
-                // TODO make sure that the elvis operator is atomic
                 pcapWriter?.processPacket(packetInfo)
             }
 
