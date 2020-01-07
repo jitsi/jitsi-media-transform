@@ -120,7 +120,7 @@ class StreamInformationStoreImpl : StreamInformationStore, NodeStatsProducer {
         get() = receiveSsrcStore.primaryVideoSsrcs
 
     // Support for FIR, PLI, REMB and TCC is declared per-payload type, but currently our code is not payload-type
-    // aware. So until this changes we will just check if any of the PTs supports FIR and PLI.
+    // aware. So until this changes we will just check if any of the PTs supports the relevant feedback.
     // We always assume support for FIR.
     override var supportsFir: Boolean = true
         private set

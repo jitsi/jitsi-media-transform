@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import com.nhaarman.mockitokotlin2.spy
 import io.kotlintest.IsolationMode
 import io.kotlintest.matchers.numerics.shouldBeGreaterThan
 import io.kotlintest.seconds
@@ -39,7 +38,7 @@ import java.time.Duration
 class RemoteBandwidthEstimatorTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val clock: FakeClock = spy()
+    private val clock: FakeClock = FakeClock()
     private val astExtensionId = 3
     // REMB is enabled by having at least one payload type which has "goog-remb" signaled as a rtcp-fb, and TCC is
     // disabled.

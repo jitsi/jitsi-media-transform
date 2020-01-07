@@ -15,17 +15,21 @@
  */
 package org.jitsi.nlj.test_utils
 
-import com.nhaarman.mockitokotlin2.spy
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.Bandwidth
+import org.jitsi.nlj.util.DataSize
+import org.jitsi.nlj.util.`in`
+import org.jitsi.nlj.util.atRate
+import org.jitsi.nlj.util.div
+import org.jitsi.nlj.util.howMuchCanISendAtRate
 import org.jitsi.rtp.rtp.RtpPacket
 import java.time.Duration
 
 class RtpPacketGenerator internal constructor(
     /**
-     * Length in bytes of each packet.
+     * Length of each packet.
      */
-    val lengthBytes: Int,
+    val length: DataSize,
     /**
      * The number of packets to generate.
      */
@@ -34,7 +38,7 @@ class RtpPacketGenerator internal constructor(
      * The interval to advance the clock after each packet.
      */
     val interval: Duration,
-    val clock: FakeClock = spy()
+    val clock: FakeClock = FakeClock()
 ) {
 
     internal constructor(
@@ -43,18 +47,18 @@ class RtpPacketGenerator internal constructor(
          */
         targetBitrate: Bandwidth,
         /**
-         * Length in bytes of each packet.
+         * Length of each packet.
          */
-        lengthBytes: Int,
+        length: DataSize,
         /**
          * The total duration over which packets will be generated.
          */
         duration: Duration = Duration.ofSeconds(10),
-        clock: FakeClock = spy()
+        clock: FakeClock = FakeClock()
     ) : this(
-        lengthBytes = lengthBytes,
-        count = getCount(duration, getInterval(targetBitrate, lengthBytes)),
-        interval = getInterval(targetBitrate, lengthBytes),
+        length = length,
+        count = (duration / length.atRate(targetBitrate)).toInt(),
+        interval = length.atRate(targetBitrate),
         clock = clock
     )
 
@@ -71,27 +75,15 @@ class RtpPacketGenerator internal constructor(
          * The total duration over which packets will be generated.
          */
         duration: Duration = Duration.ofSeconds(10),
-        clock: FakeClock = spy()
+        clock: FakeClock = FakeClock()
     ) : this(
-        lengthBytes = getLengthBytes(targetBitrate, interval),
-        count = getCount(duration, interval),
+        length = howMuchCanISendAtRate(targetBitrate).`in`(interval),
+        count = (duration / interval).toInt(),
         interval = interval,
         clock = clock
     )
 
-    companion object {
-        const val bpsNanosToBytes = 1 / 8e9
-        private fun getInterval(targetBitrate: Bandwidth, lengthBytes: Int): Duration {
-            val seconds = 8 * lengthBytes.toDouble() / targetBitrate.bps
-            return Duration.ofMillis((seconds * 1000).toLong())
-        }
-        private fun getLengthBytes(targetBitrate: Bandwidth, interval: Duration): Int =
-            (targetBitrate.bps * interval.toNanos() * bpsNanosToBytes).toInt()
-        private fun getCount(duration: Duration, interval: Duration): Int =
-            (duration.toMillis().toDouble() / interval.toMillis()).toInt()
-    }
-
-    fun createPacket(seq: Int, len: Int, packetSsrc: Long, pt: Int, receivedTime: Long): PacketInfo {
+    private fun createPacket(seq: Int, len: Int, packetSsrc: Long, pt: Int, receivedTime: Long): PacketInfo {
         val dummyPacket = RtpPacket(ByteArray(len), 0, len).apply {
             version = 2
             hasPadding = false
@@ -122,7 +114,7 @@ class RtpPacketGenerator internal constructor(
                 run {
                     processPacket(createPacket(
                         seq = startSeq + it,
-                        len = lengthBytes,
+                        len = length.bytes.toInt(),
                         packetSsrc = ssrc,
                         pt = payloadType,
                         receivedTime = clock.millis()))
