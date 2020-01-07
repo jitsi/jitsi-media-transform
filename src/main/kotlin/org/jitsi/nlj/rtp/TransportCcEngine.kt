@@ -157,7 +157,7 @@ class TransportCcEngine(
                 if (sentPacketDetails.empty) {
                     "Sent packet details map was empty."
                 } else {
-                    "Latest seqNum was ${sentPacketDetails.lastIndex}, size is ${sentPacketDetails.size}."
+                    "Latest seqNum was ${sentPacketDetails.lastIndex and 0xFFFF}, size is ${sentPacketDetails.size}."
                 })
             missingPacketDetailSeqNums.clear()
         }
@@ -171,7 +171,7 @@ class TransportCcEngine(
              * generating tccSeqNum values.
              */
             logger.warn("Not inserting very old TCC seq num $seq ($tccSeqNum), latest is " +
-                "${sentPacketDetails.lastIndex}, size is ${sentPacketDetails.size}")
+                "${sentPacketDetails.lastIndex and 0xFFFF}, size is ${sentPacketDetails.size}")
             return
         }
     }
