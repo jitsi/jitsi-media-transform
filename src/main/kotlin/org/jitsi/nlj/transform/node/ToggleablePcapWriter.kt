@@ -42,23 +42,7 @@ class ToggleablePcapWriter(
     fun disable() {
         synchronized(pcapLock) {
             pcapWriter?.close()
-            if (pcapWriter != null) {
-                pcapWriter = null
-            }
-        }
-    }
-
-    fun handleEventInternal(event: Event) {
-        when (event) {
-            is FeatureToggleEvent -> {
-                if (event.feature == Features.TRANSCEIVER_PCAP_DUMP) {
-                    if (event.enable) {
-                        enable()
-                    } else {
-                        disable()
-                    }
-                }
-            }
+            pcapWriter = null
         }
     }
 
@@ -70,12 +54,17 @@ class ToggleablePcapWriter(
             }
 
             override fun handleEvent(event: Event) {
-                handleEventInternal(event)
-            }
-
-            override fun stop() {
-                super.stop()
-                disable()
+                when (event) {
+                    is FeatureToggleEvent -> {
+                        if (event.feature == Features.TRANSCEIVER_PCAP_DUMP) {
+                            if (event.enable) {
+                                enable()
+                            } else {
+                                disable()
+                            }
+                        }
+                    }
+                }
             }
         }
     }

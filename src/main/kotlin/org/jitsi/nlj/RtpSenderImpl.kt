@@ -248,6 +248,7 @@ class RtpSenderImpl(
 
     override fun tearDown() {
         NodeTeardownVisitor().reverseVisit(outputPipelineTerminationNode)
+        toggleablePcapWriter.disable()
     }
 
     companion object {

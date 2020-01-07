@@ -250,5 +250,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun tearDown() {
         NodeTeardownVisitor().visit(inputTreeRoot)
+        toggleablePcapWriter.disable()
     }
 }
