@@ -29,20 +29,26 @@ class ToggleablePcapWriter(
 ) {
     private var pcapWriter: PcapWriter? = null
 
-    @Synchronized fun enable() {
-        if (pcapWriter == null) {
-            pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
+    private val pcapLock = Any()
+
+    fun enable() {
+        synchronized(pcapLock) {
+            if (pcapWriter == null) {
+                pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
+            }
         }
     }
 
-    @Synchronized fun disable() {
-        pcapWriter?.close()
-        if (pcapWriter != null) {
-            pcapWriter = null
+    fun disable() {
+        synchronized(pcapLock) {
+            pcapWriter?.close()
+            if (pcapWriter != null) {
+                pcapWriter = null
+            }
         }
     }
 
-    @Synchronized fun handleEventInternal(event: Event) {
+    fun handleEventInternal(event: Event) {
         when (event) {
             is FeatureToggleEvent -> {
                 if (event.feature == Features.TRANSCEIVER_PCAP_DUMP) {
@@ -59,6 +65,7 @@ class ToggleablePcapWriter(
     fun newObserverNode(): ObserverNode {
         return object : ObserverNode("Toggleable pcap writer: $prefix") {
             override fun observe(packetInfo: PacketInfo) {
+                // TODO make sure that the elvis operator is atomic
                 pcapWriter?.processPacket(packetInfo)
             }
 
