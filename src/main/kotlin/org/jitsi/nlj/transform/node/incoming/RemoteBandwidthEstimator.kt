@@ -15,7 +15,9 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
+import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.SetLocalSsrcEvent
 import org.jitsi.nlj.rtp.RtpExtensionType.ABS_SEND_TIME
 import org.jitsi.nlj.rtp.bandwidthestimation.AbsSendTimeBandwidthEstimator
 import org.jitsi.nlj.stats.NodeStatsBlock
@@ -25,11 +27,13 @@ import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.bytes
 import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.nlj.util.observableWhenChanged
+import org.jitsi.rtp.rtcp.RtcpHeaderBuilder
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbRembPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbRembPacketBuilder
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.AbsSendTimeHeaderExtension
 import org.jitsi.utils.LRUCache
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import java.time.Clock
@@ -57,6 +61,7 @@ class RemoteBandwidthEstimator(
     private val ssrcs: MutableSet<Long> = LRUCache.lruSet(MAX_SSRCS, true /* accessOrder */)
     private var numRembsCreated = 0
     private var numPacketsWithoutAbsSendTime = 0
+    private var localSsrc = 0L
 
     init {
         streamInformationStore.onRtpExtensionMapping(ABS_SEND_TIME) {
@@ -111,11 +116,10 @@ class RemoteBandwidthEstimator(
         if (currentBw < 0.bps) return null
 
         numRembsCreated++
-        return RtcpFbRembPacketBuilder(brBps = currentBw.bps.toLong(), ssrcs = ssrcs.toList()).build()
-    }
-
-    private fun Long.toInstant(): Instant {
-        return Instant.ofEpochMilli(this / 1_000_000).plusNanos(this % 1_000_000)
+        return RtcpFbRembPacketBuilder(
+            rtcpHeader = RtcpHeaderBuilder(senderSsrc = localSsrc),
+            brBps = currentBw.bps.toLong(),
+            ssrcs = ssrcs.toList()).build()
     }
 
     fun onRttUpdate(newRttMs: Double) {
