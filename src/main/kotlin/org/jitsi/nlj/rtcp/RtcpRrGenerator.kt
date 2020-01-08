@@ -17,9 +17,10 @@ package org.jitsi.nlj.rtcp
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 import org.jitsi.nlj.transform.node.incoming.IncomingSsrcStats
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
+import org.jitsi.nlj.util.milliseconds
+import org.jitsi.nlj.util.schedule
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpReportBlock
 import org.jitsi.rtp.rtcp.RtcpRrPacketBuilder
@@ -113,7 +114,14 @@ class RtcpRrGenerator(
                     rtcpSender(it)
                 }
             }
-            backgroundExecutor.schedule(this::doWork, 1, TimeUnit.SECONDS)
+            backgroundExecutor.schedule(this::doWork, reportingInterval)
         }
+    }
+
+    companion object {
+        /**
+         * The interval at which RRs and REMBs will be sent.
+         */
+        val reportingInterval = 500.milliseconds()
     }
 }
