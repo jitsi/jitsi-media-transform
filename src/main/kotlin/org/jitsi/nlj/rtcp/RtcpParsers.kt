@@ -18,6 +18,7 @@ package org.jitsi.nlj.rtcp
 
 import org.jitsi.nlj.transform.node.PacketParser
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
+import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.logging2.Logger
 
 class CompoundRtcpParser(parentLogger: Logger) : PacketParser("Compound RTCP parser", parentLogger, {
@@ -27,5 +28,5 @@ class CompoundRtcpParser(parentLogger: Logger) : PacketParser("Compound RTCP par
     }
 })
 
-class SingleRtcpParser : PacketParser("Single RTCP parser", {
+class SingleRtcpParser(parentLogger: Logger) : PacketParser("Single RTCP parser", parentLogger, {
     RtcpPacket.parse(it.buffer, it.offset) })
