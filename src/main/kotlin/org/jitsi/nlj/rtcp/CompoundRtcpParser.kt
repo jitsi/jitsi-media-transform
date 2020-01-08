@@ -26,3 +26,6 @@ class CompoundRtcpParser(parentLogger: Logger) : PacketParser("Compound RTCP par
         compoundPacket.packets
     }
 })
+
+class SingleRtcpParser : PacketParser("Single RTCP parser", {
+    RtcpPacket.parse(it.buffer, it.offset) })
