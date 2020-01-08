@@ -20,8 +20,12 @@ import org.jitsi.rtp.Packet
 
 open class PacketParser(name: String, private val action: (Packet) -> Packet) : TransformerNode(name) {
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        packetInfo.packet = action(packetInfo.packet)
-        packetInfo.resetPayloadVerification()
-        return packetInfo
+        return try {
+            packetInfo.packet = action(packetInfo.packet)
+            packetInfo.resetPayloadVerification()
+            packetInfo
+        } catch (_: Exception) {
+            null
+        }
     }
 }
