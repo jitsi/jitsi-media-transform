@@ -26,6 +26,3 @@ class CompoundRtcpParser : PacketParser("Compound RTCP parser", {
         compoundPacket.packets
     }
 })
-
-class SingleRtcpParser : PacketParser("Single RTCP parser", {
-    RtcpPacket.parse(it.buffer, it.offset) })
