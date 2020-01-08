@@ -21,7 +21,11 @@ import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpPacket
 
 class CompoundRtcpParser : PacketParser("Compound RTCP parser", {
-    CompoundRtcpPacket(it.buffer, it.offset, it.length) })
+    CompoundRtcpPacket(it.buffer, it.offset, it.length).also { compoundPacket ->
+        // Force packets to be evaluated to trigger any parsing errors
+        compoundPacket.packets
+    }
+})
 
 class SingleRtcpParser : PacketParser("Single RTCP parser", {
     RtcpPacket.parse(it.buffer, it.offset) })
