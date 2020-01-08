@@ -23,6 +23,7 @@ import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.specs.ShouldSpec
 import io.kotlintest.shouldBe
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.resources.node.onOutput
 import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.rtp.Packet
@@ -30,11 +31,13 @@ import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpByePacket
 import org.jitsi.rtp.rtcp.RtcpHeaderBuilder
 import org.jitsi.rtp.rtcp.UnsupportedRtcpPacket
+import java.util.logging.Level
 
 class CompoundRtcpParserTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
+    private val logger = StdoutLogger()
 
-    private val parser = CompoundRtcpParser()
+    private val parser = CompoundRtcpParser(logger)
 
     private val invalidRtcpData = byteArrayOf(
         0x00, 0x00, 0x00, 0x00,

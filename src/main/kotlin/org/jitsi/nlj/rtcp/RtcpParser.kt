@@ -19,8 +19,9 @@ package org.jitsi.nlj.rtcp
 import org.jitsi.nlj.transform.node.PacketParser
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpPacket
+import org.jitsi.utils.logging2.Logger
 
-class CompoundRtcpParser : PacketParser("Compound RTCP parser", {
+class CompoundRtcpParser(parentLogger: Logger) : PacketParser("Compound RTCP parser", parentLogger, {
     CompoundRtcpPacket(it.buffer, it.offset, it.length).also { compoundPacket ->
         // Force packets to be evaluated to trigger any parsing errors
         compoundPacket.packets

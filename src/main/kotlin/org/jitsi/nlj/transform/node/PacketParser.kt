@@ -17,14 +17,22 @@ package org.jitsi.nlj.transform.node
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.rtp.Packet
+import org.jitsi.utils.logging2.Logger
 
-open class PacketParser(name: String, private val action: (Packet) -> Packet) : TransformerNode(name) {
+open class PacketParser(
+    name: String,
+    parentLogger: Logger,
+    private val action: (Packet) -> Packet
+) : TransformerNode(name) {
+    private val logger = parentLogger.createChildLogger(javaClass.name)
+
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         return try {
             packetInfo.packet = action(packetInfo.packet)
             packetInfo.resetPayloadVerification()
             packetInfo
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.warn("Error parsing packet: $e")
             null
         }
     }
