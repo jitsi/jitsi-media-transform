@@ -633,9 +633,9 @@ public class DePacketizer
         /**
          * @return True, if VP8 Payload contains start codes of a keyframe, otherwise false.
          */
-        public static boolean validate(byte[] buf, int off)
+        public static boolean validate(byte[] buf, int off, int len)
         {
-            if (buf.length - off < 5)
+            if (len - off < 5)
             {
                 return false;
             }
