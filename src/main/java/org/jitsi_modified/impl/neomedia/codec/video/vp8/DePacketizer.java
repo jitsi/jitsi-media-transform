@@ -144,7 +144,7 @@ public class DePacketizer
          *
          * @return the TID/Y/KEYIDX extension byte, if that's set, -1 otherwise.
          */
-        private static byte getTidYKeyIdxExtensionByte(byte[] buf, int off, int len)
+        private static int getTidYKeyIdxExtensionByte(byte[] buf, int off, int len)
         {
             if (buf == null || buf.length < off + len || len < 2)
             {
@@ -162,7 +162,7 @@ public class DePacketizer
                 return -1;
             }
 
-            return (byte) (buf[off + sz - 1] & 0xFF);
+            return (buf[off + sz - 1] & 0xFF);
         }
 
         /**
@@ -175,7 +175,7 @@ public class DePacketizer
          */
         public static int getTemporalLayerIndex(byte[] buf, int off, int len)
         {
-            byte tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
+            int tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
 
             return tidYKeyIdxByte != -1 && (buf[off+1] & T_BIT) != 0 ?(tidYKeyIdxByte & TID_MASK) >> 6 : tidYKeyIdxByte;
         }
@@ -191,7 +191,7 @@ public class DePacketizer
          */
         public static int getFirstLayerSyncBit(byte[] buf, int off, int len)
         {
-            byte tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
+            int tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
 
             return tidYKeyIdxByte != -1 ? (tidYKeyIdxByte & Y_BIT) >> 5 : tidYKeyIdxByte;
         }
@@ -207,7 +207,7 @@ public class DePacketizer
          */
         public static int getTemporalKeyFrameIndex(byte[] buf, int off, int len)
         {
-            byte tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
+            int tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
 
             return tidYKeyIdxByte != -1 && (buf[off+1] & K_BIT) != 0 ? (tidYKeyIdxByte & KEYIDX_MASK) : tidYKeyIdxByte;
         }
