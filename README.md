@@ -29,3 +29,4 @@ ktlint --apply-to-idea-project
 ```
 
 Autoformatting can be run by calling `mvn antrun:run@ktlint-format`.
+
