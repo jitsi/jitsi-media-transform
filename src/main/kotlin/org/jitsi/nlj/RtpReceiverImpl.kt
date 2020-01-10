@@ -15,6 +15,7 @@
  */
 package org.jitsi.nlj
 
+import ToggleablePcapWriter
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.rtcp.CompoundRtcpParser
@@ -108,6 +109,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     }
     private val rtcpTermination = RtcpTermination(rtcpEventNotifier, logger)
     private val rembHandler = RembHandler(logger)
+    private val toggleablePcapWriter = ToggleablePcapWriter(logger, "$id-rx")
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
@@ -162,6 +164,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         // check for different discard conditions (i.e. checking the audio level for silence)
                         node(audioLevelReader)
                         node(srtpDecryptWrapper)
+                        node(toggleablePcapWriter.newObserverNode())
                         node(statsTracker)
                         demux("Media type") {
                             packetPath {
@@ -193,7 +196,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
                     predicate = PacketPredicate(Packet::looksLikeRtcp)
                     path = pipeline {
                         node(srtcpDecryptWrapper)
-                        node(CompoundRtcpParser())
+                        node(toggleablePcapWriter.newObserverNode())
+                        node(CompoundRtcpParser(logger))
                         node(silenceDiscarder.rtcpNode)
                         node(rtcpTermination)
                         node(packetHandlerWrapper)
@@ -255,6 +259,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun tearDown() {
         NodeTeardownVisitor().visit(inputTreeRoot)
+        toggleablePcapWriter.disable()
     }
 
     override fun onRttUpdate(newRtt: Double) {

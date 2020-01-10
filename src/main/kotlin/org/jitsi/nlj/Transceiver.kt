@@ -291,6 +291,12 @@ class Transceiver(
         rtpSender.tearDown()
     }
 
+    fun setFeature(feature: Features, enabled: Boolean) {
+        val featureToggleEvent = FeatureToggleEvent(feature, enabled)
+        rtpReceiver.handleEvent(featureToggleEvent)
+        rtpSender.handleEvent(featureToggleEvent)
+    }
+
     companion object {
         init {
 //            Node.plugins.add(BufferTracePlugin)

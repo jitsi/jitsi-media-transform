@@ -1,5 +1,5 @@
 /*
- * Copyright @ 2019 - Present, 8x8 Inc
+ * Copyright @ 2018 - Present, 8x8 Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package org.jitsi.nlj.rtcp
+package org.jitsi.nlj
 
-import org.jitsi.nlj.transform.node.PacketParser
-import org.jitsi.rtp.rtcp.CompoundRtcpPacket
-import org.jitsi.rtp.rtcp.RtcpPacket
-
-class CompoundRtcpParser : PacketParser("Compound RTCP parser", {
-    CompoundRtcpPacket(it.buffer, it.offset, it.length) })
-
-class SingleRtcpParser : PacketParser("Single RTCP parser", {
-    RtcpPacket.parse(it.buffer, it.offset) })
+enum class Features {
+    TRANSCEIVER_PCAP_DUMP
+}
