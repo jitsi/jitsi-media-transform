@@ -2,5 +2,5 @@
 
 set -e
 
-mvn clean verify package
-mvn antrun:run@ktlint
+cd $WORKSPACE
+./resources/build.sh
