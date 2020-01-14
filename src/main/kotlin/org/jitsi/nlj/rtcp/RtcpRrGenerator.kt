@@ -114,7 +114,7 @@ class RtcpRrGenerator(
 
             when (packets.size) {
                 0 -> {}
-                1 -> rtcpSender(packets[1])
+                1 -> rtcpSender(packets.first())
                 else -> rtcpSender(CompoundRtcpPacket(*packets.toTypedArray()))
             }
             backgroundExecutor.schedule(this::doWork, reportingInterval)
