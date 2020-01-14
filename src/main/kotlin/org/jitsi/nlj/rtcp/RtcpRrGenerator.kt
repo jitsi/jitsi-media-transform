@@ -21,6 +21,7 @@ import org.jitsi.nlj.transform.node.incoming.IncomingSsrcStats
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.util.milliseconds
 import org.jitsi.nlj.util.schedule
+import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpReportBlock
 import org.jitsi.rtp.rtcp.RtcpRrPacketBuilder
@@ -104,15 +105,17 @@ class RtcpRrGenerator(
                     senderInfo.getDelaySinceLastSr(now)
                 ))
             }
-            if (reportBlocks.isNotEmpty()) {
-                // TODO send one compound packet.
-                RtcpRrPacketBuilder(reportBlocks = reportBlocks).build().apply {
-                    rtcpSender(this)
-                }
 
-                additionalPacketSupplier().forEach {
-                    rtcpSender(it)
-                }
+            val packets = mutableListOf<RtcpPacket>()
+            if (reportBlocks.isNotEmpty()) {
+                packets.add(RtcpRrPacketBuilder(reportBlocks = reportBlocks).build())
+            }
+            packets.addAll(additionalPacketSupplier())
+
+            when (packets.size) {
+                0 -> {}
+                1 -> rtcpSender(packets[1])
+                else -> rtcpSender(CompoundRtcpPacket(packets))
             }
             backgroundExecutor.schedule(this::doWork, reportingInterval)
         }
