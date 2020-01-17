@@ -81,7 +81,7 @@ abstract class AbstractSrtpTransformer<CryptoContextType : BaseSrtpCryptoContext
     protected abstract fun transform(packetInfo: PacketInfo, context: CryptoContextType): SrtpErrorStatus
 
     /**
-     * Transforms a packet, returns [SrtpErrorStatus.OK] on failure.
+     * Transforms a packet, returns [SrtpErrorStatus.OK] on success or another [SrtpErrorStatus] on failure.
      */
     fun transform(packetInfo: PacketInfo): SrtpErrorStatus {
         val context = getContext(packetInfo) ?: return SrtpErrorStatus.FAIL
