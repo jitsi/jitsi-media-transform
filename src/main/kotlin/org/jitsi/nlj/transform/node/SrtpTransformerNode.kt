@@ -35,11 +35,14 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
 
     /**
      * Transforms a list of packets using [#transformer]
+     *
+     * We pass it as an arg (rather than referencing it from the object) so Kotlin
+     * knows it's non-null here.
      */
-    private fun transformList(packetInfos: List<PacketInfo>): List<PacketInfo> {
+    private fun transformList(packetInfos: List<PacketInfo>, transformer: AbstractSrtpTransformer<*>): List<PacketInfo> {
         val transformedPackets = mutableListOf<PacketInfo>()
         packetInfos.forEach { packetInfo ->
-            val err = transformer!!.transform(packetInfo)
+            val err = transformer.transform(packetInfo)
             if (err == SrtpErrorStatus.OK) {
                 transformedPackets.add(packetInfo)
             } else {
@@ -70,7 +73,7 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
             synchronized(cachedPackets) {
                 if (cachedPackets.isNotEmpty()) {
                     cachedPackets.add(packetInfo)
-                    outPackets = transformList(cachedPackets)
+                    outPackets = transformList(cachedPackets, transformer)
                     cachedPackets.clear()
                 } else {
                     val err = transformer.transform(packetInfo)
