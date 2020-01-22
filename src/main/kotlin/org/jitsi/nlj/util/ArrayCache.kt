@@ -84,6 +84,7 @@ open class ArrayCache<T>(
         val position = when {
             head == -1 -> {
                 head = 0
+                lastIndexAdvanced(-1, index)
                 head
             }
             diff <= -size -> {
@@ -93,7 +94,9 @@ open class ArrayCache<T>(
             }
             diff < 0 -> (head + diff) floorMod size
             else -> {
-                head = (head + diff) floorMod size
+                val newHead = (head + diff) floorMod size
+                lastIndexAdvanced(lastIndex, index)
+                head = newHead
                 head
             }
         }
@@ -110,6 +113,11 @@ open class ArrayCache<T>(
      * Called when an item in the cache is replaced/discarded.
      */
     protected open fun discardItem(item: T) {}
+
+    /**
+     * Called when the last index of the cache is advanced.
+     */
+    protected open fun lastIndexAdvanced(oldlastIndex: Int, lastIndex: Int) {}
 
     /**
      * Gets an item from the cache with a given index. Returns 'null' if there is no item with this index in the cache.
@@ -130,7 +138,7 @@ open class ArrayCache<T>(
 
     private fun doGet(index: Int): Container? {
         if (head == -1) {
-            // Not initialized (empty), or newer than head.
+            // Not initialized (empty).
             return null
         }
 
@@ -196,6 +204,44 @@ open class ArrayCache<T>(
                     return
                 }
             }
+        }
+    }
+
+    /**
+     * Discard an item with a specific index from the cache.
+     */
+    fun discard(index: Int) {
+        if (synchronize) {
+            synchronized(syncRoot) {
+                doDiscard(index)
+            }
+        } else {
+            doDiscard(index)
+        }
+    }
+
+    private fun doDiscard(index: Int) {
+        if (head == -1) {
+            // Not initialized (empty).
+            return
+        }
+
+        val diff = index - cache[head].index
+        if (diff > 0) {
+            // The requested index is newer than the last index we have.
+            return
+        }
+
+        val position = (head + diff) floorMod size
+        if (cache[position].index != index) {
+            return
+        }
+
+        with(cache[position]) {
+            this.index = -1
+            item?.let { discardItem(it) }
+            item = null
+            timeAdded = -1
         }
     }
 
