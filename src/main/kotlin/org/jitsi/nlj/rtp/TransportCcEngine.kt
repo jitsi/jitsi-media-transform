@@ -25,6 +25,7 @@ import org.jitsi.nlj.util.ArrayCache
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.Rfc3711IndexTracker
+import org.jitsi.nlj.util.joinToRangedString
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.PacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.ReceivedPacketReport
@@ -152,8 +153,8 @@ class TransportCcEngine(
                 "${tccPacket.iterator().asSequence()
                     .filterIsInstance<ReceivedPacketReport>()
                     .map(PacketReport::seqNum)
-                    .joinToString()}. " +
-                "Couldn't find packet detail for the seq nums: ${missingPacketDetailSeqNums.joinToString()}. " +
+                    .joinToRangedString()}. " +
+                "Couldn't find packet detail for the seq nums: ${missingPacketDetailSeqNums.joinToRangedString()}. " +
                 if (sentPacketDetails.empty) {
                     "Sent packet details map was empty."
                 } else {
