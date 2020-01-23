@@ -32,32 +32,41 @@ fun Iterator<Int>.joinToRangedString(
 
     buffer.append(prefix)
     var rangeCount = 0
-    var previous: Int? = null
-    var inRange = false
-    for (element in this) {
-        if (previous == null) {
+    if (hasNext()) {
+        rangeCount++
+        if (rangeLimit != 0) {
+            var element = next()
             buffer.append(element.toString())
-            rangeCount++
-            inRange = false
-        } else if (element == previous + 1) {
-            inRange = true
-        } else {
+
+            var previous = element
+            var inRange = false
+
+            while (hasNext()) {
+                element = next()
+                if (element == previous + 1) {
+                    inRange = true
+                } else {
+                    if (inRange) {
+                        buffer.append(rangeSeparator).append(previous.toString())
+                    }
+                    inRange = false
+                    buffer.append(separator)
+                    rangeCount++
+                    if (rangeLimit < 0 || rangeCount <= rangeLimit) {
+                        buffer.append(element.toString())
+                    } else break
+                }
+                previous = element
+            }
+
             if (inRange) {
                 buffer.append(rangeSeparator).append(previous.toString())
             }
-            inRange = false
-            buffer.append(separator)
-            rangeCount++
-            if (rangeLimit < 0 || rangeCount <= rangeLimit) {
-                buffer.append(element.toString())
-            } else break
         }
-        previous = element
     }
-    if (inRange) {
-        buffer.append(rangeSeparator).append(previous.toString())
+    if (rangeLimit >= 0 && rangeCount > rangeLimit) {
+        buffer.append(truncated)
     }
-    if (rangeLimit >= 0 && rangeCount > rangeLimit) buffer.append(truncated)
     buffer.append(postfix)
     return buffer.toString()
 }
