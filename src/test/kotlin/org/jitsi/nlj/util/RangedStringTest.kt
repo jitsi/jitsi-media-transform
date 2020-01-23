@@ -101,11 +101,51 @@ internal class RangedStringTest : ShouldSpec() {
                 string shouldBe "1-2, 4-5, 7-8, 10-14"
             }
         }
+        "setting a range limit of zero" {
+            should("work") {
+                val range = arrayOf(1, 2, 4, 5, 7, 8, 10, 11, 13, 14)
+                val string = range.joinToRangedString(rangeLimit = 0)
+                string shouldBe "..."
+            }
+            should("not print truncation for an empty array") {
+                val range = arrayOf<Int>()
+                val string = range.joinToRangedString(rangeLimit = 0)
+                string shouldBe ""
+            }
+        }
         "formatting with a custom truncated value" {
             val range = arrayOf(1, 2, 4, 5, 7, 8, 10, 11, 13, 14)
             val string = range.joinToRangedString(rangeLimit = 4, truncated = "etc.")
             should("work") {
                 string shouldBe "1-2, 4-5, 7-8, 10-11, etc."
+            }
+        }
+        "formatting from a sequence" {
+            val range = arrayOf(1, 2, 4, 5, 7, 8, 10, 11, 13, 14).asSequence()
+            val string = range.joinToRangedString()
+            should("work") {
+                string shouldBe "1-2, 4-5, 7-8, 10-11, 13-14"
+            }
+        }
+        "formatting non-consecutive numbers" {
+            val range = arrayOf(8, 6, 7, 5, 3, 0, 1)
+            val string = range.joinToRangedString()
+            should("work") {
+                string shouldBe "8, 6-7, 5, 3, 0-1"
+            }
+        }
+        "formatting repeated numbers" {
+            val range = arrayOf(1, 1, 2, 3, 5, 8, 13)
+            val string = range.joinToRangedString()
+            should("work") {
+                string shouldBe "1, 1-3, 5, 8, 13"
+            }
+        }
+        "formatting empty array" {
+            val range = arrayOf<Int>()
+            val string = range.joinToRangedString()
+            should("work") {
+                string shouldBe ""
             }
         }
     }
