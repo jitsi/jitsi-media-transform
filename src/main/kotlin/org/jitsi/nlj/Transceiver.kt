@@ -131,7 +131,7 @@ class Transceiver(
      * this transceiver is associated with) to be processed by the receiver pipeline.
      */
     fun handleIncomingPacket(p: PacketInfo) {
-        packetIOActivity.lastRtpPacketReceived = clock.instant()
+        packetIOActivity.lastRtpPacketReceivedInstant = clock.instant()
         rtpReceiver.enqueuePacket(p)
     }
 
@@ -140,7 +140,7 @@ class Transceiver(
      * passing them out the sender's outgoing pipeline
      */
     fun sendPacket(packetInfo: PacketInfo) {
-        packetIOActivity.lastRtpPacketSent = clock.instant()
+        packetIOActivity.lastRtpPacketSentInstant = clock.instant()
         rtpSender.processPacket(packetInfo)
     }
 
