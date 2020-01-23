@@ -52,6 +52,14 @@ class IncomingStatisticsTracker(
         }
     }
 
+    /**
+     * We clear the per-SSRC stats to prevent them from being aggregated (aggregation happens at [stop] time).
+     */
+    override fun stop() {
+        ssrcStats.clear()
+        super.stop()
+    }
+
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
             val stats = getSnapshot()
