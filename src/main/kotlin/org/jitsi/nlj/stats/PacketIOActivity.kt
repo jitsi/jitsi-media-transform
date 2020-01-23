@@ -23,22 +23,40 @@ import java.time.Instant
 
 @Suppress("unused")
 class PacketIOActivity {
-    var lastRtpPacketReceivedTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
+    /**
+     * The last time an RTP or RTCP packet was received.
+     */
+    var lastRtpPacketReceived: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
-    var lastRtpPacketSentTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
+    /**
+     * The last time an RTP or RTCP packet was received.
+     */
+    var lastRtpPacketSent: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
-    var lastIceActivityTimestamp: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
+    /**
+     * The last time ICE consent was refreshed.
+     */
+    var lastIceActivity: Instant by threadSafeVetoable(NEVER) { _, oldValue, newValue ->
         newValue.isAfter(oldValue)
     }
 
-    val lastOverallRtpActivity: Instant
-        get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp)
+    /**
+     * The last time an RTP or RTCP packet was sent or received.
+     */
+    val lastRtpActivity: Instant
+        get() = latest(lastRtpPacketReceived, lastRtpPacketSent)
 
-    val lastOverallIncomingActivity: Instant
-        get() = latest(lastRtpPacketReceivedTimestamp, lastIceActivityTimestamp)
+    /**
+     * The last time a packet was received (RTP, RTCP or ICE consent).
+     */
+    val lastIncomingActivity: Instant
+        get() = latest(lastRtpPacketReceived, lastIceActivity)
 
-    val latestOverallActivity: Instant
-        get() = latest(lastRtpPacketReceivedTimestamp, lastRtpPacketSentTimestamp, lastIceActivityTimestamp)
+    /**
+     * The last time a packet was sent or received.
+     */
+    val lastActivity: Instant
+        get() = latest(lastRtpPacketReceived, lastRtpPacketSent, lastIceActivity)
 }
