@@ -18,7 +18,9 @@ package org.jitsi.nlj.util
 
 /** Format a sequence of ints as a ranged string, e.g. "1, 3-8, 9-10" */
 /* TODO: it'd be nice to support this for any integer type but I don't know
-    if there's a good way to represent this.
+    if there's a good way to represent this.  Unfortunately interface [Number]
+    doesn't have [operator fun plus], so we can't use it to test
+    element == previous + 1.
  */
 fun Iterator<Int>.joinToRangedString(
     separator: CharSequence = ", ",
