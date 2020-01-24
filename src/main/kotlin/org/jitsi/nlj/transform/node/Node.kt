@@ -381,13 +381,14 @@ abstract class ObserverNode(name: String) : TransformerNode(name) {
 /**
  * A node which consumes all packets (i.e. does something with them, but does not forward them to another node).
  */
-abstract class ConsumerNode(name: String) : TransformerNode(name) {
+abstract class ConsumerNode(name: String) : StatsKeepingNode(name) {
 
     protected abstract fun consume(packetInfo: PacketInfo)
 
-    override fun transform(packetInfo: PacketInfo): PacketInfo? {
+    override fun doProcessPacket(packetInfo: PacketInfo) {
+        // TODO(before merging): should we call doneProcessing here?
+        //  Before, or after calling consume?
         consume(packetInfo)
-        return null
     }
 
     // Consumer nodes shouldn't have children, because they don't forward
