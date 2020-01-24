@@ -339,6 +339,20 @@ abstract class TransformerNode(name: String) : StatsKeepingNode(name) {
 }
 
 /**
+ * Unlike a [TransformerNode], [ModifierNode] modifies a packet in-place and never
+ * outright 'fails', meaning it can never return null.
+ */
+abstract class ModifierNode(name: String) : StatsKeepingNode(name) {
+    protected abstract fun modify(packetInfo: PacketInfo): PacketInfo
+
+    override fun doProcessPacket(packetInfo: PacketInfo) {
+        val modifiedPacket = modify(packetInfo)
+        doneProcessing(modifiedPacket)
+        next(modifiedPacket)
+    }
+}
+
+/**
  * A [Node] which drops some of the packets (the ones which are not accepted).
  */
 abstract class FilterNode(name: String) : TransformerNode(name) {
