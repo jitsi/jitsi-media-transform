@@ -18,20 +18,18 @@ package org.jitsi.nlj.transform.node.outgoing
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.protocol.ProtocolStack
-import org.jitsi.nlj.transform.node.TransformerNode
+import org.jitsi.nlj.transform.node.ConsumerNode
 
 open class ProtocolSender @JvmOverloads constructor(
     private val stack: ProtocolStack,
     name: String = stack::class.toString()
-) : TransformerNode(name) {
+) : ConsumerNode(name) {
 
     init {
         stack.onOutgoingProtocolData(::next)
     }
 
-    override fun transform(packetInfo: PacketInfo): PacketInfo? {
+    override fun consume(packetInfo: PacketInfo) {
         stack.sendApplicationData(packetInfo)
-
-        return null
     }
 }
