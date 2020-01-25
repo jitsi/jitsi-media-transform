@@ -323,6 +323,21 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
 }
 
 /**
+ * A node which will always forward the [PacketInfo] it is given.
+ * NOTE that the [PacketInfo] instance may be modified, but only the original
+ * [PacketInfo] instance will be forwarded.
+ */
+abstract class NeverDiscardNode(name: String) : StatsKeepingNode(name) {
+    protected abstract fun handlePacket(packetInfo: PacketInfo)
+
+    final override fun doProcessPacket(packetInfo: PacketInfo) {
+        handlePacket(packetInfo)
+        doneProcessing(packetInfo)
+        next(packetInfo)
+    }
+}
+
+/**
  * A [Node] which transforms a single packet, possibly dropping it (by returning null).
  */
 abstract class TransformerNode(name: String) : StatsKeepingNode(name) {
@@ -340,15 +355,13 @@ abstract class TransformerNode(name: String) : StatsKeepingNode(name) {
 
 /**
  * Unlike a [TransformerNode], [ModifierNode] modifies a packet in-place and never
- * outright 'fails', meaning it can never return null.
+ * outright 'fails', meaning the original [PacketInfo] will *always* be forwarded.
  */
-abstract class ModifierNode(name: String) : StatsKeepingNode(name) {
+abstract class ModifierNode(name: String) : NeverDiscardNode(name) {
     protected abstract fun modify(packetInfo: PacketInfo): PacketInfo
 
-    override fun doProcessPacket(packetInfo: PacketInfo) {
-        val modifiedPacket = modify(packetInfo)
-        doneProcessing(modifiedPacket)
-        next(modifiedPacket)
+    override fun handlePacket(packetInfo: PacketInfo) {
+        modify(packetInfo)
     }
 }
 
@@ -382,13 +395,12 @@ abstract class PredicateFilterNode(
 /**
  * A [Node] which observes packets, but makes no modifications.
  */
-abstract class ObserverNode(name: String) : TransformerNode(name) {
+abstract class ObserverNode(name: String) : NeverDiscardNode(name) {
 
     protected abstract fun observe(packetInfo: PacketInfo)
 
-    override fun transform(packetInfo: PacketInfo): PacketInfo? {
+    override fun handlePacket(packetInfo: PacketInfo) {
         observe(packetInfo)
-        return packetInfo
     }
 }
 
