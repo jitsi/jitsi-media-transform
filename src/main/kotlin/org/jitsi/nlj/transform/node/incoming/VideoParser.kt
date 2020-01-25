@@ -59,6 +59,7 @@ class VideoParser(
             packetInfo.packet = videoRtpPacket
             packetInfo.resetPayloadVerification()
         } ?: run {
+            // TODO(brian): Shouldn't we drop the packet here?
             logger.error("Unrecognized video payload type ${rtpPacket.payloadType}, cannot parse video information")
         }
         return packetInfo

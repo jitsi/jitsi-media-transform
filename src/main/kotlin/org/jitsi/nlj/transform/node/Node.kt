@@ -339,16 +339,18 @@ abstract class NeverDiscardNode(name: String) : StatsKeepingNode(name) {
 
 /**
  * A [Node] which transforms a single packet, possibly dropping it (by returning null).
+ * If null is returned, the [PacketInfo] instance given to [transform] will be
+ * discarded.
  */
 abstract class TransformerNode(name: String) : StatsKeepingNode(name) {
-
     protected abstract fun transform(packetInfo: PacketInfo): PacketInfo?
 
     override fun doProcessPacket(packetInfo: PacketInfo) {
         val transformedPacket = transform(packetInfo)
         doneProcessing(transformedPacket)
-        if (transformedPacket != null) {
-            next(transformedPacket)
+        when (transformedPacket) {
+            null -> packetDiscarded(packetInfo)
+            else -> next(transformedPacket)
         }
     }
 }
@@ -369,14 +371,12 @@ abstract class ModifierNode(name: String) : NeverDiscardNode(name) {
  * A [Node] which drops some of the packets (the ones which are not accepted).
  */
 abstract class FilterNode(name: String) : TransformerNode(name) {
-
     protected abstract fun accept(packetInfo: PacketInfo): Boolean
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         return if (accept(packetInfo)) {
             packetInfo
         } else {
-            packetDiscarded(packetInfo)
             null
         }
     }
