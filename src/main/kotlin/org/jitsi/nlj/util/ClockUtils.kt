@@ -25,6 +25,9 @@ import org.jitsi.utils.TimeUtils
 @JvmField
 val NEVER: Instant = Instant.MIN
 
+@JvmField
+val UNKNOWN: Duration = Duration.ofSeconds(Long.MIN_VALUE)
+
 fun Instant.formatMilli(): String = TimeUtils.formatTimeAsFullMillis(this.epochSecond, this.nano)
 
 fun Duration.formatMilli(): String = TimeUtils.formatTimeAsFullMillis(this.seconds, this.nano)
