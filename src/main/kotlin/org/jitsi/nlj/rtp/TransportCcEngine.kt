@@ -25,7 +25,6 @@ import org.jitsi.nlj.util.ArrayCache
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.Rfc3711IndexTracker
-import org.jitsi.nlj.util.UNKNOWN
 import org.jitsi.nlj.util.formatMilli
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.PacketReport
@@ -84,7 +83,7 @@ class TransportCcEngine(
 
     private val missingPacketDetailSeqNums = mutableListOf<Int>()
 
-    private var lastRtt: Duration = UNKNOWN
+    private var lastRtt: Duration? = null
 
     /**
      * Called when an RTP sender has a new round-trip time estimate.
@@ -165,8 +164,8 @@ class TransportCcEngine(
                 } else {
                     "Latest seqNum was ${sentPacketDetails.lastSequence}, size is ${sentPacketDetails.size}."
                 } +
-                if (lastRtt != UNKNOWN) {
-                    " Latest RTT is ${lastRtt.formatMilli()} ms."
+                if (lastRtt != null) {
+                    " Latest RTT is ${lastRtt!!.formatMilli()} ms."
                 } else {
                     ""
                 })
