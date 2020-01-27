@@ -412,9 +412,8 @@ abstract class ConsumerNode(name: String) : StatsKeepingNode(name) {
     protected abstract fun consume(packetInfo: PacketInfo)
 
     override fun doProcessPacket(packetInfo: PacketInfo) {
-        // TODO(before merging): should we call doneProcessing here?
-        //  Before, or after calling consume?
         consume(packetInfo)
+        doneProcessing(packetInfo)
     }
 
     // Consumer nodes shouldn't have children, because they don't forward
