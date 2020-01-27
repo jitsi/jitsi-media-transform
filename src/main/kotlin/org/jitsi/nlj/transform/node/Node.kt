@@ -258,7 +258,7 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
 
         if (enableStatistics && stats.numInputPackets > 0) {
             synchronized(globalStats) {
-                val classStats = globalStats.computeIfAbsent(name) { NodeStatsBlock(name) }
+                val classStats = globalStats.computeIfAbsent(javaClass.name) { NodeStatsBlock(javaClass.simpleName) }
                 classStats.aggregate(getNodeStatsToAggregate())
             }
         }
