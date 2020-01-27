@@ -164,11 +164,11 @@ class TransportCcEngine(
                 } else {
                     "Latest seqNum was ${sentPacketDetails.lastSequence}, size is ${sentPacketDetails.size}."
                 } +
-                if (lastRtt != null) {
-                    " Latest RTT is ${lastRtt!!.formatMilli()} ms."
-                } else {
+                (lastRtt?.let {
+                    " Latest RTT is ${it.formatMilli()} ms."
+                } ?: run {
                     ""
-                })
+                }))
             missingPacketDetailSeqNums.clear()
         }
     }
