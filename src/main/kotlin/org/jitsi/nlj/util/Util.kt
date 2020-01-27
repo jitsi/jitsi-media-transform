@@ -47,7 +47,9 @@ infix fun Int.floorMod(other: Int): Int {
     return Math.floorMod(this, other)
 }
 
-fun getStackTrace(): String = with(StringBuffer()) {
+/* We inline this so getStackTrace itself doesn't show up in the stack trace. */
+@Suppress("NOTHING_TO_INLINE")
+inline fun getStackTrace(): String = with(StringBuffer()) {
     for (ste in Thread.currentThread().stackTrace) {
         appendln(ste.toString())
     }
