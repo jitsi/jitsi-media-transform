@@ -98,6 +98,7 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
         }
     }
 
+    private var num_srtp_processed = 0
     private var num_srtp_fail = 0
     private var num_srtp_auth_fail = 0
     private var num_srtp_replay_fail = 0
@@ -106,6 +107,7 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
 
     private fun countErrorStatus(err: SrtpErrorStatus) {
         when (err) {
+            SrtpErrorStatus.OK -> num_srtp_processed++
             SrtpErrorStatus.FAIL -> num_srtp_fail++
             SrtpErrorStatus.AUTH_FAIL -> num_srtp_auth_fail++
             SrtpErrorStatus.REPLAY_FAIL -> num_srtp_replay_fail++
@@ -123,6 +125,7 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
             } else {
                 addString("state", "hold_for_transformer")
             }
+            addNumber("num_srtp_processed", num_srtp_processed)
             addNumber("num_srtp_fail", num_srtp_fail)
             addNumber("num_srtp_auth_fail", num_srtp_auth_fail)
             addNumber("num_srtp_replay_fail", num_srtp_replay_fail)
