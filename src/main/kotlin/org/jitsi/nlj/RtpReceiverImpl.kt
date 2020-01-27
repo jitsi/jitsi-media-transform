@@ -34,7 +34,8 @@ import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketStreamStatsNode
 import org.jitsi.nlj.transform.node.RtpParser
-import org.jitsi.nlj.transform.node.SrtpTransformerNode
+import org.jitsi.nlj.transform.node.SrtcpDecryptNode
+import org.jitsi.nlj.transform.node.SrtpDecryptNode
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.transform.node.incoming.PaddingTermination
@@ -90,8 +91,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val inputTreeRoot: Node
     private val incomingPacketQueue =
             PacketInfoQueue("rtp-receiver-incoming-packet-queue", executor, this::handleIncomingPacket)
-    private val srtpDecryptWrapper = SrtpTransformerNode("SRTP Decrypt node")
-    private val srtcpDecryptWrapper = SrtpTransformerNode("SRTCP Decrypt node")
+    private val srtpDecryptWrapper = SrtpDecryptNode()
+    private val srtcpDecryptWrapper = SrtcpDecryptNode()
     private val tccGenerator = TccGeneratorNode(rtcpSender, streamInformationStore, logger)
     private val remoteBandwidthEstimator = RemoteBandwidthEstimator(streamInformationStore, logger, diagnosticContext)
     private val audioLevelReader = AudioLevelReader(streamInformationStore)
