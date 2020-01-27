@@ -245,7 +245,7 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
         }
     }
 
-    protected fun packetDiscarded(packetInfo: PacketInfo) {
+    protected open fun packetDiscarded(packetInfo: PacketInfo) {
         stats.numDiscardedPackets++
         BufferPool.returnBuffer(packetInfo.packet.buffer)
     }
@@ -349,9 +349,14 @@ abstract class TransformerNode(name: String) : StatsKeepingNode(name) {
         val transformedPacket = transform(packetInfo)
         doneProcessing(transformedPacket)
         when (transformedPacket) {
-            null -> packetDiscarded(packetInfo)
+            null -> super.packetDiscarded(packetInfo)
             else -> next(transformedPacket)
         }
+    }
+
+    final override fun packetDiscarded(packetInfo: PacketInfo) {
+        throw Exception("No subclass of TransformerNode should call packetDiscarded, " +
+            "return null from 'transform' instead")
     }
 }
 
