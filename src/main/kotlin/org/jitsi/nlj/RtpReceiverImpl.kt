@@ -262,7 +262,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
         toggleablePcapWriter.disable()
     }
 
-    override fun onRttUpdate(newRtt: Double) {
-        remoteBandwidthEstimator.onRttUpdate(newRtt)
+    override fun onRttUpdate(newRttMs: Double) {
+        remoteBandwidthEstimator.onRttUpdate(newRttMs)
     }
 }
