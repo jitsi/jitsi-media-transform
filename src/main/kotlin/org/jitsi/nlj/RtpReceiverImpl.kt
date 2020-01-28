@@ -133,6 +133,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
             // should be returned.
             packetHandler?.processPacket(packetInfo) ?: packetDiscarded(packetInfo)
         }
+
+        override val aggregationKey: String = name
     }
 
     init {
@@ -144,7 +146,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
         inputTreeRoot = pipeline {
             node(packetStreamStats)
-            demux("SRTP/SRTCP") {
+            demux("SRTP/SRTCP Demuxer") {
                 packetPath {
                     name = "SRTP path"
                     predicate = PacketPredicate(Packet::looksLikeRtp)
@@ -163,7 +165,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         node(srtpDecryptWrapper)
                         node(toggleablePcapWriter.newObserverNode())
                         node(statsTracker)
-                        demux("Media type") {
+                        demux("Media Type Demuxer") {
                             packetPath {
                                 name = "Audio path"
                                 predicate = PacketPredicate { it is AudioRtpPacket }
