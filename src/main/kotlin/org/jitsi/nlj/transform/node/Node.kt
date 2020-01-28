@@ -516,5 +516,5 @@ class ExclusivePathDemuxer(name: String) : DemuxerNode(name) {
         }
         packetDiscarded(packetInfo)
     }
-    override val aggregationKey = name
+    override val aggregationKey = this.name
 }

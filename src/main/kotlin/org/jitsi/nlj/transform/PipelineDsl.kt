@@ -60,7 +60,7 @@ class PipelineBuilder {
                 return packetHandler.invoke(packetInfo)
             }
 
-            override val aggregationKey = name
+            override val aggregationKey = this.name
         }
         addNode(node)
     }

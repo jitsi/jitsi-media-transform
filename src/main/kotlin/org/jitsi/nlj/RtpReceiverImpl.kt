@@ -146,7 +146,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
         inputTreeRoot = pipeline {
             node(packetStreamStats)
-            demux("SRTP/SRTCP Demuxer") {
+            demux("SRTP/SRTCP") {
                 packetPath {
                     name = "SRTP path"
                     predicate = PacketPredicate(Packet::looksLikeRtp)
@@ -165,7 +165,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         node(srtpDecryptWrapper)
                         node(toggleablePcapWriter.newObserverNode())
                         node(statsTracker)
-                        demux("Media Type Demuxer") {
+                        demux("Media Type") {
                             packetPath {
                                 name = "Audio path"
                                 predicate = PacketPredicate { it is AudioRtpPacket }
