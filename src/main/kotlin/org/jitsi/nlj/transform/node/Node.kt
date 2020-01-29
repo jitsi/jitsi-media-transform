@@ -103,11 +103,7 @@ sealed class Node(
         if (PLUGINS_ENABLED) {
             plugins.forEach { it.observe(this, packetInfo) }
         }
-        if (TRACE_ENABLED) {
-            trace { nextNode?.processPacket(packetInfo) }
-        } else {
-            nextNode?.processPacket(packetInfo)
-        }
+        nextNode?.processPacket(packetInfo)
     }
 
     protected fun next(packetInfos: List<PacketInfo>) {
@@ -115,11 +111,7 @@ sealed class Node(
             if (PLUGINS_ENABLED) {
                 plugins.forEach { it.observe(this, packetInfo) }
             }
-            if (TRACE_ENABLED) {
-                trace { nextNode?.processPacket(packetInfo) }
-            } else {
-                nextNode?.processPacket(packetInfo)
-            }
+            nextNode?.processPacket(packetInfo)
         }
     }
 
@@ -193,7 +185,11 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
 
     override fun processPacket(packetInfo: PacketInfo) {
         onEntry(packetInfo)
-        doProcessPacket(packetInfo)
+        if (TRACE_ENABLED) {
+            trace { doProcessPacket(packetInfo) }
+        } else {
+            doProcessPacket(packetInfo)
+        }
     }
 
     override fun getNodeStats() = NodeStatsBlock("Node $name ${hashCode()}").apply {
@@ -263,11 +259,7 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
 
     protected open fun packetDiscarded(packetInfo: PacketInfo) {
         stats.numDiscardedPackets++
-        if (TRACE_ENABLED) {
-            trace { BufferPool.returnBuffer(packetInfo.packet.buffer) }
-        } else {
-            BufferPool.returnBuffer(packetInfo.packet.buffer)
-        }
+        BufferPool.returnBuffer(packetInfo.packet.buffer)
     }
 
     override fun stop() {
