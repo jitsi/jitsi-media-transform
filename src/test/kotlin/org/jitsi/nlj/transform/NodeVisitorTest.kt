@@ -56,6 +56,8 @@ internal class NodeVisitorTest : ShouldSpec() {
         override fun consume(packetInfo: PacketInfo) {}
 
         override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
+
+        override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
     }
 
     private val testOutgoingPipeline1 = pipeline {

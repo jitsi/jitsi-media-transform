@@ -48,6 +48,8 @@ class OutgoingStatisticsTracker : ObserverNode("Outgoing statistics tracker") {
     }
 
     override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
+
+override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
 }
 
 class OutgoingStatisticsSnapshot(

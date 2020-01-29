@@ -27,5 +27,7 @@ internal fun Node.onOutput(func: (PacketInfo) -> Unit) {
         }
 
         override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
+
+        override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
     })
 }

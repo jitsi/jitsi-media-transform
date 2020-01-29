@@ -40,4 +40,6 @@ class PacketCacher : ObserverNode("Packet cache") {
     }
 
     override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
+
+override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
 }

@@ -204,6 +204,8 @@ class KeyframeRequester @JvmOverloads constructor(
 
     override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 
+override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
+
     companion object {
         private val DEFAULT_WAIT_INTERVAL = Duration.ofMillis(100)
     }

@@ -256,9 +256,17 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
     }
 
     protected fun packetDiscarded(packetInfo: PacketInfo) {
+        // stats.numDiscardedPackets++
+        // BufferPool.returnBuffer(packetInfo.packet.buffer)
+        detailedPacketDiscarded(packetInfo)
+    }
+
+    protected fun packetDiscardedFromChild(packetInfo: PacketInfo) {
         stats.numDiscardedPackets++
         BufferPool.returnBuffer(packetInfo.packet.buffer)
     }
+
+    protected abstract fun detailedPacketDiscarded(packetInfo: PacketInfo)
 
     override fun stop() {
         if (stopped) {
@@ -522,6 +530,8 @@ class ExclusivePathDemuxer(name: String) : DemuxerNode(name) {
     }
 
     override fun detailedNext(packetInfo: PacketInfo) {
-        next(packetInfo)
+        nextFromChild(packetInfo)
     }
+
+    override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
 }

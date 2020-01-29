@@ -35,6 +35,8 @@ internal class ExclusivePathDemuxerTest : ShouldSpec() {
         }
 
         override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
+
+        override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
     }
 
     private class DummyRtcpPacket : RtcpPacket(ByteArray(50), 0, 50) {

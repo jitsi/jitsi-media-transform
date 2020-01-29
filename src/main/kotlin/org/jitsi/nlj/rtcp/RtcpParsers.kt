@@ -30,10 +30,14 @@ class CompoundRtcpParser(parentLogger: Logger) : PacketParser("Compound RTCP par
 }) {
 
     override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
+
+override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
 }
 
 class SingleRtcpParser(parentLogger: Logger) : PacketParser("Single RTCP parser", parentLogger, {
     RtcpPacket.parse(it.buffer, it.offset, it.length) }) {
 
     override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
+
+override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
 }

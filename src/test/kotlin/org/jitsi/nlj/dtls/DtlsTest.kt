@@ -70,6 +70,8 @@ class DtlsTest : ShouldSpec() {
             }
 
             override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
+
+            override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
         })
         clientSender.attach(object : ConsumerNode("client network") {
             override fun consume(packetInfo: PacketInfo) {
@@ -78,6 +80,8 @@ class DtlsTest : ShouldSpec() {
             }
 
             override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
+
+            override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
         })
 
         // We attach a consumer to each peer's receiver to consume the DTLS app packet
@@ -94,6 +98,8 @@ class DtlsTest : ShouldSpec() {
             }
 
             override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
+
+            override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
         })
 
         val clientReceivedData = CompletableFuture<String>()
@@ -106,6 +112,8 @@ class DtlsTest : ShouldSpec() {
             }
 
             override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
+
+            override fun detailedPacketDiscarded(packetInfo: PacketInfo) = packetDiscardedFromChild(packetInfo)
         })
 
         val serverThread = thread {
