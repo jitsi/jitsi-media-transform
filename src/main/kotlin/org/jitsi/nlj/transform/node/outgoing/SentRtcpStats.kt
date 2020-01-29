@@ -37,4 +37,6 @@ class SentRtcpStats : ObserverNode("Sent RTCP stats") {
             }
         }
     }
+
+    override fun trace(f: () -> Unit) = f.invoke()
 }

@@ -103,7 +103,11 @@ sealed class Node(
         if (PLUGINS_ENABLED) {
             plugins.forEach { it.observe(this, packetInfo) }
         }
-        nextNode?.processPacket(packetInfo)
+        if (TRACE_ENABLED) {
+            trace { nextNode?.processPacket(packetInfo) }
+        } else {
+            nextNode?.processPacket(packetInfo)
+        }
     }
 
     protected fun next(packetInfos: List<PacketInfo>) {
@@ -111,11 +115,18 @@ sealed class Node(
             if (PLUGINS_ENABLED) {
                 plugins.forEach { it.observe(this, packetInfo) }
             }
-            nextNode?.processPacket(packetInfo)
+            if (TRACE_ENABLED) {
+                trace { nextNode?.processPacket(packetInfo) }
+            } else {
+                nextNode?.processPacket(packetInfo)
+            }
         }
     }
 
+    abstract fun trace(f: () -> Unit)
+
     companion object {
+        var TRACE_ENABLED = false
         var PLUGINS_ENABLED = false
         // 'Plugins' are observers which, when enabled, will be passed every packet that passes through
         // every node
@@ -131,6 +142,10 @@ sealed class Node(
                 PLUGINS_ENABLED = plugins.isNotEmpty()
                 PacketInfo.ENABLE_PAYLOAD_VERIFICATION = false
             }
+        }
+
+        fun enableNodeTracing(enable: Boolean) {
+            TRACE_ENABLED = enable
         }
     }
 }
@@ -248,7 +263,11 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
 
     protected open fun packetDiscarded(packetInfo: PacketInfo) {
         stats.numDiscardedPackets++
-        BufferPool.returnBuffer(packetInfo.packet.buffer)
+        if (TRACE_ENABLED) {
+            trace { BufferPool.returnBuffer(packetInfo.packet.buffer) }
+        } else {
+            BufferPool.returnBuffer(packetInfo.packet.buffer)
+        }
     }
 
     override fun stop() {
@@ -517,4 +536,6 @@ class ExclusivePathDemuxer(name: String) : DemuxerNode(name) {
         packetDiscarded(packetInfo)
     }
     override val aggregationKey = this.name
+
+    override fun trace(f: () -> Unit) = f.invoke()
 }
