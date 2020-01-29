@@ -68,12 +68,16 @@ class DtlsTest : ShouldSpec() {
                 pcapWriter?.processPacket(packetInfo)
                 clientReceiver.processPacket(packetInfo)
             }
+
+            override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
         })
         clientSender.attach(object : ConsumerNode("client network") {
             override fun consume(packetInfo: PacketInfo) {
                 pcapWriter?.processPacket(packetInfo)
                 serverReceiver.processPacket(packetInfo)
             }
+
+            override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
         })
 
         // We attach a consumer to each peer's receiver to consume the DTLS app packet
@@ -88,6 +92,8 @@ class DtlsTest : ShouldSpec() {
                 serverReceivedData.complete(receivedStr)
                 serverSender.processPacket(PacketInfo(UnparsedPacket(serverToClientMessage.toByteArray())))
             }
+
+            override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
         })
 
         val clientReceivedData = CompletableFuture<String>()
@@ -98,6 +104,8 @@ class DtlsTest : ShouldSpec() {
                 debug("Client received message: '$receivedStr'")
                 clientReceivedData.complete(receivedStr)
             }
+
+            override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
         })
 
         val serverThread = thread {

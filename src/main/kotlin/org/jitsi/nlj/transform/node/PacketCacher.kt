@@ -38,4 +38,6 @@ class PacketCacher : ObserverNode("Packet cache") {
             addBlock(packetCache.getNodeStats())
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

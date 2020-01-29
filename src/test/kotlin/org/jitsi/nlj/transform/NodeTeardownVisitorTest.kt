@@ -51,6 +51,8 @@ internal class NodeTeardownVisitorTest : ShouldSpec() {
     // terminate at the same node
     private val testOutgoingPipelineTermination = object : ConsumerNode("Output termination") {
         override fun consume(packetInfo: PacketInfo) {}
+
+        override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
     }
 
     private val testOutgoingPipeline1 = pipeline {

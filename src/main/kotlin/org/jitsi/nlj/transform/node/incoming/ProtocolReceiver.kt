@@ -28,4 +28,6 @@ class ProtocolReceiver @JvmOverloads constructor(
     override fun transform(packetInfo: PacketInfo): List<PacketInfo> {
         return stack.processIncomingProtocolData(packetInfo)
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

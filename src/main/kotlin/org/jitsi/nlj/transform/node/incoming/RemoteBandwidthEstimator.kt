@@ -130,4 +130,6 @@ class RemoteBandwidthEstimator(
     fun onRttUpdate(newRttMs: Double) {
         bwe.onRttUpdate(clock.instant(), Duration.ofNanos((newRttMs * 1000_000).toLong()))
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

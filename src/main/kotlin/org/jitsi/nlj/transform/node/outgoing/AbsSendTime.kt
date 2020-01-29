@@ -50,4 +50,6 @@ class AbsSendTime(
             addString("abs_send_time_ext_id", extensionId.toString())
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

@@ -73,6 +73,8 @@ class IncomingStatisticsTracker(
             }.toMap()
         )
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }
 
 class IncomingStatisticsSnapshot(

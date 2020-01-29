@@ -132,6 +132,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
             // should be returned.
             packetHandler?.processPacket(packetInfo) ?: packetDiscarded(packetInfo)
         }
+
+        override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
     }
 
     init {

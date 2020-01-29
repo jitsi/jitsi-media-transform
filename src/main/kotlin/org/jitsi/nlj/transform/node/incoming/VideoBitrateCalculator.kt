@@ -64,4 +64,6 @@ class VideoBitrateCalculator(
             }
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

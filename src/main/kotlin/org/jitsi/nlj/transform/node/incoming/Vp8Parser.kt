@@ -67,4 +67,6 @@ class Vp8Parser(
             addNumber("num_keyframes", numKeyframes)
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

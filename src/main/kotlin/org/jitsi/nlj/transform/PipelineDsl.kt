@@ -59,6 +59,8 @@ class PipelineBuilder {
             override fun transform(packetInfo: PacketInfo): PacketInfo? {
                 return packetHandler.invoke(packetInfo)
             }
+
+            override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
         }
         addNode(node)
     }

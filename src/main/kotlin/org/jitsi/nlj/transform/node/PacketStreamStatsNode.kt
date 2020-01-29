@@ -39,4 +39,6 @@ class PacketStreamStatsNode(private val packetStreamStats: PacketStreamStats = P
      * different branches of a [Node] tree.
      */
     fun createNewNode() = PacketStreamStatsNode(packetStreamStats)
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

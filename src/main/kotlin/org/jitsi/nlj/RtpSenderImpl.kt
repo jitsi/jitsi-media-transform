@@ -104,6 +104,8 @@ class RtpSenderImpl(
             // should be returned.
             outgoingPacketHandler?.processPacket(packetInfo) ?: packetDiscarded(packetInfo)
         }
+
+        override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
     }
 
     init {

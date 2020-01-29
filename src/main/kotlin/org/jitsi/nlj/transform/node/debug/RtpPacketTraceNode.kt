@@ -25,4 +25,6 @@ class RtpPacketTraceNode(val where: String) : ObserverNode("RtpPacketTraceNode@$
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
         println("$where: RTP packet ${rtpPacket.ssrc} ${rtpPacket.sequenceNumber}")
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

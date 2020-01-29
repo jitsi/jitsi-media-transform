@@ -39,4 +39,6 @@ class RtcpSrUpdater(
 
         return packetInfo
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

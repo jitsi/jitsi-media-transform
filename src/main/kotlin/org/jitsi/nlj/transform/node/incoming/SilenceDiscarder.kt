@@ -47,6 +47,8 @@ class SilenceDiscarder(
                 packetInfo
             }
         }
+
+        override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
     }
 
     inner class RtcpTransformer : TransformerNode("Silence discarder RTCP") {
@@ -63,5 +65,7 @@ class SilenceDiscarder(
 
             return packetInfo
         }
+
+        override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
     }
 }

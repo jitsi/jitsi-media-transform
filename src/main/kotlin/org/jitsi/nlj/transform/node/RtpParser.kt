@@ -49,4 +49,6 @@ class RtpParser(
         packetInfo.resetPayloadVerification()
         return packetInfo
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

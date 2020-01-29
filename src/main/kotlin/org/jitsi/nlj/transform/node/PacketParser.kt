@@ -19,7 +19,7 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.rtp.Packet
 import org.jitsi.utils.logging2.Logger
 
-open class PacketParser(
+abstract class PacketParser(
     name: String,
     parentLogger: Logger,
     private val action: (Packet) -> Packet

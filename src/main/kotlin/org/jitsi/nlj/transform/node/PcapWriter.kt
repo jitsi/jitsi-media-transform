@@ -100,4 +100,6 @@ class PcapWriter(
             handle.close()
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

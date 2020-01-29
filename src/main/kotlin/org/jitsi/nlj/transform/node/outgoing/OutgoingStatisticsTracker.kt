@@ -46,6 +46,8 @@ class OutgoingStatisticsTracker : ObserverNode("Outgoing statistics tracker") {
     fun getSsrcSnapshot(ssrc: Long): OutgoingSsrcStats.Snapshot? {
         return ssrcStats[ssrc]?.getSnapshot()
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }
 
 class OutgoingStatisticsSnapshot(

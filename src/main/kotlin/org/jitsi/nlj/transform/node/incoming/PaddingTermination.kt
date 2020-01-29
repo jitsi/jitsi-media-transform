@@ -46,4 +46,6 @@ class PaddingTermination : FilterNode("Padding termination") {
             addNumber("num_padding_packets_seen", numPaddingPacketsSeen)
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

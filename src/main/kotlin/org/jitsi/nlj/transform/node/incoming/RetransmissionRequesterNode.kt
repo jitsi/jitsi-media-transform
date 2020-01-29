@@ -39,4 +39,6 @@ class RetransmissionRequesterNode(
         super.stop()
         retransmissionRequester.stop()
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

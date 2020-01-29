@@ -117,4 +117,6 @@ class RtcpTermination(
             addNumber("num_failed_to_forward", numFailedToForward)
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

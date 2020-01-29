@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.rtcp
 
+import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.transform.node.PacketParser
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpPacket
@@ -26,7 +27,13 @@ class CompoundRtcpParser(parentLogger: Logger) : PacketParser("Compound RTCP par
         // Force packets to be evaluated to trigger any parsing errors
         compoundPacket.packets
     }
-})
+}) {
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
+}
 
 class SingleRtcpParser(parentLogger: Logger) : PacketParser("Single RTCP parser", parentLogger, {
-    RtcpPacket.parse(it.buffer, it.offset, it.length) })
+    RtcpPacket.parse(it.buffer, it.offset, it.length) }) {
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
+}

@@ -142,4 +142,6 @@ class SrtpTransformerNode(name: String) : MultipleOutputTransformerNode(name) {
         }
         transformer?.close()
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

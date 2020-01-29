@@ -41,4 +41,6 @@ open class ProtocolSender @JvmOverloads constructor(
 
         return null
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

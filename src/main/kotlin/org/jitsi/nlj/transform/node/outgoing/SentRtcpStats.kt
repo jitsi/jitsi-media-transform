@@ -37,4 +37,6 @@ class SentRtcpStats : ObserverNode("Sent RTCP stats") {
             }
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

@@ -103,8 +103,18 @@ sealed class Node(
         if (PLUGINS_ENABLED) {
             plugins.forEach { it.observe(this, packetInfo) }
         }
+        // nextNode?.processPacket(packetInfo)
+        detailedNext(packetInfo)
+    }
+
+    protected fun nextFromChild(packetInfo: PacketInfo) {
+        if (PLUGINS_ENABLED) {
+            plugins.forEach { it.observe(this, packetInfo) }
+        }
         nextNode?.processPacket(packetInfo)
     }
+
+    protected abstract fun detailedNext(packetInfo: PacketInfo)
 
     protected fun next(packetInfos: List<PacketInfo>) {
         packetInfos.forEach { packetInfo ->
@@ -514,5 +524,9 @@ class ExclusivePathDemuxer(name: String) : DemuxerNode(name) {
             }
         }
         packetDiscarded(packetInfo)
+    }
+
+    override fun detailedNext(packetInfo: PacketInfo) {
+        next(packetInfo)
     }
 }

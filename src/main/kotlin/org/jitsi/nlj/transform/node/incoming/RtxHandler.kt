@@ -91,4 +91,6 @@ class RtxHandler(
             addString("rtx_payload_types", rtxPtToRtxPayloadType.values.toString())
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

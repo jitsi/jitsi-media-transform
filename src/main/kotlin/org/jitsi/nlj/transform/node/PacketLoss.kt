@@ -45,6 +45,8 @@ class PacketLoss(private val lossRate: Double) : FilterNode("Packet loss") {
             addRatio("actual_drop_rate", "packetsDropped", "packetsSeen")
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }
 
 class BurstPacketLoss(
@@ -73,4 +75,6 @@ class BurstPacketLoss(
             true
         }
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

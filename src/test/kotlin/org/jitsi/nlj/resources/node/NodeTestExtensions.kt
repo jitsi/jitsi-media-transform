@@ -25,5 +25,7 @@ internal fun Node.onOutput(func: (PacketInfo) -> Unit) {
         override fun consume(packetInfo: PacketInfo) {
             func(packetInfo)
         }
+
+        override fun detailedNext(packetInfo: PacketInfo) = next(packetInfo)
     })
 }

@@ -82,4 +82,6 @@ class VideoParser(
         }
         super.handleEvent(event)
     }
+
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
 }

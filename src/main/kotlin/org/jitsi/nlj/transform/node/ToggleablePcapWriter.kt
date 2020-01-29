@@ -65,6 +65,8 @@ class ToggleablePcapWriter(
                     }
                 }
             }
+
+            override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
         }
     }
 }

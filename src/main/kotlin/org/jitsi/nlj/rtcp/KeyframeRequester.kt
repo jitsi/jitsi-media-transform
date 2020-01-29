@@ -202,6 +202,8 @@ class KeyframeRequester @JvmOverloads constructor(
         waitInterval = Duration.ofMillis(min(DEFAULT_WAIT_INTERVAL.toMillis(), newRtt.toLong() + 10))
     }
 
+    override fun detailedNext(packetInfo: PacketInfo) = nextFromChild(packetInfo)
+
     companion object {
         private val DEFAULT_WAIT_INTERVAL = Duration.ofMillis(100)
     }
