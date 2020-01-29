@@ -114,6 +114,16 @@ sealed class Node(
             nextNode?.processPacket(packetInfo)
         }
     }
+    /**
+     * This function must be implemented by leaf nodes, as
+     * ```
+     *     override fun trace(f: () -> Unit) = f.invoke()
+     * ```
+     * or the Java equivalent.  When [NODE_TRACING] is
+     * turned on, this ensures that call stacks always include an method from
+     * the derived class, rather than one of the parent classes.  This can greatly
+     * aid debugging and profiling.
+     */
 
     abstract fun trace(f: () -> Unit)
 
