@@ -44,7 +44,7 @@ import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto
 import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.util.cerror
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.nlj.util.createChildLogger
+import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.rtp.extensions.toHex
 import org.jitsi.utils.logging2.Logger
 
@@ -57,7 +57,7 @@ class TlsServerImpl(
     parentLogger: Logger
 ) : DefaultTlsServer(BC_TLS_CRYPTO) {
 
-    private val logger = parentLogger.createChildLogger(TlsServerImpl::class)
+    private val logger = createChildLogger(parentLogger)
 
     private var session: TlsSession? = null
 

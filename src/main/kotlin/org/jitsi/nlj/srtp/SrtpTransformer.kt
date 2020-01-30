@@ -18,7 +18,7 @@ package org.jitsi.nlj.srtp
 
 import java.util.concurrent.ConcurrentHashMap
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.util.createChildLogger
+import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.nlj.util.cwarn
 import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.rtcp.RtcpHeader
@@ -133,14 +133,20 @@ abstract class SrtcpTransformer(
 /**
  * A transformer which decrypts SRTCP packets.
  */
-class SrtcpDecryptTransformer(
+class SrtcpDecryptTransformer private constructor(
     contextFactory: SrtpContextFactory,
-    parentLogger: Logger
-) : SrtcpTransformer(contextFactory, parentLogger.createChildLogger(SrtcpDecryptTransformer::class)) {
+    logger: Logger
+) : SrtcpTransformer(contextFactory, createChildLogger(logger)) {
+
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): SrtpErrorStatus {
         return context.reverseTransformPacket(packetInfo.packet).apply {
             packetInfo.resetPayloadVerification()
         }
+    }
+
+    companion object {
+        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtcpDecryptTransformer =
+            SrtcpDecryptTransformer(contextFactory, createChildLogger(parentLogger))
     }
 }
 
@@ -148,10 +154,10 @@ class SrtcpDecryptTransformer(
  * A transformer which encrypts RTCP packets (producing SRTCP packets). Note that as opposed to the other transformers,
  * this one replaces the [Packet].
  */
-class SrtcpEncryptTransformer(
+class SrtcpEncryptTransformer private constructor(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtcpTransformer(contextFactory, parentLogger.createChildLogger(SrtcpEncryptTransformer::class)) {
+) : SrtcpTransformer(contextFactory, createChildLogger(parentLogger)) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): SrtpErrorStatus {
         return context.transformPacket(packetInfo.packet).apply {
@@ -165,16 +171,21 @@ class SrtcpEncryptTransformer(
             packetInfo.resetPayloadVerification()
         }
     }
+
+    companion object {
+        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtcpEncryptTransformer =
+            SrtcpEncryptTransformer(contextFactory, createChildLogger(parentLogger))
+    }
 }
 
 /**
  * A transformer which decrypts SRTP packets. Note that it expects the [Packet] to have already been parsed as
  * [RtpPacket].
  */
-class SrtpDecryptTransformer(
+class SrtpDecryptTransformer private constructor(
     contextFactory: SrtpContextFactory,
-    parentLogger: Logger
-) : SrtpTransformer(contextFactory, parentLogger.createChildLogger(SrtpDecryptTransformer::class)) {
+    logger: Logger
+) : SrtpTransformer(contextFactory, logger) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): SrtpErrorStatus {
         // For silence packets we update the ROC (if authentication passes), but don't decrypt
@@ -182,21 +193,31 @@ class SrtpDecryptTransformer(
             packetInfo.resetPayloadVerification()
         }
     }
+
+    companion object {
+        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtpDecryptTransformer =
+            SrtpDecryptTransformer(contextFactory, createChildLogger(parentLogger))
+    }
 }
 
 /**
  * A transformer which encrypts RTP packets (producing SRTP packets).
  */
-class SrtpEncryptTransformer(
+class SrtpEncryptTransformer private constructor(
     contextFactory: SrtpContextFactory,
-    parentLogger: Logger
-) : SrtpTransformer(contextFactory, parentLogger.createChildLogger(SrtpEncryptTransformer::class)) {
+    logger: Logger
+) : SrtpTransformer(contextFactory, logger) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): SrtpErrorStatus {
         return context.transformPacket(packetInfo.packetAs()).apply {
             packetInfo.packet = packetInfo.packet.toOtherType(::UnparsedPacket)
             packetInfo.resetPayloadVerification()
         }
+    }
+
+    companion object {
+        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtpEncryptTransformer =
+            SrtpEncryptTransformer(contextFactory, createChildLogger(parentLogger))
     }
 }
 

@@ -22,7 +22,6 @@ import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.util.cdebug
 import org.jitsi.nlj.util.cinfo
-import org.jitsi.nlj.util.createChildLogger
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpByePacket
 import org.jitsi.rtp.rtcp.RtcpPacket
@@ -36,12 +35,13 @@ import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbRembPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.utils.logging2.Logger
+import org.jitsi.utils.logging2.createChildLogger
 
 class RtcpTermination(
     private val rtcpEventNotifier: RtcpEventNotifier,
     parentLogger: Logger
 ) : TransformerNode("RTCP termination") {
-    private val logger = parentLogger.createChildLogger(RtcpTermination::class)
+    private val logger = createChildLogger(parentLogger)
     private var packetReceiveCounts = mutableMapOf<String, Int>()
     /**
      * Number of packets we failed to forward because a compound packet contained more than one

@@ -16,11 +16,7 @@
 
 package org.jitsi.nlj.util
 
-import java.util.logging.Level
-import kotlin.reflect.KClass
-import org.jitsi.utils.logging2.LogContext
 import org.jitsi.utils.logging2.Logger
-import org.jitsi.utils.logging2.LoggerImpl
 
 /**
  * Note that, although the logger now supports taking a message supplier
@@ -47,27 +43,4 @@ inline fun Logger.cwarn(msg: () -> String) {
 
 inline fun Logger.cerror(msg: () -> String) {
     this.error(msg())
-}
-
-fun <T : Any> Logger.createChildLogger(
-    forClass: KClass<T>,
-    context: Map<String, String> = emptyMap()
-): Logger {
-    return this.createChildLogger(forClass.java.name, context)
-}
-
-fun <T : Any> getLogger(
-    forClass: KClass<T>,
-    minLevel: Level = Level.ALL,
-    context: Map<String, String> = emptyMap()
-): Logger {
-    return getLogger(forClass.java.name, minLevel, context)
-}
-
-fun getLogger(
-    name: String,
-    minLevel: Level = Level.ALL,
-    context: Map<String, String> = emptyMap()
-): Logger {
-    return LoggerImpl(name, minLevel, LogContext(context))
 }
