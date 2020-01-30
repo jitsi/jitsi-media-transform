@@ -16,10 +16,7 @@
 
 package org.jitsi.nlj.srtp
 
-import java.util.concurrent.ConcurrentHashMap
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.utils.logging2.createChildLogger
-import org.jitsi.utils.logging2.cwarn
 import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.rtcp.RtcpHeader
 import org.jitsi.rtp.rtp.RtpPacket
@@ -29,14 +26,18 @@ import org.jitsi.srtp.SrtpContextFactory
 import org.jitsi.srtp.SrtpCryptoContext
 import org.jitsi.srtp.SrtpErrorStatus
 import org.jitsi.utils.logging2.Logger
+import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.utils.logging2.cwarn
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Implements the methods common to all 4 transformer implementation (encrypt/decrypt for SRTP/SRTCP)
  */
 abstract class AbstractSrtpTransformer<CryptoContextType : BaseSrtpCryptoContext>(
     protected val contextFactory: SrtpContextFactory,
-    protected val logger: Logger
+    parentLogger: Logger
 ) {
+    protected val logger = createChildLogger(parentLogger)
     /**
      * All the known SSRC's corresponding SrtpCryptoContexts
      */
@@ -136,20 +137,13 @@ abstract class SrtcpTransformer(
 class SrtcpDecryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtcpTransformer(contextFactory, createChildLogger(parentLogger)) {
+) : SrtcpTransformer(contextFactory, parentLogger) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): SrtpErrorStatus {
         return context.reverseTransformPacket(packetInfo.packet).apply {
             packetInfo.resetPayloadVerification()
         }
     }
-
-    /**
-     * The definition of a companion object is needed to resolve as a receiver for
-     * the [createChildLogger] function, since 'this' isn't available when calling
-     * the parent constructor.
-     */
-    companion object
 }
 
 /**
@@ -159,7 +153,7 @@ class SrtcpDecryptTransformer(
 class SrtcpEncryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtcpTransformer(contextFactory, createChildLogger(parentLogger)) {
+) : SrtcpTransformer(contextFactory, parentLogger) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): SrtpErrorStatus {
         return context.transformPacket(packetInfo.packet).apply {
@@ -173,13 +167,6 @@ class SrtcpEncryptTransformer(
             packetInfo.resetPayloadVerification()
         }
     }
-
-    /**
-     * The definition of a companion object is needed to resolve as a receiver for
-     * the [createChildLogger] function, since 'this' isn't available when calling
-     * the parent constructor.
-     */
-    companion object
 }
 
 /**
@@ -189,7 +176,7 @@ class SrtcpEncryptTransformer(
 class SrtpDecryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtpTransformer(contextFactory, createChildLogger(parentLogger)) {
+) : SrtpTransformer(contextFactory, parentLogger) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): SrtpErrorStatus {
         // For silence packets we update the ROC (if authentication passes), but don't decrypt
@@ -197,13 +184,6 @@ class SrtpDecryptTransformer(
             packetInfo.resetPayloadVerification()
         }
     }
-
-    /**
-     * The definition of a companion object is needed to resolve as a receiver for
-     * the [createChildLogger] function, since 'this' isn't available when calling
-     * the parent constructor.
-     */
-    companion object
 }
 
 /**
@@ -212,7 +192,7 @@ class SrtpDecryptTransformer(
 class SrtpEncryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
-) : SrtpTransformer(contextFactory, createChildLogger(parentLogger)) {
+) : SrtpTransformer(contextFactory, parentLogger) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): SrtpErrorStatus {
         return context.transformPacket(packetInfo.packetAs()).apply {
@@ -220,13 +200,6 @@ class SrtpEncryptTransformer(
             packetInfo.resetPayloadVerification()
         }
     }
-
-    /**
-     * The definition of a companion object is needed to resolve as a receiver for
-     * the [createChildLogger] function, since 'this' isn't available when calling
-     * the parent constructor.
-     */
-    companion object
 }
 
 /**
