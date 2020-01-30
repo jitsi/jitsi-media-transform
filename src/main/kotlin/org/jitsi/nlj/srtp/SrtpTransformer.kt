@@ -19,7 +19,7 @@ package org.jitsi.nlj.srtp
 import java.util.concurrent.ConcurrentHashMap
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.utils.logging2.createChildLogger
-import org.jitsi.nlj.util.cwarn
+import org.jitsi.utils.logging2.cwarn
 import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.rtp.rtcp.RtcpHeader
 import org.jitsi.rtp.rtp.RtpPacket

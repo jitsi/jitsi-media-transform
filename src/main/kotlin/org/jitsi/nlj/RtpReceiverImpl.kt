@@ -53,7 +53,7 @@ import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
-import org.jitsi.nlj.util.cdebug
+import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.rtp.Packet
 import org.jitsi.rtp.extensions.looksLikeRtcp

@@ -21,7 +21,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
 import org.jitsi.nlj.rtcp.RtcpListener
-import org.jitsi.nlj.util.cdebug
+import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.nlj.util.toDoubleMillis
 import org.jitsi.rtp.rtcp.RtcpPacket

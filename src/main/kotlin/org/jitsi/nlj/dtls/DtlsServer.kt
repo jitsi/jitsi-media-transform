@@ -21,8 +21,8 @@ import org.bouncycastle.tls.DTLSServerProtocol
 import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
 import org.jitsi.nlj.srtp.TlsRole
-import org.jitsi.nlj.util.cerror
-import org.jitsi.nlj.util.cinfo
+import org.jitsi.utils.logging2.cerror
+import org.jitsi.utils.logging2.cinfo
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.utils.logging2.Logger
 

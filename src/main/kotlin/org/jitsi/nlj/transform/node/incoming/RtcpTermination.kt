@@ -20,8 +20,8 @@ import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.BufferPool
-import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.cinfo
+import org.jitsi.utils.logging2.cdebug
+import org.jitsi.utils.logging2.cinfo
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpByePacket
 import org.jitsi.rtp.rtcp.RtcpPacket

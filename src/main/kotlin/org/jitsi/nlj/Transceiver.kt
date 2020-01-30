@@ -34,8 +34,8 @@ import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.LocalSsrcAssociation
 import org.jitsi.nlj.util.SsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
-import org.jitsi.nlj.util.cdebug
-import org.jitsi.nlj.util.cinfo
+import org.jitsi.utils.logging2.cdebug
+import org.jitsi.utils.logging2.cinfo
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext

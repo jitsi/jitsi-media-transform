@@ -28,7 +28,7 @@ import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.util.BufferPool
-import org.jitsi.nlj.util.cdebug
+import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.rtp.UnparsedPacket
 import org.jitsi.utils.logging2.Logger

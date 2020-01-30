@@ -25,7 +25,7 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
-import org.jitsi.nlj.util.cdebug
+import org.jitsi.utils.logging2.cdebug
 import org.jitsi.nlj.util.milliseconds
 import org.jitsi.utils.observableWhenChanged
 import org.jitsi.rtp.rtcp.RtcpPacket

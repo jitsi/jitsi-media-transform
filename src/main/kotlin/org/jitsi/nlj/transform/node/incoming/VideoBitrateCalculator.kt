@@ -21,7 +21,7 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SetMediaStreamTracksEvent
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.transform.node.ObserverNode
-import org.jitsi.nlj.util.cdebug
+import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
