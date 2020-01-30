@@ -133,10 +133,10 @@ abstract class SrtcpTransformer(
 /**
  * A transformer which decrypts SRTCP packets.
  */
-class SrtcpDecryptTransformer private constructor(
+class SrtcpDecryptTransformer(
     contextFactory: SrtpContextFactory,
-    logger: Logger
-) : SrtcpTransformer(contextFactory, createChildLogger(logger)) {
+    parentLogger: Logger
+) : SrtcpTransformer(contextFactory, createChildLogger(parentLogger)) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtcpCryptoContext): SrtpErrorStatus {
         return context.reverseTransformPacket(packetInfo.packet).apply {
@@ -144,17 +144,19 @@ class SrtcpDecryptTransformer private constructor(
         }
     }
 
-    companion object {
-        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtcpDecryptTransformer =
-            SrtcpDecryptTransformer(contextFactory, createChildLogger(parentLogger))
-    }
+    /**
+     * The definition of a companion object is needed to resolve as a receiver for
+     * the [createChildLogger] function, since 'this' isn't available when calling
+     * the parent constructor.
+     */
+    companion object
 }
 
 /**
  * A transformer which encrypts RTCP packets (producing SRTCP packets). Note that as opposed to the other transformers,
  * this one replaces the [Packet].
  */
-class SrtcpEncryptTransformer private constructor(
+class SrtcpEncryptTransformer(
     contextFactory: SrtpContextFactory,
     parentLogger: Logger
 ) : SrtcpTransformer(contextFactory, createChildLogger(parentLogger)) {
@@ -172,20 +174,22 @@ class SrtcpEncryptTransformer private constructor(
         }
     }
 
-    companion object {
-        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtcpEncryptTransformer =
-            SrtcpEncryptTransformer(contextFactory, createChildLogger(parentLogger))
-    }
+    /**
+     * The definition of a companion object is needed to resolve as a receiver for
+     * the [createChildLogger] function, since 'this' isn't available when calling
+     * the parent constructor.
+     */
+    companion object
 }
 
 /**
  * A transformer which decrypts SRTP packets. Note that it expects the [Packet] to have already been parsed as
  * [RtpPacket].
  */
-class SrtpDecryptTransformer private constructor(
+class SrtpDecryptTransformer(
     contextFactory: SrtpContextFactory,
-    logger: Logger
-) : SrtpTransformer(contextFactory, logger) {
+    parentLogger: Logger
+) : SrtpTransformer(contextFactory, createChildLogger(parentLogger)) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): SrtpErrorStatus {
         // For silence packets we update the ROC (if authentication passes), but don't decrypt
@@ -194,19 +198,21 @@ class SrtpDecryptTransformer private constructor(
         }
     }
 
-    companion object {
-        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtpDecryptTransformer =
-            SrtpDecryptTransformer(contextFactory, createChildLogger(parentLogger))
-    }
+    /**
+     * The definition of a companion object is needed to resolve as a receiver for
+     * the [createChildLogger] function, since 'this' isn't available when calling
+     * the parent constructor.
+     */
+    companion object
 }
 
 /**
  * A transformer which encrypts RTP packets (producing SRTP packets).
  */
-class SrtpEncryptTransformer private constructor(
+class SrtpEncryptTransformer(
     contextFactory: SrtpContextFactory,
-    logger: Logger
-) : SrtpTransformer(contextFactory, logger) {
+    parentLogger: Logger
+) : SrtpTransformer(contextFactory, createChildLogger(parentLogger)) {
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): SrtpErrorStatus {
         return context.transformPacket(packetInfo.packetAs()).apply {
@@ -215,10 +221,12 @@ class SrtpEncryptTransformer private constructor(
         }
     }
 
-    companion object {
-        operator fun invoke(contextFactory: SrtpContextFactory, parentLogger: Logger): SrtpEncryptTransformer =
-            SrtpEncryptTransformer(contextFactory, createChildLogger(parentLogger))
-    }
+    /**
+     * The definition of a companion object is needed to resolve as a receiver for
+     * the [createChildLogger] function, since 'this' isn't available when calling
+     * the parent constructor.
+     */
+    companion object
 }
 
 /**
