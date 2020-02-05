@@ -242,7 +242,7 @@ class DtlsStack(
         // a buffer came from the pool or not, we'll need to always return it.
         val newBuf = BufferPool.getBuffer(length)
         System.arraycopy(buf, off, newBuf, 0, length)
-        val packet = PacketInfo(UnparsedPacket(newBuf, off, length))
+        val packet = PacketInfo(UnparsedPacket(newBuf, 0, length))
         onOutgoingProtocolData(listOf(packet))
     }
 
