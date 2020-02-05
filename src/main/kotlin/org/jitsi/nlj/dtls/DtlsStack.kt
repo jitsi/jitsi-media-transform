@@ -120,6 +120,9 @@ class DtlsStack(
 
     /**
      * A buffer we'll use to receive data from [dtlsTransport].
+     * TODO: we leak this buffer (it's never returned to the pool).  We can return
+     * it in [close], but we need a sentinel to make sure we don't try and receive from
+     * it after close has been called.
      */
     private val dtlsAppDataBuf = BufferPool.getBuffer(1500)
 
