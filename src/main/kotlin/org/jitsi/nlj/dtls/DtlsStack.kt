@@ -120,11 +120,8 @@ class DtlsStack(
 
     /**
      * A buffer we'll use to receive data from [dtlsTransport].
-     * TODO: we leak this buffer (it's never returned to the pool).  We can return
-     * it in [close], but we need a sentinel to make sure we don't try and receive from
-     * it after close has been called.
      */
-    private val dtlsAppDataBuf = BufferPool.getBuffer(1500)
+    private val dtlsAppDataBuf = ByteArray(1500)
 
     /**
      * Install a handler to be invoked when the DTLS handshake is finished.
