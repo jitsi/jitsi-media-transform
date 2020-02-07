@@ -285,6 +285,28 @@
 				  </execution>
 			  </executions>
 		  </plugin>
+          <plugin>
+              <groupId>com.github.spotbugs</groupId>
+              <artifactId>spotbugs-maven-plugin</artifactId>
+              <version>3.1.12.2</version>
+              <configuration>
+                  <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+                  <includeTests>true</includeTests>
+              </configuration>
+              <executions>
+                  <execution>
+                      <phase>verify</phase>
+                      <goals><goal>check</goal></goals>
+                  </execution>
+              </executions>
+              <dependencies>
+                  <dependency>
+                      <groupId>com.github.spotbugs</groupId>
+                      <artifactId>spotbugs</artifactId>
+                      <version>${spotbugs.version}</version>
+                  </dependency>
+              </dependencies>
+          </plugin>
         </plugins>
     </build>
 
