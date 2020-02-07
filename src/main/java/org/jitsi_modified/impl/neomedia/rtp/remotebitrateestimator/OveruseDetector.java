@@ -28,7 +28,7 @@ import java.util.*;
  * @author Lyubomir Marinov
  */
 @SuppressFBWarnings(
-        value = "FE_FLOATING_POINT_EQUALITY",
+        value = {"FE_FLOATING_POINT_EQUALITY", "DB_DUPLICATE_BRANCHES"},
         justification = "We only compare timeOverUsing with the special value -1")
 class OveruseDetector
 {
