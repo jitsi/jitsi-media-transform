@@ -421,7 +421,7 @@ public class RemoteBitrateEstimatorAbsSendTime
                 kTimestampGroupLengthTicks, kTimestampToMs,
                 enableBurstGrouping, diagnosticContext, parentLogger);
             this.estimator = new OveruseEstimator(options, diagnosticContext, logger);
-            this.detector = new OveruseDetector(options, diagnosticContext, logger);
+            this.detector = new OveruseDetector(options, diagnosticContext);
         }
     }
 

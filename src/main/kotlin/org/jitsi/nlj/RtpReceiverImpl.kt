@@ -75,7 +75,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * participant it's receiving data from (NACK packets, for example)
      */
     private val rtcpSender: (RtcpPacket) -> Unit = {},
-    private val rtcpEventNotifier: RtcpEventNotifier,
+    rtcpEventNotifier: RtcpEventNotifier,
     /**
      * The executor this class will use for its primary work (i.e. critical path
      * packet processing).  This [RtpReceiver] will execute a blocking queue read
