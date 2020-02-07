@@ -28,6 +28,9 @@
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
     <!-- False positives with kotlin's "when" -->
     <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+    <!-- False positives with lazy vals -->
+    <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+
 
     <!-- False positives for an unknown reason -->
     <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION"/>
