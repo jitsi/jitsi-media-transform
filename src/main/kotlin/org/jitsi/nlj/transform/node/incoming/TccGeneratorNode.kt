@@ -25,6 +25,7 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.NEVER
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
+import org.jitsi.nlj.util.Rfc3711IndexTracker
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.nlj.util.milliseconds
 import org.jitsi.utils.observableWhenChanged
@@ -33,7 +34,6 @@ import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacketBuilder
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
-import org.jitsi.rtp.util.RtpUtils
 import org.jitsi.rtp.util.isOlderThan
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -55,8 +55,7 @@ class TccGeneratorNode(
     private var lastTccSentTime: Instant = NEVER
     private val lock = Any()
     // Tcc seq num -> arrival time in ms
-    private val packetArrivalTimes =
-        TreeMap<Int, Long>(Comparator<Int> { o1, o2 -> RtpUtils.getSequenceNumberDelta(o1, o2) })
+    private val packetArrivalTimes = TreeMap<Int, Long>()
     // The first sequence number of the current tcc feedback packet
     private var windowStartSeq: Int = -1
     private var running = true
@@ -65,6 +64,7 @@ class TccGeneratorNode(
     private var enabled: Boolean by observableWhenChanged(false) {
         _, _, newValue -> logger.debug("Setting enabled=$newValue")
     }
+    private val rfc3711IndexTracker = Rfc3711IndexTracker()
 
     init {
         streamInformation.onRtpExtensionMapping(TRANSPORT_CC) {
@@ -81,12 +81,15 @@ class TccGeneratorNode(
         tccExtensionId?.let { tccExtId ->
             val rtpPacket = packetInfo.packetAs<RtpPacket>()
             rtpPacket.getHeaderExtension(tccExtId)?.let { ext ->
-                val tccSeqNum = TccHeaderExtension.getSequenceNumber(ext)
+                val tccSeqNum = rfc3711IndexTracker.update(TccHeaderExtension.getSequenceNumber(ext))
                 addPacket(tccSeqNum, packetInfo.receivedTime, rtpPacket.isMarked, rtpPacket.ssrc)
             }
         }
     }
 
+    /**
+     * @param tccSeqNum the extended sequence number.
+     */
     private fun addPacket(tccSeqNum: Int, timestamp: Long, isMarked: Boolean, ssrc: Long) {
         synchronized(lock) {
             if (packetArrivalTimes.ceilingKey(windowStartSeq) == null) {
@@ -127,7 +130,7 @@ class TccGeneratorNode(
                 if (!tccBuilder.AddReceivedPacket(seqNum, timestampMs * 1000)) {
                     break
                 }
-                nextSequenceNumber = (seqNum + 1) and 0xFFFF
+                nextSequenceNumber = seqNum + 1
             }
 
             // The next window will start with the sequence number after the last one we included in the previous
