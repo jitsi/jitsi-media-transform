@@ -21,6 +21,7 @@ import org.jitsi.nlj.SetMediaStreamTracksEvent
 import org.jitsi.nlj.format.Vp8PayloadType
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
+import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.rtp.rtp.RtpPacket
@@ -28,6 +29,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
 import org.jitsi_modified.impl.neomedia.rtp.RTPEncodingDesc
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Parse video packets at a codec level and set appropriate meta-information
@@ -38,6 +40,7 @@ class VideoParser(
 ) : TransformerNode("Video parser") {
     private val logger = createChildLogger(parentLogger)
     private var tracks: Array<MediaStreamTrackDesc> = arrayOf()
+    private val numVp8PacketsDroppedNoEncoding = AtomicInteger()
 
     // TODO: things we want to detect here:
     // does this packet belong to a keyframe?
@@ -52,6 +55,9 @@ class VideoParser(
                     findRtpEncodingDesc(vp8Packet)?.let {
                         vp8Packet.qualityIndex = it.index
                         vp8Packet
+                    } ?: run {
+                        numVp8PacketsDroppedNoEncoding.incrementAndGet()
+                        null
                     }
                 }
                 else -> rtpPacket
@@ -85,4 +91,10 @@ class VideoParser(
     }
 
     override fun trace(f: () -> Unit) = f.invoke()
+
+    override fun getNodeStats(): NodeStatsBlock {
+        return super.getNodeStats().apply {
+            addNumber("num_vp8_packets_dropped_no_encoding", numVp8PacketsDroppedNoEncoding.get())
+        }
+    }
 }
