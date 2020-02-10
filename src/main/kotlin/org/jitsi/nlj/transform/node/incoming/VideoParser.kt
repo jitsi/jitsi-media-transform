@@ -71,6 +71,7 @@ class VideoParser(
                 return it
             }
         }
+        logger.warn("Unable to find encoding matching packet! encodings=$tracks, packet=$packet")
         return null
     }
 
