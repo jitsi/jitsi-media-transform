@@ -51,11 +51,11 @@ class VideoParser(
                     val vp8Packet = rtpPacket.toOtherType(::Vp8Packet)
                     findRtpEncodingDesc(vp8Packet)?.let {
                         vp8Packet.qualityIndex = it.index
+                        vp8Packet
                     }
-                    vp8Packet
                 }
                 else -> rtpPacket
-            }
+            } ?: return null
             packetInfo.packet = videoRtpPacket
             packetInfo.resetPayloadVerification()
             packetInfo
@@ -71,6 +71,7 @@ class VideoParser(
                 return it
             }
         }
+        logger.warn("Unable to find encoding matching packet! encodings=$tracks, packet=$packet")
         return null
     }
 
