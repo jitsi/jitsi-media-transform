@@ -29,7 +29,7 @@ open class DelayStats {
     val maxDelayMs = AtomicLong(0)
 
     /* TODO: make thresholds configurable */
-    val thresholds = longArrayOf(5, 20, 50, 200, 500, 1000)
+    val thresholds = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
     val thresholdCounts = Array(thresholds.size + 1) { LongAdder() }
 
     fun addDelay(delayMs: Long) {
