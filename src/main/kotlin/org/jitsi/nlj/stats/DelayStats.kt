@@ -20,6 +20,7 @@ import java.util.Arrays
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.util.OrderedJsonObject
 
 open class DelayStats {
     private val totalDelayMs = LongAdder()
@@ -44,6 +45,19 @@ open class DelayStats {
             val bucket = if (searchResult < 0) { - searchResult - 1 } else { searchResult }
             thresholdCounts[bucket].increment()
         }
+    }
+
+    fun toJson() = OrderedJsonObject().apply {
+        put("average_delay_ms", averageDelay)
+        put("max_delay_ms", maxDelayMs)
+
+        val buckets = OrderedJsonObject().apply {
+            for (i in thresholds.indices) {
+                put("< ${thresholds[i]} ms", thresholdCounts[i])
+            }
+            put("> ${thresholds[thresholds.size - 1]} ms", thresholdCounts[thresholds.size])
+        }
+        put("buckets", buckets)
     }
 }
 
