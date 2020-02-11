@@ -27,19 +27,23 @@ class DelayStatsTest : ShouldSpec() {
     init {
         "adding stats" {
             val delayStats = DelayStats(longArrayOf(2, 5, 200, 999))
-            repeat(100) { delayStats.addDelay(1) }
-            repeat(100) { delayStats.addDelay(5) }
 
             should("calculate the average correctly") {
+                repeat(100) { delayStats.addDelay(1) }
+                repeat(100) { delayStats.addDelay(5) }
                 delayStats.getSnapshot().averageDelayMs shouldBe 3.0
             }
 
             should("calculate the max correctly") {
+                repeat(100) { delayStats.addDelay(1) }
+                repeat(100) { delayStats.addDelay(5) }
                 delayStats.addDelay(100)
                 delayStats.getSnapshot().maxDelayMs shouldBe 100
             }
 
             should("export the buckets correctly to json") {
+                repeat(100) { delayStats.addDelay(1) }
+                repeat(100) { delayStats.addDelay(5) }
                 delayStats.addDelay(150)
                 delayStats.addDelay(1500)
                 val bucketsJson = delayStats.toJson()["buckets"]
@@ -50,6 +54,26 @@ class DelayStatsTest : ShouldSpec() {
                 bucketsJson["<= 5 ms"] shouldBe 100
                 bucketsJson["<= 200 ms"] shouldBe 1
                 bucketsJson["> 999 ms"] shouldBe 1
+            }
+
+            should("calculate p99 and p999 correctly") {
+                delayStats.getSnapshot().p99bound shouldBe -1
+                delayStats.getSnapshot().p999bound shouldBe -1
+
+                repeat(200) { delayStats.addDelay(1) }
+                delayStats.getSnapshot().p99bound shouldBe 2
+                delayStats.getSnapshot().p999bound shouldBe -1
+
+                repeat(800) { delayStats.addDelay(1) }
+                delayStats.getSnapshot().p999bound shouldBe 2
+
+                delayStats.addDelay(5)
+                delayStats.addDelay(5)
+                delayStats.getSnapshot().p99bound shouldBe 2
+                delayStats.getSnapshot().p999bound shouldBe 5
+
+                repeat(2000) { delayStats.addDelay(1) }
+                delayStats.getSnapshot().p999bound shouldBe 2
             }
         }
     }

@@ -66,24 +66,44 @@ open class DelayStats(
             put("> ${snapshot.buckets[indexOfSecondToLast].first} ms", snapshot.buckets.last().second)
         }
         put("buckets", buckets)
+        put("p99<=", snapshot.p99bound)
+        put("p999<=", snapshot.p999bound)
     }
 
     fun getSnapshot(): Snapshot {
 
         val buckets = Array(thresholds.size) { i -> Pair(thresholds[i], thresholdCounts[i].sum()) }
+        val totalCount = totalCount.sum()
+
+        var p99 = Long.MAX_VALUE
+        var p999 = Long.MAX_VALUE
+        var sum: Long = 0
+        buckets.forEach {
+            sum += it.second
+            if (it.first < p99 && sum > 0.99 * totalCount) p99 = it.first
+            if (it.first < p999 && sum > 0.999 * totalCount) p999 = it.first
+        }
+
+        // Not enough data
+        if (totalCount < 100 || p99 == Long.MAX_VALUE) p99 = -1
+        if (totalCount < 1000 || p999 == Long.MAX_VALUE) p999 = -1
 
         return Snapshot(
             averageDelayMs = averageDelayMs,
             maxDelayMs = maxDelayMs.get(),
-            totalCount = totalCount.sum(),
-            buckets = buckets)
+            totalCount = totalCount,
+            buckets = buckets,
+            p99bound = p99,
+            p999bound = p999)
     }
 
     data class Snapshot(
         val averageDelayMs: Double,
         val maxDelayMs: Long,
         val totalCount: Long,
-        val buckets: Array<Pair<Long, Long>>
+        val buckets: Array<Pair<Long, Long>>,
+        val p99bound: Long,
+        val p999bound: Long
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
