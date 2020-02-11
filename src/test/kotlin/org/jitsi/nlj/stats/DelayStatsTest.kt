@@ -31,26 +31,24 @@ class DelayStatsTest : ShouldSpec() {
             repeat(100) { delayStats.addDelay(5) }
 
             should("calculate the average correctly") {
-                val json = delayStats.toJson()
-                json.get("average_delay_ms") shouldBe 3.0
+                delayStats.getSnapshot().averageDelayMs shouldBe 3.0
             }
 
             should("calculate the max correctly") {
                 delayStats.addDelay(100)
-                val json = delayStats.toJson()
-                json.get("max_delay_ms") shouldBe 100
+                delayStats.getSnapshot().maxDelayMs shouldBe 100
             }
 
-            should("calculate the buckets correctly") {
+            should("export the buckets correctly to json") {
                 delayStats.addDelay(150)
                 delayStats.addDelay(1500)
-                val bucketsJson = delayStats.toJson().get("buckets")
+                val bucketsJson = delayStats.toJson()["buckets"]
                 bucketsJson.shouldBeInstanceOf<OrderedJsonObject>()
 
                 bucketsJson as OrderedJsonObject
-                bucketsJson["< 2 ms"] shouldBe 100
-                bucketsJson["< 5 ms"] shouldBe 100
-                bucketsJson["< 200 ms"] shouldBe 1
+                bucketsJson["<= 2 ms"] shouldBe 100
+                bucketsJson["<= 5 ms"] shouldBe 100
+                bucketsJson["<= 200 ms"] shouldBe 1
                 bucketsJson["> 1000 ms"] shouldBe 1
             }
         }

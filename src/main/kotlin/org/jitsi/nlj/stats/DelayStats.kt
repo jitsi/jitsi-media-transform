@@ -16,7 +16,6 @@
 
 package org.jitsi.nlj.stats
 
-import java.util.Arrays
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 import org.jitsi.nlj.PacketInfo
@@ -26,13 +25,13 @@ import org.jitsi.utils.increaseAndGet
 open class DelayStats {
     private val totalDelayMs = LongAdder()
     private val totalCount = LongAdder()
-    val averageDelay: Double
+    private val averageDelayMs: Double
         get() = totalDelayMs.sum() / totalCount.sum().toDouble()
-    val maxDelayMs = AtomicLong(0)
+    private val maxDelayMs = AtomicLong(0)
 
     /* TODO: make thresholds configurable */
-    val thresholds = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
-    val thresholdCounts = Array(thresholds.size + 1) { LongAdder() }
+    private val thresholds = longArrayOf(2, 5, 20, 50, 200, 500, 1000, Long.MAX_VALUE)
+    private val thresholdCounts = Array(thresholds.size + 1) { LongAdder() }
 
     fun addDelay(delayMs: Long) {
         if (delayMs >= 0) {
@@ -40,23 +39,72 @@ open class DelayStats {
             maxDelayMs.increaseAndGet(delayMs)
             totalCount.increment()
 
-            val searchResult = Arrays.binarySearch(thresholds, delayMs)
-            val bucket = if (searchResult < 0) { - searchResult - 1 } else { searchResult }
-            thresholdCounts[bucket].increment()
+            findBucket(delayMs).increment()
         }
     }
 
+    private fun findBucket(delayMs: Long): LongAdder {
+        // The vast majority of values are in the first bucket, so linear search is likely faster than binary.
+        for (i in thresholds.indices) {
+            if (delayMs <= thresholds[i]) return thresholdCounts[i]
+        }
+        return thresholdCounts.last()
+    }
+
     fun toJson() = OrderedJsonObject().apply {
-        put("average_delay_ms", averageDelay)
-        put("max_delay_ms", maxDelayMs.get())
+        val snapshot = getSnapshot()
+        put("average_delay_ms", snapshot.averageDelayMs)
+        put("max_delay_ms", snapshot.maxDelayMs)
+        put("total_count", snapshot.totalCount)
 
         val buckets = OrderedJsonObject().apply {
-            for (i in thresholds.indices) {
-                put("< ${thresholds[i]} ms", thresholdCounts[i].sum())
+            for (i in 0..snapshot.buckets.size - 2) {
+                put("<= ${snapshot.buckets[i].first} ms", snapshot.buckets[i].second)
             }
-            put("> ${thresholds[thresholds.size - 1]} ms", thresholdCounts[thresholds.size].sum())
+            val indexOfSecondToLast = snapshot.buckets.size - 2
+            put("> ${snapshot.buckets[indexOfSecondToLast].first} ms", snapshot.buckets.last().second)
         }
         put("buckets", buckets)
+    }
+
+    fun getSnapshot(): Snapshot {
+
+        val buckets = Array(thresholds.size) { i -> Pair(thresholds[i], thresholdCounts[i].sum()) }
+
+        return Snapshot(
+            averageDelayMs = averageDelayMs,
+            maxDelayMs = maxDelayMs.get(),
+            totalCount = totalCount.sum(),
+            buckets = buckets)
+    }
+
+    data class Snapshot(
+        val averageDelayMs: Double,
+        val maxDelayMs: Long,
+        val totalCount: Long,
+        val buckets: Array<Pair<Long, Long>>
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Snapshot
+
+            if (averageDelayMs != other.averageDelayMs) return false
+            if (maxDelayMs != other.maxDelayMs) return false
+            if (totalCount != other.totalCount) return false
+            if (!buckets.contentEquals(other.buckets)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = averageDelayMs.hashCode()
+            result = 31 * result + maxDelayMs.hashCode()
+            result = 31 * result + totalCount.hashCode()
+            result = 31 * result + buckets.contentHashCode()
+            return result
+        }
     }
 }
 
