@@ -39,7 +39,8 @@ class VideoParser(
 ) : TransformerNode("Video parser") {
     private val logger = createChildLogger(parentLogger)
     private var tracks: Array<MediaStreamTrackDesc> = arrayOf()
-    private val numVp8PacketsDroppedNoEncoding = AtomicInteger()
+    private val numPacketsDroppedUnknownPt = AtomicInteger()
+    private val numPacketsDroppedNoEncoding = AtomicInteger()
 
     // TODO: things we want to detect here:
     // does this packet belong to a keyframe?
@@ -49,10 +50,12 @@ class VideoParser(
         val videoPacket = packetInfo.packetAs<VideoRtpPacket>()
         val payloadType = streamInformationStore.rtpPayloadTypes[videoPacket.payloadType.toByte()] ?: run {
             logger.error("Unrecognized video payload type ${videoPacket.payloadType}, cannot parse video information")
+            numPacketsDroppedUnknownPt.incrementAndGet()
             return null
         }
         val encodingDesc = findRtpEncodingDesc(videoPacket) ?: run {
             logger.warn("Unable to find encoding matching packet! encodings=$tracks, packet=$videoPacket")
+            numPacketsDroppedNoEncoding.incrementAndGet()
             return null
         }
         when (payloadType) {
@@ -88,7 +91,8 @@ class VideoParser(
 
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
-            addNumber("num_vp8_packets_dropped_no_encoding", numVp8PacketsDroppedNoEncoding.get())
+            addNumber("num_packets_dropped_no_encoding", numPacketsDroppedNoEncoding.get())
+            addNumber("num_packets_dropped_unknown_pt", numPacketsDroppedUnknownPt.get())
         }
     }
 }
