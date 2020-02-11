@@ -49,13 +49,13 @@ open class DelayStats {
 
     fun toJson() = OrderedJsonObject().apply {
         put("average_delay_ms", averageDelay)
-        put("max_delay_ms", maxDelayMs)
+        put("max_delay_ms", maxDelayMs.get())
 
         val buckets = OrderedJsonObject().apply {
             for (i in thresholds.indices) {
-                put("< ${thresholds[i]} ms", thresholdCounts[i])
+                put("< ${thresholds[i]} ms", thresholdCounts[i].sum())
             }
-            put("> ${thresholds[thresholds.size - 1]} ms", thresholdCounts[thresholds.size])
+            put("> ${thresholds[thresholds.size - 1]} ms", thresholdCounts[thresholds.size].sum())
         }
         put("buckets", buckets)
     }
