@@ -22,15 +22,16 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.utils.increaseAndGet
 
-open class DelayStats {
+open class DelayStats(
+    thresholdsNoMax: LongArray = longArrayOf(2, 5, 20, 50, 200, 500, 100)
+) {
     private val totalDelayMs = LongAdder()
     private val totalCount = LongAdder()
     private val averageDelayMs: Double
         get() = totalDelayMs.sum() / totalCount.sum().toDouble()
     private val maxDelayMs = AtomicLong(0)
 
-    /* TODO: make thresholds configurable */
-    private val thresholds = longArrayOf(2, 5, 20, 50, 200, 500, 1000, Long.MAX_VALUE)
+    private val thresholds = longArrayOf(*thresholdsNoMax, Long.MAX_VALUE)
     private val thresholdCounts = Array(thresholds.size + 1) { LongAdder() }
 
     fun addDelay(delayMs: Long) {

@@ -26,7 +26,7 @@ class DelayStatsTest : ShouldSpec() {
 
     init {
         "adding stats" {
-            val delayStats = DelayStats()
+            val delayStats = DelayStats(longArrayOf(2, 5, 200, 999))
             repeat(100) { delayStats.addDelay(1) }
             repeat(100) { delayStats.addDelay(5) }
 
@@ -49,7 +49,7 @@ class DelayStatsTest : ShouldSpec() {
                 bucketsJson["<= 2 ms"] shouldBe 100
                 bucketsJson["<= 5 ms"] shouldBe 100
                 bucketsJson["<= 200 ms"] shouldBe 1
-                bucketsJson["> 1000 ms"] shouldBe 1
+                bucketsJson["> 999 ms"] shouldBe 1
             }
         }
     }
