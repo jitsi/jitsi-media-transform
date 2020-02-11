@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.OrderedJsonObject
+import org.jitsi.utils.increaseAndGet
 
 open class DelayStats {
     private val totalDelayMs = LongAdder()
@@ -36,9 +37,7 @@ open class DelayStats {
     fun addDelay(delayMs: Long) {
         if (delayMs >= 0) {
             totalDelayMs.add(delayMs)
-            if (delayMs > maxDelayMs.get()) {
-                maxDelayMs.set(delayMs)
-            }
+            maxDelayMs.increaseAndGet(delayMs)
             totalCount.increment()
 
             val searchResult = Arrays.binarySearch(thresholds, delayMs)
