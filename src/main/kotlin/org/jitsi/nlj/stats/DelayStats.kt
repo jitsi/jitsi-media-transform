@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.OrderedJsonObject
-import org.jitsi.utils.increaseAndGet
+import org.jitsi.utils.maxAssign
 import java.lang.IllegalArgumentException
 
 open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) {
@@ -41,7 +41,7 @@ open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) {
     fun addDelay(delayMs: Long) {
         if (delayMs >= 0) {
             totalDelayMs.add(delayMs)
-            maxDelayMs.increaseAndGet(delayMs)
+            maxDelayMs.maxAssign(delayMs)
             totalCount.increment()
 
             findBucket(delayMs).increment()
