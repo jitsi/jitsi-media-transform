@@ -24,7 +24,6 @@ import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
-import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
@@ -47,28 +46,23 @@ class VideoParser(
     // does this packet represent the start of a frame?
     // does this packet represent the end of a frame?
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val rtpPacket = packetInfo.packetAs<RtpPacket>()
-        return streamInformationStore.rtpPayloadTypes[rtpPacket.payloadType.toByte()]?.let { payloadType ->
-            val videoRtpPacket = when (payloadType) {
-                is Vp8PayloadType -> {
-                    val vp8Packet = rtpPacket.toOtherType(::Vp8Packet)
-                    findRtpEncodingDesc(vp8Packet)?.let {
-                        vp8Packet.qualityIndex = it.index
-                        vp8Packet
-                    } ?: run {
-                        numVp8PacketsDroppedNoEncoding.incrementAndGet()
-                        null
-                    }
-                }
-                else -> rtpPacket
-            } ?: return null
-            packetInfo.packet = videoRtpPacket
-            packetInfo.resetPayloadVerification()
-            packetInfo
-        } ?: run {
-            logger.error("Unrecognized video payload type ${rtpPacket.payloadType}, cannot parse video information")
-            null
+        val videoPacket = packetInfo.packetAs<VideoRtpPacket>()
+        val payloadType = streamInformationStore.rtpPayloadTypes[videoPacket.payloadType.toByte()] ?: run {
+            logger.error("Unrecognized video payload type ${videoPacket.payloadType}, cannot parse video information")
+            return null
         }
+        val encodingDesc = findRtpEncodingDesc(videoPacket) ?: run {
+            logger.warn("Unable to find encoding matching packet! encodings=$tracks, packet=$videoPacket")
+            return null
+        }
+        when (payloadType) {
+            is Vp8PayloadType -> {
+                val vp8Packet = videoPacket.toOtherType(::Vp8Packet)
+                vp8Packet.qualityIndex = encodingDesc.index
+                packetInfo.packet = vp8Packet
+            }
+        }
+        return packetInfo
     }
 
     private fun findRtpEncodingDesc(packet: VideoRtpPacket): RTPEncodingDesc? {
