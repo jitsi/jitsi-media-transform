@@ -55,7 +55,6 @@ class TccGeneratorNode(
     private val lock = Any()
     // Tcc seq num -> arrival time in ms
     private val packetArrivalTimes = TreeMap<Int, Long>()
-    private var running = true
     private val tccFeedbackBitrate = RateStatistics(1000)
     private var numTccSent: Int = 0
     private var numMultipleTccPackets = 0
@@ -151,12 +150,6 @@ class TccGeneratorNode(
         val timeSinceLastTcc = Duration.between(lastTccSentTime, now)
         return timeSinceLastTcc >= 100.milliseconds() ||
             ((timeSinceLastTcc >= 20.milliseconds()) && currentPacketMarked)
-    }
-
-    override fun stop() {
-        super.stop()
-
-        running = false
     }
 
     override fun trace(f: () -> Unit) = f.invoke()
