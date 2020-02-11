@@ -63,6 +63,7 @@ class VideoParser(
                 val vp8Packet = videoPacket.toOtherType(::Vp8Packet)
                 vp8Packet.qualityIndex = encodingDesc.index
                 packetInfo.packet = vp8Packet
+                packetInfo.resetPayloadVerification()
             }
         }
         return packetInfo
