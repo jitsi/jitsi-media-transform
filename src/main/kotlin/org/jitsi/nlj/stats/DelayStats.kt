@@ -21,10 +21,16 @@ import java.util.concurrent.atomic.LongAdder
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.utils.increaseAndGet
+import java.lang.IllegalArgumentException
 
 open class DelayStats(
     thresholdsNoMax: LongArray = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
 ) {
+    init {
+        if (!thresholdsNoMax.contentEquals(thresholdsNoMax.sortedArray())) {
+            throw IllegalArgumentException("Thresholds must be sorted: ${thresholdsNoMax.joinToString()}")
+        }
+    }
     private val totalDelayMs = LongAdder()
     private val totalCount = LongAdder()
     private val averageDelayMs: Double

@@ -18,8 +18,10 @@ package org.jitsi.nlj.stats
 import io.kotlintest.IsolationMode
 import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.shouldBe
+import io.kotlintest.shouldThrow
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi.nlj.util.OrderedJsonObject
+import java.lang.IllegalArgumentException
 
 class DelayStatsTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -74,6 +76,12 @@ class DelayStatsTest : ShouldSpec() {
 
                 repeat(2000) { delayStats.addDelay(1) }
                 delayStats.getSnapshot().p999bound shouldBe 2
+            }
+        }
+
+        "initializing with invalid thresholds should throw" {
+            shouldThrow<IllegalArgumentException> {
+                DelayStats(longArrayOf(2, 10, 5))
             }
         }
     }
