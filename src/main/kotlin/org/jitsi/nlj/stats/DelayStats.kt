@@ -23,9 +23,7 @@ import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.utils.increaseAndGet
 import java.lang.IllegalArgumentException
 
-open class DelayStats(
-    thresholdsNoMax: LongArray = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
-) {
+open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) {
     init {
         if (!thresholdsNoMax.contentEquals(thresholdsNoMax.sortedArray())) {
             throw IllegalArgumentException("Thresholds must be sorted: ${thresholdsNoMax.joinToString()}")
@@ -133,9 +131,13 @@ open class DelayStats(
             return result
         }
     }
+
+    companion object {
+        val defaultThresholds = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
+    }
 }
 
-class PacketDelayStats : DelayStats() {
+class PacketDelayStats(thresholdsNoMax: LongArray = defaultThresholds) : DelayStats(thresholdsNoMax) {
     fun addPacket(packetInfo: PacketInfo) {
         val delayMs = if (packetInfo.receivedTime > 0) {
             System.currentTimeMillis() - packetInfo.receivedTime
