@@ -23,7 +23,7 @@ import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.utils.increaseAndGet
 
 open class DelayStats(
-    thresholdsNoMax: LongArray = longArrayOf(2, 5, 20, 50, 200, 500, 100)
+    thresholdsNoMax: LongArray = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
 ) {
     private val totalDelayMs = LongAdder()
     private val totalCount = LongAdder()
