@@ -34,7 +34,6 @@ import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacketBuilder
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
-import org.jitsi.rtp.util.isOlderThan
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.utils.stats.RateStatistics
@@ -56,11 +55,10 @@ class TccGeneratorNode(
     private val lock = Any()
     // Tcc seq num -> arrival time in ms
     private val packetArrivalTimes = TreeMap<Int, Long>()
-    // The first sequence number of the current tcc feedback packet
-    private var windowStartSeq: Int = -1
     private var running = true
     private val tccFeedbackBitrate = RateStatistics(1000)
     private var numTccSent: Int = 0
+    private var numMultipleTccPackets = 0
     private var enabled: Boolean by observableWhenChanged(false) {
         _, _, newValue -> logger.debug("Setting enabled=$newValue")
     }
@@ -92,55 +90,44 @@ class TccGeneratorNode(
      */
     private fun addPacket(tccSeqNum: Int, timestamp: Long, isMarked: Boolean, ssrc: Long) {
         synchronized(lock) {
-            if (packetArrivalTimes.ceilingKey(windowStartSeq) == null) {
-                // Packets in map are all older than the start of the next tcc feedback packet,
-                // remove them
-                // TODO: chrome does something more advanced. is this good enough?
-                packetArrivalTimes.clear()
-            }
-            if (windowStartSeq == -1) {
-                windowStartSeq = tccSeqNum
-            } else if (tccSeqNum isOlderThan windowStartSeq) {
-                windowStartSeq = tccSeqNum
-            }
             packetArrivalTimes.putIfAbsent(tccSeqNum, timestamp)
             if (isTccReadyToSend(isMarked)) {
-                buildFeedback(ssrc)?.let { sendTcc(it) }
+                buildFeedback(ssrc).forEach { sendTcc(it) }
             }
         }
     }
 
-    private fun buildFeedback(mediaSsrc: Long): RtcpFbTccPacket? {
-        val tccBuilder = RtcpFbTccPacketBuilder(
-            mediaSourceSsrc = mediaSsrc,
-            feedbackPacketSeqNum = currTccSeqNum++
-        )
-        logger.cdebug { "building TCC packet with media ssrc ${tccBuilder.mediaSourceSsrc} and" +
-            " seq num ${tccBuilder.feedbackPacketSeqNum}" }
+    private fun buildFeedback(mediaSsrc: Long): List<RtcpFbTccPacket> {
         synchronized(lock) {
-            // windowStartSeq is the first sequence number to include in the current feedback, but we may not have
-            // received it so the base time shall be the time of the first received packet which will be included
-            // in this feedback
-            val firstEntry = packetArrivalTimes.ceilingEntry(windowStartSeq) ?: return null
-            tccBuilder.SetBase(windowStartSeq, firstEntry.value * 1000)
+            val firstEntry = packetArrivalTimes.pollFirstEntry() ?: return emptyList()
 
-            var nextSequenceNumber = windowStartSeq
-            val feedbackBlockPackets = packetArrivalTimes.tailMap(windowStartSeq)
-            for ((seqNum, timestampMs) in feedbackBlockPackets) {
-                if (!tccBuilder.AddReceivedPacket(seqNum, timestampMs * 1000)) {
-                    break
+            val tccPackets = mutableListOf<RtcpFbTccPacket>()
+            var currentTccPacket = RtcpFbTccPacketBuilder(mediaSourceSsrc = mediaSsrc, feedbackPacketSeqNum = currTccSeqNum++)
+            currentTccPacket.SetBase(firstEntry.key, firstEntry.value * 1000)
+
+            packetArrivalTimes.forEach { (seq, timestampMs) ->
+                val timestampUs = timestampMs * 1000
+                if (!currentTccPacket.AddReceivedPacket(seq, timestampUs)) {
+                    tccPackets.add(currentTccPacket.build())
+                    currentTccPacket = RtcpFbTccPacketBuilder(
+                        mediaSourceSsrc = mediaSsrc,
+                        feedbackPacketSeqNum = currTccSeqNum++
+                    ).apply {
+                        SetBase(seq, timestampUs)
+                        AddReceivedPacket(seq, timestampUs)
+                    }
                 }
-                nextSequenceNumber = seqNum + 1
             }
 
-            // The next window will start with the sequence number after the last one we included in the previous
-            // feedback
-            windowStartSeq = nextSequenceNumber
+            tccPackets.add(currentTccPacket.build())
+            if (tccPackets.size > 1) {
+                numMultipleTccPackets++
+                logger.info("Sending TCC feedback in ${tccPackets.size} packets (${packetArrivalTimes.size} media packets)")
+            }
+            packetArrivalTimes.clear()
+
+            return tccPackets
         }
-
-        logger.cdebug { "built TCC packet with ${tccBuilder.num_seq_no_} packets represented" }
-
-        return tccBuilder.build()
     }
 
     private fun sendTcc(tccPacket: RtcpFbTccPacket) {
@@ -179,6 +166,7 @@ class TccGeneratorNode(
             addNumber("num_tcc_packets_sent", numTccSent)
             addNumber("tcc_feedback_bitrate_bps", tccFeedbackBitrate.rate)
             addString("tcc_extension_id", tccExtensionId.toString())
+            addNumber("num_multiple_tcc_packets", numMultipleTccPackets)
             addBoolean("enabled", enabled)
         }
     }
