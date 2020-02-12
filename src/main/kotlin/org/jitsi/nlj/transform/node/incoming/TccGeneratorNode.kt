@@ -55,6 +55,8 @@ class TccGeneratorNode(
     private val lock = Any()
     // Tcc seq num -> arrival time in ms
     private val packetArrivalTimes = TreeMap<Int, Long>()
+    // The first sequence number of the current tcc feedback packet
+    private var windowStartSeq: Int = -1
     private val tccFeedbackBitrate = RateStatistics(1000)
     private var numTccSent: Int = 0
     private var numMultipleTccPackets = 0
@@ -89,6 +91,17 @@ class TccGeneratorNode(
      */
     private fun addPacket(tccSeqNum: Int, timestamp: Long, isMarked: Boolean, ssrc: Long) {
         synchronized(lock) {
+            if (packetArrivalTimes.ceilingKey(windowStartSeq) == null) {
+                // Start new feedback packet, cull old packets.
+                packetArrivalTimes.entries.removeIf {
+                    entry -> entry.key < tccSeqNum &&
+                        timestamp - entry.value >= BACK_WINDOW_MS
+                }
+            }
+            if (windowStartSeq == -1 || tccSeqNum < windowStartSeq) {
+                windowStartSeq = tccSeqNum
+            }
+
             packetArrivalTimes.putIfAbsent(tccSeqNum, timestamp)
             if (isTccReadyToSend(isMarked)) {
                 buildFeedback(ssrc).forEach { sendTcc(it) }
@@ -98,12 +111,16 @@ class TccGeneratorNode(
 
     private fun buildFeedback(mediaSsrc: Long): List<RtcpFbTccPacket> {
         synchronized(lock) {
-            val firstEntry = packetArrivalTimes.pollFirstEntry() ?: return emptyList()
+            // windowStartSeq is the first sequence number to include in the current feedback, but we may not have
+            // received it so the base time shall be the time of the first received packet which will be included
+            // in this feedback
+            val firstEntry = packetArrivalTimes.ceilingEntry(windowStartSeq) ?: return emptyList()
 
             val tccPackets = mutableListOf<RtcpFbTccPacket>()
             var currentTccPacket = RtcpFbTccPacketBuilder(mediaSourceSsrc = mediaSsrc, feedbackPacketSeqNum = currTccSeqNum++)
             currentTccPacket.SetBase(firstEntry.key, firstEntry.value * 1000)
 
+            var nextSequenceNumber = windowStartSeq
             packetArrivalTimes.forEach { (seq, timestampMs) ->
                 val timestampUs = timestampMs * 1000
                 if (!currentTccPacket.AddReceivedPacket(seq, timestampUs)) {
@@ -116,6 +133,7 @@ class TccGeneratorNode(
                         AddReceivedPacket(seq, timestampUs)
                     }
                 }
+                nextSequenceNumber = seq + 1
             }
 
             tccPackets.add(currentTccPacket.build())
@@ -123,7 +141,7 @@ class TccGeneratorNode(
                 numMultipleTccPackets++
                 logger.info("Sending TCC feedback in ${tccPackets.size} packets (${packetArrivalTimes.size} media packets)")
             }
-            packetArrivalTimes.clear()
+            windowStartSeq = nextSequenceNumber
 
             return tccPackets
         }
@@ -162,5 +180,11 @@ class TccGeneratorNode(
             addNumber("num_multiple_tcc_packets", numMultipleTccPackets)
             addBoolean("enabled", enabled)
         }
+    }
+
+    companion object {
+        /** The number of milliseconds of old tcc reports to save */
+        /** TODO: Chrome makes this a field trial param; do we need to make it configurable? */
+        private val BACK_WINDOW_MS = 500
     }
 }
