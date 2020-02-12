@@ -34,19 +34,68 @@ open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) {
     private val averageDelayMs: Double
         get() = totalDelayMs.sum() / totalCount.sum().toDouble()
     private val maxDelayMs = AtomicLong(0)
-
-    private val thresholds = longArrayOf(*thresholdsNoMax, Long.MAX_VALUE)
-    private val thresholdCounts = Array(thresholds.size + 1) { LongAdder() }
+    private val buckets = Buckets(thresholdsNoMax)
 
     fun addDelay(delayMs: Long) {
         if (delayMs >= 0) {
             totalDelayMs.add(delayMs)
             maxDelayMs.maxAssign(delayMs)
             totalCount.increment()
-
-            findBucket(delayMs).increment()
+            buckets.addDelay(delayMs)
         }
     }
+
+    fun toJson() = OrderedJsonObject().apply {
+        val snapshot = snapshot
+        put("average_delay_ms", snapshot.averageDelayMs)
+        put("max_delay_ms", snapshot.maxDelayMs)
+        put("total_count", snapshot.totalCount)
+
+        put("buckets", snapshot.buckets.toJson())
+    }
+
+    val snapshot: Snapshot
+        get() = Snapshot(
+            averageDelayMs = averageDelayMs,
+            maxDelayMs = maxDelayMs.get(),
+            totalCount = totalCount.sum(),
+            buckets = buckets.snapshot
+        )
+
+    data class Snapshot(
+        val averageDelayMs: Double,
+        val maxDelayMs: Long,
+        val totalCount: Long,
+        val buckets: Buckets.Snapshot
+    )
+
+    companion object {
+        val defaultThresholds = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
+    }
+}
+
+class Buckets(thresholdsNoMax: LongArray) {
+    private val thresholds = longArrayOf(*thresholdsNoMax, Long.MAX_VALUE)
+    private val thresholdCounts = Array(thresholds.size + 1) { LongAdder() }
+    val snapshot: Snapshot
+        get() {
+            val bucketCounts = Array(thresholds.size) { i -> Pair(thresholds[i], thresholdCounts[i].sum()) }
+
+            var p99 = Long.MAX_VALUE
+            var p999 = Long.MAX_VALUE
+            var sum: Long = 0
+            val totalCount = bucketCounts.map { it.second }.sum()
+            bucketCounts.forEach {
+                sum += it.second
+                if (it.first < p99 && sum > 0.99 * totalCount) p99 = it.first
+                if (it.first < p999 && sum > 0.999 * totalCount) p999 = it.first
+            }
+
+            // Not enough data
+            if (totalCount < 100 || p99 == Long.MAX_VALUE) p99 = -1
+            if (totalCount < 1000 || p999 == Long.MAX_VALUE) p999 = -1
+            return Snapshot(bucketCounts, p99, p999)
+        }
 
     private fun findBucket(delayMs: Long): LongAdder {
         // The vast majority of values are in the first bucket, so linear search is likely faster than binary.
@@ -56,55 +105,9 @@ open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) {
         return thresholdCounts.last()
     }
 
-    fun toJson() = OrderedJsonObject().apply {
-        val snapshot = getSnapshot()
-        put("average_delay_ms", snapshot.averageDelayMs)
-        put("max_delay_ms", snapshot.maxDelayMs)
-        put("total_count", snapshot.totalCount)
-
-        val buckets = OrderedJsonObject().apply {
-            for (i in 0..snapshot.buckets.size - 2) {
-                put("<= ${snapshot.buckets[i].first} ms", snapshot.buckets[i].second)
-            }
-            val indexOfSecondToLast = snapshot.buckets.size - 2
-            put("> ${snapshot.buckets[indexOfSecondToLast].first} ms", snapshot.buckets.last().second)
-        }
-        put("buckets", buckets)
-        put("p99<=", snapshot.p99bound)
-        put("p999<=", snapshot.p999bound)
-    }
-
-    fun getSnapshot(): Snapshot {
-
-        val buckets = Array(thresholds.size) { i -> Pair(thresholds[i], thresholdCounts[i].sum()) }
-        val totalCount = totalCount.sum()
-
-        var p99 = Long.MAX_VALUE
-        var p999 = Long.MAX_VALUE
-        var sum: Long = 0
-        buckets.forEach {
-            sum += it.second
-            if (it.first < p99 && sum > 0.99 * totalCount) p99 = it.first
-            if (it.first < p999 && sum > 0.999 * totalCount) p999 = it.first
-        }
-
-        // Not enough data
-        if (totalCount < 100 || p99 == Long.MAX_VALUE) p99 = -1
-        if (totalCount < 1000 || p999 == Long.MAX_VALUE) p999 = -1
-
-        return Snapshot(
-            averageDelayMs = averageDelayMs,
-            maxDelayMs = maxDelayMs.get(),
-            totalCount = totalCount,
-            buckets = buckets,
-            p99bound = p99,
-            p999bound = p999)
-    }
+    fun addDelay(delayMs: Long) = findBucket(delayMs).increment()
 
     data class Snapshot(
-        val averageDelayMs: Double,
-        val maxDelayMs: Long,
-        val totalCount: Long,
         val buckets: Array<Pair<Long, Long>>,
         val p99bound: Long,
         val p999bound: Long
@@ -115,25 +118,26 @@ open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) {
 
             other as Snapshot
 
-            if (averageDelayMs != other.averageDelayMs) return false
-            if (maxDelayMs != other.maxDelayMs) return false
-            if (totalCount != other.totalCount) return false
             if (!buckets.contentEquals(other.buckets)) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = averageDelayMs.hashCode()
-            result = 31 * result + maxDelayMs.hashCode()
-            result = 31 * result + totalCount.hashCode()
-            result = 31 * result + buckets.contentHashCode()
-            return result
+            return buckets.contentHashCode()
         }
-    }
 
-    companion object {
-        val defaultThresholds = longArrayOf(2, 5, 20, 50, 200, 500, 1000)
+        fun toJson() = OrderedJsonObject().apply {
+            for (i in 0..buckets.size - 2) {
+                put("<= ${buckets[i].first} ms", buckets[i].second)
+            }
+
+            val indexOfSecondToLast = buckets.size - 2
+            put("> ${buckets[indexOfSecondToLast].first} ms", buckets.last().second)
+
+            put("p99<=", p99bound)
+            put("p999<=", p999bound)
+        }
     }
 }
 

@@ -33,14 +33,14 @@ class DelayStatsTest : ShouldSpec() {
             should("calculate the average correctly") {
                 repeat(100) { delayStats.addDelay(1) }
                 repeat(100) { delayStats.addDelay(5) }
-                delayStats.getSnapshot().averageDelayMs shouldBe 3.0
+                delayStats.snapshot.averageDelayMs shouldBe 3.0
             }
 
             should("calculate the max correctly") {
                 repeat(100) { delayStats.addDelay(1) }
                 repeat(100) { delayStats.addDelay(5) }
                 delayStats.addDelay(100)
-                delayStats.getSnapshot().maxDelayMs shouldBe 100
+                delayStats.snapshot.maxDelayMs shouldBe 100
             }
 
             should("export the buckets correctly to json") {
@@ -59,23 +59,23 @@ class DelayStatsTest : ShouldSpec() {
             }
 
             should("calculate p99 and p999 correctly") {
-                delayStats.getSnapshot().p99bound shouldBe -1
-                delayStats.getSnapshot().p999bound shouldBe -1
+                delayStats.snapshot.buckets.p99bound shouldBe -1
+                delayStats.snapshot.buckets.p999bound shouldBe -1
 
                 repeat(200) { delayStats.addDelay(1) }
-                delayStats.getSnapshot().p99bound shouldBe 2
-                delayStats.getSnapshot().p999bound shouldBe -1
+                delayStats.snapshot.buckets.p99bound shouldBe 2
+                delayStats.snapshot.buckets.p999bound shouldBe -1
 
                 repeat(800) { delayStats.addDelay(1) }
-                delayStats.getSnapshot().p999bound shouldBe 2
+                delayStats.snapshot.buckets.p999bound shouldBe 2
 
                 delayStats.addDelay(5)
                 delayStats.addDelay(5)
-                delayStats.getSnapshot().p99bound shouldBe 2
-                delayStats.getSnapshot().p999bound shouldBe 5
+                delayStats.snapshot.buckets.p99bound shouldBe 2
+                delayStats.snapshot.buckets.p999bound shouldBe 5
 
                 repeat(2000) { delayStats.addDelay(1) }
-                delayStats.getSnapshot().p999bound shouldBe 2
+                delayStats.snapshot.buckets.p999bound shouldBe 2
             }
         }
 
