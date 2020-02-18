@@ -118,10 +118,10 @@ class TccGeneratorNode(
 
             val tccPackets = mutableListOf<RtcpFbTccPacket>()
             var currentTccPacket = RtcpFbTccPacketBuilder(mediaSourceSsrc = mediaSsrc, feedbackPacketSeqNum = currTccSeqNum++)
-            currentTccPacket.SetBase(firstEntry.key, firstEntry.value * 1000)
+            currentTccPacket.SetBase(windowStartSeq, firstEntry.value * 1000)
 
             var nextSequenceNumber = windowStartSeq
-            var feedbackBlockPackets = packetArrivalTimes.tailMap(windowStartSeq)
+            val feedbackBlockPackets = packetArrivalTimes.tailMap(windowStartSeq)
             feedbackBlockPackets.forEach { (seq, timestampMs) ->
                 val timestampUs = timestampMs * 1000
                 if (!currentTccPacket.AddReceivedPacket(seq, timestampUs)) {
