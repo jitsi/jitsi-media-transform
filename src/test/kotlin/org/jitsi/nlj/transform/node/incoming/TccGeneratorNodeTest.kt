@@ -56,7 +56,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
         "when a series of packets (without marking) is received" {
             timeline(clock) {
                 repeat(11) { tccSeqNum ->
-                    run { tccGenerator.processPacket(PacketInfo(createPacket(tccSeqNum))) }
+                    run { tccGenerator.processPacket(PacketInfo(createPacket(tccSeqNum)).apply { receivedTime = clock.millis() }) }
                     elapse(10.ms())
                 }
             }.run()
@@ -68,11 +68,11 @@ class TccGeneratorNodeTest : ShouldSpec() {
         }
         "when a series of packets (where one is marked) is received" {
             timeline(clock) {
-                run { tccGenerator.processPacket(PacketInfo(createPacket(1))) }
+                run { tccGenerator.processPacket(PacketInfo(createPacket(1)).apply { receivedTime = clock.millis() }) }
                 elapse(10.ms())
-                run { tccGenerator.processPacket(PacketInfo(createPacket(2))) }
+                run { tccGenerator.processPacket(PacketInfo(createPacket(2)).apply { receivedTime = clock.millis() }) }
                 elapse(10.ms())
-                run { tccGenerator.processPacket(PacketInfo(createPacket(3).apply { isMarked = true })) }
+                run { tccGenerator.processPacket(PacketInfo(createPacket(3).apply { isMarked = true }).apply { receivedTime = clock.millis() }) }
             }.run()
             "a TCC packet" {
                 should("be sent after 20ms") {
@@ -96,7 +96,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                 tccGenerator.processPacket(PacketInfo(createPacket(i)))
             }
             for (i in 2..5000) {
-                tccGenerator.processPacket(PacketInfo(createPacket(i and 0xffff)))
+                tccGenerator.processPacket(PacketInfo(createPacket(i and 0xffff)).apply { receivedTime = clock.millis() })
                 clock.elapse(10.ms())
 
                 tccPackets.lastOrNull()?.let {
