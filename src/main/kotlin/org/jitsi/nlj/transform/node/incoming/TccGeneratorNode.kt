@@ -121,7 +121,8 @@ class TccGeneratorNode(
             currentTccPacket.SetBase(firstEntry.key, firstEntry.value * 1000)
 
             var nextSequenceNumber = windowStartSeq
-            packetArrivalTimes.forEach { (seq, timestampMs) ->
+            var feedbackBlockPackets = packetArrivalTimes.tailMap(windowStartSeq)
+            feedbackBlockPackets.forEach { (seq, timestampMs) ->
                 val timestampUs = timestampMs * 1000
                 if (!currentTccPacket.AddReceivedPacket(seq, timestampUs)) {
                     tccPackets.add(currentTccPacket.build())
