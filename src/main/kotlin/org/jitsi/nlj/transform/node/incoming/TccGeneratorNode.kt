@@ -140,7 +140,7 @@ class TccGeneratorNode(
             tccPackets.add(currentTccPacket.build())
             if (tccPackets.size > 1) {
                 numMultipleTccPackets++
-                logger.info("Sending TCC feedback in ${tccPackets.size} packets (${packetArrivalTimes.size} media packets)")
+                logger.info("Sending TCC feedback in ${tccPackets.size} packets (${feedbackBlockPackets.size} media packets)")
             }
             windowStartSeq = nextSequenceNumber
 
