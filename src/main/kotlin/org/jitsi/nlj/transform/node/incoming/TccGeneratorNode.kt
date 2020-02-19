@@ -92,11 +92,10 @@ class TccGeneratorNode(
     private fun addPacket(tccSeqNum: Int, timestamp: Long, isMarked: Boolean, ssrc: Long) {
         synchronized(lock) {
             if (packetArrivalTimes.ceilingKey(windowStartSeq) == null) {
-                // Start new feedback packet, cull old packets.
-                packetArrivalTimes.entries.removeIf {
-                    entry -> entry.key < tccSeqNum &&
-                        timestamp - entry.value >= BACK_WINDOW_MS
-                }
+                // Packets in map are all older than the start of the next tcc feedback packet,
+                // remove them
+                // TODO: Chrome does something more advanced, keeping older sequences to replay on packet reordering.
+                packetArrivalTimes.clear()
             }
             if (windowStartSeq == -1 || tccSeqNum < windowStartSeq) {
                 windowStartSeq = tccSeqNum
@@ -183,11 +182,5 @@ class TccGeneratorNode(
             addNumber("num_multiple_tcc_packets", numMultipleTccPackets)
             addBoolean("enabled", enabled)
         }
-    }
-
-    companion object {
-        /** The number of milliseconds of old tcc reports to save */
-        /** TODO: Chrome makes this a field trial param; do we need to make it configurable? */
-        private val BACK_WINDOW_MS = 500
     }
 }
