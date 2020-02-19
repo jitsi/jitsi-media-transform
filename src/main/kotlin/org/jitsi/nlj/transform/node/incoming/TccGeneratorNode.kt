@@ -142,6 +142,8 @@ class TccGeneratorNode(
                 numMultipleTccPackets++
                 logger.info("Sending TCC feedback in ${tccPackets.size} packets (${feedbackBlockPackets.size} media packets)")
             }
+            // The next window will start with the sequence number after the last one we included in the previous
+            // feedback
             windowStartSeq = nextSequenceNumber
 
             return tccPackets
