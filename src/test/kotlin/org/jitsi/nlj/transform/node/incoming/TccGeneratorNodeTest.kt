@@ -68,6 +68,12 @@ class TccGeneratorNodeTest : ShouldSpec() {
                 should("be sent after 100ms") {
                     tccPackets.size shouldBe 1
                 }
+                should("contain the right number of reports") {
+                    tccPackets[0] should beInstanceOf<RtcpFbTccPacket>()
+                    with(tccPackets[0] as RtcpFbTccPacket) {
+                        iterator().asSequence().count() shouldBe 11
+                    }
+                }
             }
         }
         "when a series of packets (where one is marked) is received" {
