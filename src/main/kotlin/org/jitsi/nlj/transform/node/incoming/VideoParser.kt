@@ -24,7 +24,7 @@ import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
-import org.jitsi.rtp.extensions.toHex
+import org.jitsi.rtp.extensions.bytearray.toHex
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
@@ -69,7 +69,7 @@ class VideoParser(
                 }
             }
         } catch (e: Exception) {
-            logger.error("Exception parsing video packet.  Packet data is: ${videoPacket.toHex()}", e)
+            logger.error("Exception parsing video packet.  Packet data is: ${videoPacket.buffer.toHex(videoPacket.offset, Math.min(videoPacket.length, 80))}", e)
             return null
         }
         return packetInfo
