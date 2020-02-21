@@ -121,14 +121,30 @@ public class DePacketizer
         private static final byte N_BIT = (byte) 0x20;
 
         /**
-         * Gets the temporal layer index (TID), if that's set.
+         * The bitmask for the temporal-layer index
+         */
+        private static final byte TID_MASK = (byte) 0xC0;
+
+        /**
+         * Y bit from the TID/Y/KEYIDX extension byte.
+         */
+        private static final byte Y_BIT = (byte) 0x20;
+
+        /**
+         * The bitmask for the temporal key frame index
+         */
+        private static final byte KEYIDX_MASK = (byte) 0x1F;
+
+        /**
+         * Gets the TID/Y/KEYIDX extension byte if available
          *
          * @param buf the byte buffer that holds the VP8 packet.
          * @param off the offset in the byte buffer where the VP8 packet starts.
          * @param len the length of the VP8 packet.
-         * @return the temporal layer index (TID), if that's set, -1 otherwise.
+         *
+         * @return the TID/Y/KEYIDX extension byte, if that's set, -1 otherwise.
          */
-        public static int getTemporalLayerIndex(byte[] buf, int off, int len)
+        private static int getTidYKeyIdxExtensionByte(byte[] buf, int off, int len)
         {
             if (buf == null || buf.length < off + len || len < 2)
             {
@@ -146,7 +162,54 @@ public class DePacketizer
                 return -1;
             }
 
-            return (buf[off + sz - 1] & 0xc0) >> 6;
+            return (buf[off + sz - 1] & 0xFF);
+        }
+
+        /**
+         * Gets the temporal layer index (TID), if that's set.
+         *
+         * @param buf the byte buffer that holds the VP8 packet.
+         * @param off the offset in the byte buffer where the VP8 packet starts.
+         * @param len the length of the VP8 packet.
+         * @return the temporal layer index (TID), if that's set, -1 otherwise.
+         */
+        public static int getTemporalLayerIndex(byte[] buf, int off, int len)
+        {
+            int tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
+
+            return tidYKeyIdxByte != -1 && (buf[off+1] & T_BIT) != 0 ?(tidYKeyIdxByte & TID_MASK) >> 6 : tidYKeyIdxByte;
+        }
+
+        /**
+         * Gets the 1 layer sync bit (Y BIT), if that's set.
+         *
+         * @param buf the byte buffer that holds the VP8 packet.
+         * @param off the offset in the byte buffer where the VP8 packet starts.
+         * @param len the length of the VP8 packet.
+         *
+         * @return the 1 layer sync bit (Y BIT), if that's set, -1 otherwise.
+         */
+        public static int getFirstLayerSyncBit(byte[] buf, int off, int len)
+        {
+            int tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
+
+            return tidYKeyIdxByte != -1 ? (tidYKeyIdxByte & Y_BIT) >> 5 : tidYKeyIdxByte;
+        }
+
+        /**
+         * Gets the temporal key frame index (KEYIDX), if that's set.
+         *
+         * @param buf the byte buffer that holds the VP8 packet.
+         * @param off the offset in the byte buffer where the VP8 packet starts.
+         * @param len the length of the VP8 packet.
+         *
+         * @return the temporal key frame index (KEYIDX), if that's set, -1 otherwise.
+         */
+        public static int getTemporalKeyFrameIndex(byte[] buf, int off, int len)
+        {
+            int tidYKeyIdxByte = getTidYKeyIdxExtensionByte(buf, off, len);
+
+            return tidYKeyIdxByte != -1 && (buf[off+1] & K_BIT) != 0 ? (tidYKeyIdxByte & KEYIDX_MASK) : tidYKeyIdxByte;
         }
 
         /**
@@ -202,7 +265,7 @@ public class DePacketizer
         public static byte[] create(boolean startOfPartition)
         {
             byte[] pd = new byte[1];
-            pd[0] = startOfPartition ? (byte) 0x10 : 0;
+            pd[0] = startOfPartition ? S_BIT : 0;
             return pd;
         }
 
@@ -252,7 +315,8 @@ public class DePacketizer
                 if ((input[offset + 2] & M_BIT) != 0)
                     size++;
             }
-            if ((input[offset + 1] & L_BIT) != 0)
+            // if L_BIT is set then T_BIT also has to be set according to RFC 7741
+            if ((input[offset+1] & (L_BIT | T_BIT)) != 0)
                 size++;
             if ((input[offset + 1] & (T_BIT | K_BIT)) != 0)
                 size++;
@@ -564,13 +628,57 @@ public class DePacketizer
         //
         // 16 bits      :     (2 bits Horizontal Scale << 14) | Width (14 bits)
         // 16 bits      :     (2 bits Vertical Scale << 14) | Height (14 bits)
+        public static final byte[] START_CODES = {(byte) 0x9D, 0x01, 0x2A};
+
+        /**
+         * @return True, if VP8 Payload contains start codes of a keyframe, otherwise false.
+         */
+        public static boolean validate(byte[] buf, int off, int len)
+        {
+            if (len - off < 5)
+            {
+                return false;
+            }
+            for (int i = 0; i < START_CODES.length; i++)
+            {
+                if ((buf[off + 2 + i] - START_CODES[i]) != 0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         /**
          * @return the height of this instance.
          */
         public static int getHeight(byte[] buf, int off)
         {
-            return (((buf[off + 6] & 0xff) << 8) | buf[off + 5] & 0xff) & 0x3fff;
+            return (((buf[off + 6] & 0x3F) << 8) | buf[off + 5] & 0xFF);
+        }
+
+        /**
+         * @return the height scaling of this instance.
+         */
+        public static int getHeightScaling(byte[] buf, int off)
+        {
+            return (buf[off + 6] & 0xC0) >> 6;
+        }
+
+        /**
+         * @return the width of this instance.
+         */
+        public static int getWidth(byte[] buf, int off)
+        {
+            return (((buf[off + 8] & 0x3F) << 8) | buf[off + 7] & 0xFF);
+        }
+
+        /**
+         * @return the width scaling of this instance.
+         */
+        public static int getWidthScaling(byte[] buf, int off)
+        {
+            return (buf[off + 8] & 0xC0) >> 6;
         }
     }
 }
