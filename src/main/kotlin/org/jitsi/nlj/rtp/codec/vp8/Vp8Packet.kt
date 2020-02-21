@@ -71,7 +71,7 @@ class Vp8Packet private constructor (
         _, _, newValue ->
             if (!DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
                     buffer, payloadOffset, payloadLength, newValue)) {
-                logger.cwarn { "Failed to set the TL0PICIDX of a VP8 packet." }
+                logger.cwarn { "Failed to set the TL0PICIDX of a VP8 packet: $this" }
             }
         }
 
@@ -79,7 +79,7 @@ class Vp8Packet private constructor (
         _, _, newValue ->
             if (!DePacketizer.VP8PayloadDescriptor.setExtendedPictureId(
                     buffer, payloadOffset, payloadLength, newValue)) {
-                logger.cwarn { "Failed to set the picture id of a VP8 packet." }
+                logger.cwarn { "Failed to set the picture id of a VP8 packet: $this" }
             }
         }
 
