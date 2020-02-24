@@ -38,7 +38,7 @@ import org.jitsi.nlj.transform.node.SrtcpDecryptNode
 import org.jitsi.nlj.transform.node.SrtpDecryptNode
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
-import org.jitsi.nlj.transform.node.incoming.PaddingTermination
+import org.jitsi.nlj.transform.node.incoming.ProbingTermination
 import org.jitsi.nlj.transform.node.incoming.RemoteBandwidthEstimator
 import org.jitsi.nlj.transform.node.incoming.RetransmissionRequesterNode
 import org.jitsi.nlj.transform.node.incoming.RtcpTermination
@@ -181,7 +181,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 predicate = PacketPredicate { it is VideoRtpPacket }
                                 path = pipeline {
                                     node(RtxHandler(streamInformationStore, logger))
-                                    node(PaddingTermination())
+                                    node(ProbingTermination(logger))
                                     node(VideoParser(streamInformationStore, logger))
                                     node(Vp8Parser(logger))
                                     node(VideoBitrateCalculator(logger))
