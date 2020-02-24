@@ -294,6 +294,22 @@ public class DePacketizer
         }
 
         /**
+         * Determines whether the VP8 payload specified in the buffer that is
+         * passed as an argument has a TL0PICIDX or not.
+         *
+         * @param buf the byte buffer that contains the VP8 payload.
+         * @param off the offset in the byte buffer where the VP8 payload
+         *            starts.
+         * @param len the length of the VP8 payload in the byte buffer.
+         * @return true if the VP8 payload contains a TL0PICIDX,
+         * false otherwise.
+         */
+        public static boolean hasTL0PICIDX(byte[] buf, int off, int len)
+        {
+            return getLByteOffset(buf, off, len) >= 0;
+        }
+
+        /**
          * Gets the value of the PictureID field of a VP8 Payload Descriptor.
          *
          * @param input
