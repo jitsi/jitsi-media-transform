@@ -75,7 +75,7 @@ class RtpSenderImpl(
     private val outgoingRtpRoot: Node
     private val outgoingRtxRoot: Node
     private val outgoingRtcpRoot: Node
-    private val incomingPacketQueue = PacketInfoQueue("rtp-sender-incoming-packet-queue", executor, this::handlePacket)
+    private val incomingPacketQueue = PacketInfoQueue("rtp-sender-incoming-packet-queue", executor, this::handlePacket, RtpSenderConfig.Config.rtpSenderQueueSizeProperty())
     var running = true
     private var localVideoSsrc: Long? = null
     private var localAudioSsrc: Long? = null
