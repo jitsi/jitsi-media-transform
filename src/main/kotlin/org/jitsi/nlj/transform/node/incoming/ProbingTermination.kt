@@ -19,31 +19,52 @@ import java.util.Collections
 import java.util.TreeMap
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.stats.NodeStatsBlock
-import org.jitsi.nlj.transform.node.FilterNode
+import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.utils.LRUCache
+import org.jitsi.utils.logging2.Logger
+import org.jitsi.utils.logging2.createChildLogger
+import kotlin.math.max
 
-class PaddingTermination : FilterNode("Padding termination") {
+class ProbingTermination(parentLogger: Logger) : TransformerNode("Probing termination") {
+    private val logger = createChildLogger(parentLogger)
     private val replayContexts: MutableMap<Long, MutableSet<Int>> = TreeMap()
+    private var numDuplicatePacketsDropped = 0
     private var numPaddingPacketsSeen = 0
+    private var numPaddingOnlyPacketsDropped = 0
 
-    override fun accept(packetInfo: PacketInfo): Boolean {
+    override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val replayContext = replayContexts.computeIfAbsent(rtpPacket.ssrc) {
             Collections.newSetFromMap(LRUCache(1500))
         }
 
-        return if (replayContext.add(rtpPacket.sequenceNumber)) {
-            true
-        } else {
-            numPaddingPacketsSeen++
-            false
+        if (!replayContext.add(rtpPacket.sequenceNumber)) {
+            numDuplicatePacketsDropped++
+            return null
         }
+
+        if (rtpPacket.hasPadding) {
+            val paddingSize = rtpPacket.paddingSize
+            rtpPacket.length = max(rtpPacket.length - paddingSize, rtpPacket.headerLength)
+            rtpPacket.hasPadding = true
+            numPaddingPacketsSeen++
+        }
+
+        if (rtpPacket.payloadLength <= 0) {
+            logger.debug { "Dropping a padding-only packet: $rtpPacket" }
+            numPaddingOnlyPacketsDropped++
+            return null
+        }
+
+        return packetInfo
     }
 
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
+            addNumber("num_duplicate_packets_dropped", numDuplicatePacketsDropped)
             addNumber("num_padding_packets_seen", numPaddingPacketsSeen)
+            addNumber("num_padding_only_packets_dropped", numPaddingOnlyPacketsDropped)
         }
     }
 
