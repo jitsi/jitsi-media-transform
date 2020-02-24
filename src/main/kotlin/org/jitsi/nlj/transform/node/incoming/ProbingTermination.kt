@@ -47,7 +47,7 @@ class ProbingTermination(parentLogger: Logger) : TransformerNode("Probing termin
         if (rtpPacket.hasPadding) {
             val paddingSize = rtpPacket.paddingSize
             rtpPacket.length = max(rtpPacket.length - paddingSize, rtpPacket.headerLength)
-            rtpPacket.hasPadding = true
+            rtpPacket.hasPadding = false
             numPaddingPacketsSeen++
         }
 
