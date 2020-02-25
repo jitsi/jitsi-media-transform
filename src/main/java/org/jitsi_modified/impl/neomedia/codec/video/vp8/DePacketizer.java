@@ -121,6 +121,35 @@ public class DePacketizer
         private static final byte N_BIT = (byte) 0x20;
 
         /**
+         * Gets whether a VP8 payload has a temporal layer index (TID).
+         *
+         * @param buf the byte buffer that holds the VP8 packet.
+         * @param off the offset in the byte buffer where the VP8 payload starts.
+         * @param len the length of the VP8 payload.
+         * @return true if the VP8 payload has a temporal layer index, false if not.
+         */
+        public static boolean hasTemporalLayerIndex(byte[] buf, int off, int len)
+        {
+            if (buf == null || buf.length < off + len || len < 2)
+            {
+                return false;
+            }
+
+            if ((buf[off] & X_BIT) == 0 || (buf[off + 1] & T_BIT) == 0)
+            {
+                return false;
+            }
+
+            int sz = getSize(buf, off, len);
+            if (buf.length < off + sz || sz < 1)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
          * Gets the temporal layer index (TID), if that's set.
          *
          * @param buf the byte buffer that holds the VP8 packet.

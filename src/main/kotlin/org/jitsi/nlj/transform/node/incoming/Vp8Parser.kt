@@ -66,8 +66,8 @@ class Vp8Parser(
                 logger.cinfo { "Packet $videoRtpPacket has 7-bit (short) picture ID.  Packet data: ${videoRtpPacket.toHex(80)}" }
             }
 
-            if (!videoRtpPacket.hasTL0PICIDX) {
-                logger.cinfo { "Packet $videoRtpPacket does not have TL0PICIDX.  Packet data: ${videoRtpPacket.toHex(80)}" }
+            if (videoRtpPacket.hasTemporalLayerIndex && !videoRtpPacket.hasTL0PICIDX) {
+                logger.cinfo { "Packet $videoRtpPacket has TID but does not have TL0PICIDX.  Packet data: ${videoRtpPacket.toHex(80)}" }
             }
         }
 
