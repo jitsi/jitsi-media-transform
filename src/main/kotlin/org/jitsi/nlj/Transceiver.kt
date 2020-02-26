@@ -101,6 +101,9 @@ class Transceiver(
         RtpReceiverImpl(
             id,
             { rtcpPacket ->
+                if (rtcpPacket.packetLength >= 1500) {
+                    logger.warn("Sending large locally-generated RTCP packet of size ${rtcpPacket.packetLength}.")
+                }
                 rtpSender.processPacket(PacketInfo(rtcpPacket))
             },
             rtcpEventNotifier,
