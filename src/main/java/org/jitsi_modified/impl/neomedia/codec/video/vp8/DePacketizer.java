@@ -130,23 +130,7 @@ public class DePacketizer
          */
         public static boolean hasTemporalLayerIndex(byte[] buf, int off, int len)
         {
-            if (buf == null || buf.length < off + len || len < 2)
-            {
-                return false;
-            }
-
-            if ((buf[off] & X_BIT) == 0 || (buf[off + 1] & T_BIT) == 0)
-            {
-                return false;
-            }
-
-            int sz = getSize(buf, off, len);
-            if (buf.length < off + sz || sz < 1)
-            {
-                return false;
-            }
-
-            return true;
+            return getTemporalLayerIndex(buf, off, len) != -1;
         }
 
         /**
