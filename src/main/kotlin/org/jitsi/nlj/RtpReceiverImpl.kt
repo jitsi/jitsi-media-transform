@@ -174,7 +174,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 name = "Audio path"
                                 predicate = PacketPredicate { it is AudioRtpPacket }
                                 path = pipeline {
-                                    node(silenceDiscarder.rtpNode)
+                                    node(silenceDiscarder)
                                     node(packetHandlerWrapper)
                                 }
                             }
@@ -201,7 +201,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         node(srtcpDecryptWrapper)
                         node(toggleablePcapWriter.newObserverNode())
                         node(CompoundRtcpParser(logger))
-                        node(silenceDiscarder.rtcpNode)
                         node(rtcpTermination)
                         node(packetHandlerWrapper)
                     }

@@ -17,55 +17,28 @@ package org.jitsi.nlj.transform.node.incoming
 
 import java.util.concurrent.ConcurrentHashMap
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.rtp.AudioRtpPacket
 import org.jitsi.nlj.rtp.ResumableStreamRewriter
 import org.jitsi.nlj.transform.node.TransformerNode
-import org.jitsi.nlj.util.forEachIf
-import org.jitsi.rtp.rtcp.CompoundRtcpPacket
-import org.jitsi.rtp.rtcp.RtcpSrPacket
+import org.jitsi.rtp.rtp.RtpPacket
 
 /**
- * Discards RTP packets which contains shouldDiscard, masking their loss in the RTP sequence numbers and timestamps of RTP
- * packets, as well as the RTP timestamp in RTCP SR packets.
+ * Discards RTP packets which contains shouldDiscard, masking their loss in the RTP sequence numbers of RTP
+ * packets.
  */
-class SilenceDiscarder(
-    private val rewriteTimestamps: Boolean = false
-) {
+class SilenceDiscarder() : TransformerNode("Silence discarder") {
     val rewriters: MutableMap<Long, ResumableStreamRewriter> = ConcurrentHashMap()
-    val rtpNode = RtpTransformer()
-    val rtcpNode = RtcpTransformer()
 
-    inner class RtpTransformer : TransformerNode("Silence discarder RTP") {
-        override fun transform(packetInfo: PacketInfo): PacketInfo? {
-            val packet = packetInfo.packet as? AudioRtpPacket ?: return packetInfo
-            rewriters.computeIfAbsent(packet.ssrc) { ResumableStreamRewriter(rewriteTimestamps) }
-                .rewriteRtp(!packetInfo.shouldDiscard, packet)
+    override fun transform(packetInfo: PacketInfo): PacketInfo? {
+        val packet = packetInfo.packet as? RtpPacket ?: return packetInfo
+        rewriters.computeIfAbsent(packet.ssrc) { ResumableStreamRewriter() }
+            .rewriteRtp(!packetInfo.shouldDiscard, packet)
 
-            return if (packetInfo.shouldDiscard) {
-                null
-            } else {
-                packetInfo
-            }
+        return if (packetInfo.shouldDiscard) {
+            null
+        } else {
+            packetInfo
         }
-
-        override fun trace(f: () -> Unit) = f.invoke()
     }
 
-    inner class RtcpTransformer : TransformerNode("Silence discarder RTCP") {
-        override fun transform(packetInfo: PacketInfo): PacketInfo? {
-            if (!rewriteTimestamps) { return packetInfo }
-
-            val packet = packetInfo.packet
-            when (packet) {
-                is RtcpSrPacket -> rewriters[packet.senderSsrc]?.rewriteRtcpSr(packet)
-                is CompoundRtcpPacket -> packet.packets.forEachIf<RtcpSrPacket> {
-                    rewriters[packet.senderSsrc]?.rewriteRtcpSr(it)
-                }
-            }
-
-            return packetInfo
-        }
-
-        override fun trace(f: () -> Unit) = f.invoke()
-    }
+    override fun trace(f: () -> Unit) = f.invoke()
 }

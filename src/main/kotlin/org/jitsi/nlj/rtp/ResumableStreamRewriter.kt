@@ -15,11 +15,8 @@
  */
 package org.jitsi.nlj.rtp
 
-import org.jitsi.rtp.extensions.bytearray.putInt
-import org.jitsi.rtp.rtcp.RtcpSrPacket
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.util.isNewerThan
-import org.jitsi.rtp.util.isNewerTimestampThan
 
 /**
  * Rewrites sequence numbers for RTP streams by hiding any gaps caused by
@@ -32,9 +29,7 @@ import org.jitsi.rtp.util.isNewerTimestampThan
  * @author George Politis
  * @author Boris Grozev
  */
-class ResumableStreamRewriter(
-    private val rewriteTimestamps: Boolean
-) {
+class ResumableStreamRewriter() {
     /**
      * The sequence number delta between what's been accepted and what's been
      * received, mod 2^16.
@@ -43,21 +38,10 @@ class ResumableStreamRewriter(
         private set
 
     /**
-     * The timestamp delta between what's been accepted and what's been
-     * received, mod 2^32.
-     */
-    private var timestampDelta: Long = 0
-
-    /**
      * The highest sequence number that got accepted, mod 2^16.
      */
     var highestSequenceNumberSent = -1
         private set
-
-    /**
-     * The highest timestamp that got accepted, mod 2^32.
-     */
-    private var highestTimestampSent: Long = -1
 
     /**
      * Rewrites the sequence number of the given RTP packet hiding any gaps caused by drops.
@@ -70,32 +54,6 @@ class ResumableStreamRewriter(
         if (sequenceNumber != newSequenceNumber) {
             rtpPacket.sequenceNumber = newSequenceNumber
         }
-
-        if (rewriteTimestamps) {
-            val timestamp = rtpPacket.timestamp
-            val newTimestamp = rewriteTimestamp(accept, timestamp)
-
-            if (timestamp != newTimestamp) {
-                rtpPacket.timestamp = newTimestamp
-            }
-        }
-    }
-
-    /**
-     * Restores the RTP timestamp of the RTCP SR packet in the buffer.
-     *
-     */
-    fun rewriteRtcpSr(rtcpPacket: RtcpSrPacket) {
-        if (!rewriteTimestamps || timestampDelta == 0L) {
-            return
-        }
-
-        val timestamp = rtcpPacket.senderInfo.rtpTimestamp
-        val newTimestamp = (timestamp - timestampDelta) and 0xffffffffL
-
-        // TODO: what's the right way to do this?
-        // rtcpPacket.senderInfo.rtpTimestamp = newTimestamp
-        rtcpPacket.buffer.putInt(rtcpPacket.offset + 16, newTimestamp.toInt())
     }
 
     /**
@@ -128,39 +86,6 @@ class ResumableStreamRewriter(
             }
 
             return sequenceNumber
-        }
-    }
-
-    /**
-     * Rewrites the timestamp passed as a parameter, hiding any gaps caused by
-     * drops.
-     *
-     * @param accept true if the packet is accepted, false otherwise
-     * @param timestamp the timestamp to rewrite
-     * @return a rewritten timestamp that hides any gaps caused by drops.
-     */
-    private fun rewriteTimestamp(accept: Boolean, timestamp: Long): Long {
-        if (accept) {
-            // overwrite the timestamp (if needed)
-            val newTimestamp: Long = (timestamp - timestampDelta) and 0xffff_ffffL
-
-            // init or update the highest sent timestamp (if needed)
-            if (highestTimestampSent == -1L || newTimestamp isNewerTimestampThan highestTimestampSent) {
-                highestTimestampSent = newTimestamp
-            }
-
-            return newTimestamp
-        } else {
-            // update the timestamp delta (if needed)
-            if (highestTimestampSent != -1L) {
-                val newDelta = (timestamp - highestTimestampSent) and 0xffff_ffffL
-
-                if (newDelta isNewerTimestampThan timestampDelta) {
-                    timestampDelta = newDelta
-                }
-            }
-
-            return timestamp
         }
     }
 }
