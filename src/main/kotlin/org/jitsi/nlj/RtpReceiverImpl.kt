@@ -37,8 +37,9 @@ import org.jitsi.nlj.transform.node.RtpParser
 import org.jitsi.nlj.transform.node.SrtcpDecryptNode
 import org.jitsi.nlj.transform.node.SrtpDecryptNode
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
+import org.jitsi.nlj.transform.node.incoming.DuplicateTermination
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
-import org.jitsi.nlj.transform.node.incoming.ProbingTermination
+import org.jitsi.nlj.transform.node.incoming.PaddingTermination
 import org.jitsi.nlj.transform.node.incoming.RemoteBandwidthEstimator
 import org.jitsi.nlj.transform.node.incoming.RetransmissionRequesterNode
 import org.jitsi.nlj.transform.node.incoming.RtcpTermination
@@ -167,6 +168,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                         node(srtpDecryptWrapper)
                         node(toggleablePcapWriter.newObserverNode())
                         node(statsTracker)
+                        node(PaddingTermination(logger))
                         demux("Media Type") {
                             packetPath {
                                 name = "Audio path"
@@ -181,11 +183,11 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 predicate = PacketPredicate { it is VideoRtpPacket }
                                 path = pipeline {
                                     node(RtxHandler(streamInformationStore, logger))
-                                    node(ProbingTermination(logger))
+                                    node(DuplicateTermination(logger))
+                                    node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
                                     node(VideoParser(streamInformationStore, logger))
                                     node(Vp8Parser(logger))
                                     node(VideoBitrateCalculator(logger))
-                                    node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
                                     node(packetHandlerWrapper)
                                 }
                             }
