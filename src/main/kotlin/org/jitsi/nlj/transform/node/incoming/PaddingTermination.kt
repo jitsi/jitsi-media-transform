@@ -26,6 +26,7 @@ import kotlin.math.max
 class PaddingTermination(parentLogger: Logger) : TransformerNode("Probing termination") {
     private val logger = createChildLogger(parentLogger)
     private var numPaddedPacketsSeen = 0
+    private var numPaddingOnlyPacketsSeen = 0
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
@@ -35,6 +36,10 @@ class PaddingTermination(parentLogger: Logger) : TransformerNode("Probing termin
             rtpPacket.length = max(rtpPacket.length - paddingSize, rtpPacket.headerLength)
             rtpPacket.hasPadding = false
             numPaddedPacketsSeen++
+            if (rtpPacket.length == 0) {
+                numPaddingOnlyPacketsSeen++
+                packetInfo.shouldDiscard = true
+            }
         }
 
         return packetInfo
@@ -43,6 +48,7 @@ class PaddingTermination(parentLogger: Logger) : TransformerNode("Probing termin
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
             addNumber("num_padded_packets_seen", numPaddedPacketsSeen)
+            addNumber("num_padding_only_packets_seen", numPaddingOnlyPacketsSeen)
         }
     }
 
