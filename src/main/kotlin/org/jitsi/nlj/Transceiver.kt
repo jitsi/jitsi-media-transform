@@ -87,6 +87,18 @@ class Transceiver(
 
     private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger)
 
+    /**
+     * Whether this [Transceiver] is receiving audio from the remote endpoint.
+     */
+    @JvmName("isReceivingAudio")
+    fun isReceivingAudio(): Boolean = rtpReceiver.isReceivingAudio()
+
+    /**
+     * Whether this [Transceiver] is receiving video from the remote endpoint.
+     */
+    @JvmName("isReceivingVideo")
+    fun isReceivingVideo(): Boolean = rtpReceiver.isReceivingVideo()
+
     private val rtpSender: RtpSender = RtpSenderImpl(
         id,
         transportCcEngine,

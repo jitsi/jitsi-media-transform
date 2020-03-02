@@ -37,6 +37,7 @@ import org.jitsi.nlj.transform.node.RtpParser
 import org.jitsi.nlj.transform.node.SrtcpDecryptNode
 import org.jitsi.nlj.transform.node.SrtpDecryptNode
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
+import org.jitsi.nlj.transform.node.incoming.BitrateCalculator
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.transform.node.incoming.PaddingTermination
 import org.jitsi.nlj.transform.node.incoming.RemoteBandwidthEstimator
@@ -53,6 +54,7 @@ import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
+import org.jitsi.nlj.util.kbps
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.rtp.Packet
@@ -107,6 +109,10 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val rtcpTermination = RtcpTermination(rtcpEventNotifier, logger)
     private val rembHandler = RembHandler(logger)
     private val toggleablePcapWriter = ToggleablePcapWriter(logger, "$id-rx")
+    private val videoBitrateCalculator = VideoBitrateCalculator(parentLogger)
+    private val audioBitrateCalculator = BitrateCalculator("Audio bitrate calculator")
+    override fun isReceivingAudio() = audioBitrateCalculator.bitrate >= 10.kbps
+    override fun isReceivingVideo() = videoBitrateCalculator.bitrate >= 10.kbps
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
@@ -173,6 +179,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 predicate = PacketPredicate { it is AudioRtpPacket }
                                 path = pipeline {
                                     node(silenceDiscarder.rtpNode)
+                                    node(audioBitrateCalculator)
                                     node(packetHandlerWrapper)
                                 }
                             }
@@ -184,7 +191,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                     node(PaddingTermination())
                                     node(VideoParser(streamInformationStore, logger))
                                     node(Vp8Parser(logger))
-                                    node(VideoBitrateCalculator(logger))
+                                    node(videoBitrateCalculator)
                                     node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
                                     node(packetHandlerWrapper)
                                 }
