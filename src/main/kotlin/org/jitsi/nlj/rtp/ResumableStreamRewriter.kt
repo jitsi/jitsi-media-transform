@@ -72,7 +72,7 @@ class ResumableStreamRewriter(val keepHistory: Boolean = false) {
     fun rewriteSequenceNumber(accept: Boolean, sequenceNumber: Int): Int {
         if (keepHistory && !accept && history == null) {
             /* Don't instantiate history until it's needed; many streams never discard. */
-            history = StreamRewriteHistory()
+            history = StreamRewriteHistory(highestSequenceNumberSent)
         }
 
         history?.let {
@@ -103,14 +103,15 @@ class ResumableStreamRewriter(val keepHistory: Boolean = false) {
         }
     }
 
-    val gapsLeft = history?.gapsLeft ?: 0
+    val gapsLeft: Int
+        get() = history?.gapsLeft ?: 0
 
     private class RewriteHistoryItem(
         var accept: Boolean?,
         val newIndex: Int
     )
 
-    private class StreamRewriteHistory : ArrayCache<RewriteHistoryItem>(
+    private class StreamRewriteHistory(highestSeqSent: Int) : ArrayCache<RewriteHistoryItem>(
         MAX_REWRITE_HISTORY,
         /* We don't want to clone objects that get put in the tracker. */
         { it },
@@ -142,7 +143,7 @@ class ResumableStreamRewriter(val keepHistory: Boolean = false) {
         }
 
         fun rewriteSequenceNumber(accept: Boolean, sequenceNumber: Int): Int {
-            val index = rfc3711IndexTracker.interpret(sequenceNumber)
+            val index = rfc3711IndexTracker.update(sequenceNumber)
 
             val newIndex: Int
 
@@ -231,6 +232,12 @@ class ResumableStreamRewriter(val keepHistory: Boolean = false) {
             if (accept) return newIndex and 0xffff
             return sequenceNumber /* Don't care about sequence numbers for non-accepted packets,
               so make sure rewriteRtp does nothing. */
+        }
+
+        init {
+            if (highestSeqSent != -1) {
+                rewriteSequenceNumber(true, highestSeqSent)
+            }
         }
 
         companion object {
