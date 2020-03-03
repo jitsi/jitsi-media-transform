@@ -75,12 +75,17 @@ class VideoBitrateCalculator(
 }
 
 open class BitrateCalculator(name: String = "Bitrate calculator") : ObserverNode(name) {
-    private val rateStatistics = RateStatistics(5000, 8000f)
+    private val bitrateStatistics = RateStatistics(5000, 8000f)
+    private val packetRateStatistics = RateStatistics(5000, 1000f)
     val bitrate: Bandwidth
-        get() = rateStatistics.rate.bps
+        get() = bitrateStatistics.rate.bps
+    val packetRatePps: Long
+        get() = packetRateStatistics.rate
 
     override fun observe(packetInfo: PacketInfo) {
-        rateStatistics.update(packetInfo.packet.length, System.currentTimeMillis())
+        val now = System.currentTimeMillis()
+        bitrateStatistics.update(packetInfo.packet.length, now)
+        packetRateStatistics.update(1, now)
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

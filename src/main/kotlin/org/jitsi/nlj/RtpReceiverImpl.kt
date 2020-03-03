@@ -54,7 +54,6 @@ import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
 import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
-import org.jitsi.nlj.util.kbps
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.rtp.Packet
@@ -111,8 +110,9 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val toggleablePcapWriter = ToggleablePcapWriter(logger, "$id-rx")
     private val videoBitrateCalculator = VideoBitrateCalculator(parentLogger)
     private val audioBitrateCalculator = BitrateCalculator("Audio bitrate calculator")
-    override fun isReceivingAudio() = audioBitrateCalculator.bitrate >= 10.kbps
-    override fun isReceivingVideo() = videoBitrateCalculator.bitrate >= 10.kbps
+    override fun isReceivingAudio() = audioBitrateCalculator.packetRatePps >= 5
+    // Screen sharing static content can result in very low packet/bit rates, hence the low threshold.
+    override fun isReceivingVideo() = videoBitrateCalculator.packetRatePps >= 1
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
