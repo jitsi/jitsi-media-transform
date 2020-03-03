@@ -25,7 +25,7 @@ import org.jitsi.rtp.rtp.RtpPacket
  * Discards RTP packets which contains shouldDiscard, masking their loss in the RTP sequence numbers of RTP
  * packets.
  */
-class SilenceDiscarder() : TransformerNode("Silence discarder") {
+class DiscardableDiscarder(name: String) : TransformerNode(name) {
     val rewriters: MutableMap<Long, ResumableStreamRewriter> = ConcurrentHashMap()
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {

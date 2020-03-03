@@ -44,7 +44,7 @@ import org.jitsi.nlj.transform.node.incoming.RemoteBandwidthEstimator
 import org.jitsi.nlj.transform.node.incoming.RetransmissionRequesterNode
 import org.jitsi.nlj.transform.node.incoming.RtcpTermination
 import org.jitsi.nlj.transform.node.incoming.RtxHandler
-import org.jitsi.nlj.transform.node.incoming.SilenceDiscarder
+import org.jitsi.nlj.transform.node.incoming.DiscardableDiscarder
 import org.jitsi.nlj.transform.node.incoming.TccGeneratorNode
 import org.jitsi.nlj.transform.node.incoming.VideoBitrateCalculator
 import org.jitsi.nlj.transform.node.incoming.VideoParser
@@ -97,7 +97,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val tccGenerator = TccGeneratorNode(rtcpSender, streamInformationStore, logger)
     private val remoteBandwidthEstimator = RemoteBandwidthEstimator(streamInformationStore, logger, diagnosticContext)
     private val audioLevelReader = AudioLevelReader(streamInformationStore)
-    private val silenceDiscarder = SilenceDiscarder()
+    private val silenceDiscarder = DiscardableDiscarder("Silence discarder")
+    private val paddingOnlyDiscarder = DiscardableDiscarder("Padding-only discarder")
     private val statsTracker = IncomingStatisticsTracker(streamInformationStore)
     private val packetStreamStats = PacketStreamStatsNode()
     private val rtcpRrGenerator = RtcpRrGenerator(backgroundExecutor, rtcpSender, statsTracker) {
@@ -185,6 +186,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                     node(RtxHandler(streamInformationStore, logger))
                                     node(DuplicateTermination(logger))
                                     node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
+                                    node(paddingOnlyDiscarder)
                                     node(VideoParser(streamInformationStore, logger))
                                     node(Vp8Parser(logger))
                                     node(VideoBitrateCalculator(logger))
