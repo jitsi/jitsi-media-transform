@@ -37,6 +37,7 @@ import org.jitsi.nlj.transform.node.RtpParser
 import org.jitsi.nlj.transform.node.SrtcpDecryptNode
 import org.jitsi.nlj.transform.node.SrtpDecryptNode
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
+import org.jitsi.nlj.transform.node.incoming.BitrateCalculator
 import org.jitsi.nlj.transform.node.incoming.DuplicateTermination
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.transform.node.incoming.PaddingTermination
@@ -63,6 +64,8 @@ import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
+
+import org.jitsi.nlj.RtpReceiverConfig.Config
 
 class RtpReceiverImpl @JvmOverloads constructor(
     val id: String,
@@ -91,7 +94,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private var running: Boolean = true
     private val inputTreeRoot: Node
     private val incomingPacketQueue =
-            PacketInfoQueue("rtp-receiver-incoming-packet-queue", executor, this::handleIncomingPacket)
+            PacketInfoQueue("rtp-receiver-incoming-packet-queue", executor, this::handleIncomingPacket, Config.queueSize())
     private val srtpDecryptWrapper = SrtpDecryptNode()
     private val srtcpDecryptWrapper = SrtcpDecryptNode()
     private val tccGenerator = TccGeneratorNode(rtcpSender, streamInformationStore, logger)
@@ -109,6 +112,11 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val rtcpTermination = RtcpTermination(rtcpEventNotifier, logger)
     private val rembHandler = RembHandler(logger)
     private val toggleablePcapWriter = ToggleablePcapWriter(logger, "$id-rx")
+    private val videoBitrateCalculator = VideoBitrateCalculator(parentLogger)
+    private val audioBitrateCalculator = BitrateCalculator("Audio bitrate calculator")
+    override fun isReceivingAudio() = audioBitrateCalculator.packetRatePps >= 5
+    // Screen sharing static content can result in very low packet/bit rates, hence the low threshold.
+    override fun isReceivingVideo() = videoBitrateCalculator.packetRatePps >= 1
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
@@ -176,6 +184,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 predicate = PacketPredicate { it is AudioRtpPacket }
                                 path = pipeline {
                                     node(silenceDiscarder)
+                                    node(audioBitrateCalculator)
                                     node(packetHandlerWrapper)
                                 }
                             }
@@ -189,7 +198,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                     node(paddingOnlyDiscarder)
                                     node(VideoParser(streamInformationStore, logger))
                                     node(Vp8Parser(logger))
-                                    node(VideoBitrateCalculator(logger))
+                                    node(videoBitrateCalculator)
                                     node(packetHandlerWrapper)
                                 }
                             }
