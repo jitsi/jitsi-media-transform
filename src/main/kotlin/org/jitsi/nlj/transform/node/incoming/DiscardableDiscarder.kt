@@ -22,8 +22,8 @@ import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.rtp.rtp.RtpPacket
 
 /**
- * Discards RTP packets which contains shouldDiscard, masking their loss in the RTP sequence numbers of RTP
- * packets.
+ * Discards RTP packets which have shouldDiscard set to true, masking their loss
+ * in the RTP sequence numbers of RTP packets.
  */
 class DiscardableDiscarder(name: String, val keepHistory: Boolean) : TransformerNode(name) {
     val rewriters: MutableMap<Long, ResumableStreamRewriter> = ConcurrentHashMap()
