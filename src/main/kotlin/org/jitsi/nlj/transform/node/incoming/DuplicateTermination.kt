@@ -28,7 +28,7 @@ import org.jitsi.utils.logging2.Logger
  * that have previously been seen.
  *
  * (Since SRTP also has anti-replay protection, the normal case where duplicates
- * will occur is after the [RtxHandler].)
+ * will occur is after the [RtxHandler], since duplicate packets are sent over RTX for probing.)
  */
 class DuplicateTermination(parentLogger: Logger) : TransformerNode("Duplicate termination") {
     private val replayContexts: MutableMap<Long, MutableSet<Int>> = TreeMap()
