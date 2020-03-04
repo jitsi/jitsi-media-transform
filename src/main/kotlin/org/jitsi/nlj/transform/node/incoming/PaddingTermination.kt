@@ -23,6 +23,10 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import kotlin.math.max
 
+/**
+ * A node which removes padding from RTP packets.
+ * Padding-only packets are marked as shouldDiscard in their PacketInfo.
+ */
 class PaddingTermination(parentLogger: Logger) : TransformerNode("Padding termination") {
     private val logger = createChildLogger(parentLogger)
     private var numPaddedPacketsSeen = 0

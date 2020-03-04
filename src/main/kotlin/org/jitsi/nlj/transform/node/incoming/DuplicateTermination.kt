@@ -24,8 +24,14 @@ import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 
+/**
+ * A node which drops packets with SSRC and sequence number pairs identical to ones
+ * that have previously been seen.
+ *
+ * (Since SRTP also has anti-replay protection, the normal case where duplicates
+ * will occur is after the [RtxHandler].)
+ */
 class DuplicateTermination(parentLogger: Logger) : TransformerNode("Duplicate termination") {
-    private val logger = createChildLogger(parentLogger)
     private val replayContexts: MutableMap<Long, MutableSet<Int>> = TreeMap()
     private var numDuplicatePacketsDropped = 0
 
