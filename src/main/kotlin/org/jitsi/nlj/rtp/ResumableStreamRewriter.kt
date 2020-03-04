@@ -229,7 +229,7 @@ class ResumableStreamRewriter(val keepHistory: Boolean = false) {
                 }
             }
 
-            if (accept) return newIndex and 0xffff
+            if (accept) return toSequenceNumber(newIndex)
             return sequenceNumber /* Don't care about sequence numbers for non-accepted packets,
               so make sure rewriteRtp does nothing. */
         }
@@ -248,6 +248,9 @@ class ResumableStreamRewriter(val keepHistory: Boolean = false) {
              * XXX this is an uninformed value.
              */
             private const val MAX_REWRITE_HISTORY = 1000
+
+            /** Map an index back to a sequence number. */
+            private fun toSequenceNumber(index: Int): Int = index and 0xffff
         }
     }
 }
