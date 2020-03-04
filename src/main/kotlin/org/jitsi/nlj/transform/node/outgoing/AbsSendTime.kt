@@ -29,8 +29,10 @@ class AbsSendTime(
     private var extensionId: Int? = null
 
     init {
-        streamInformationStore.onRtpExtensionMapping(ABS_SEND_TIME) {
-            extensionId = it
+        if (!streamInformationStore.supportsTcc) {
+            streamInformationStore.onRtpExtensionMapping(ABS_SEND_TIME) {
+                extensionId = it
+            }
         }
     }
 
