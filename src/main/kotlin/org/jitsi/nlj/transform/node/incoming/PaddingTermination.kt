@@ -23,7 +23,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import kotlin.math.max
 
-class PaddingTermination(parentLogger: Logger) : TransformerNode("Probing termination") {
+class PaddingTermination(parentLogger: Logger) : TransformerNode("Padding termination") {
     private val logger = createChildLogger(parentLogger)
     private var numPaddedPacketsSeen = 0
     private var numPaddingOnlyPacketsSeen = 0
@@ -36,7 +36,7 @@ class PaddingTermination(parentLogger: Logger) : TransformerNode("Probing termin
             rtpPacket.length = max(rtpPacket.length - paddingSize, rtpPacket.headerLength)
             rtpPacket.hasPadding = false
             numPaddedPacketsSeen++
-            if (rtpPacket.length == 0) {
+            if (rtpPacket.payloadLength == 0) {
                 numPaddingOnlyPacketsSeen++
                 packetInfo.shouldDiscard = true
             }

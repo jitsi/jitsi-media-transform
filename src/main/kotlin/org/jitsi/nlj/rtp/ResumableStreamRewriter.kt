@@ -242,7 +242,7 @@ class ResumableStreamRewriter(val keepHistory: Boolean = false) {
 
         companion object {
             /**
-             * The maximum number of received packets and their timestamps to save.
+             * The maximum number of packets to save history for.
              *
              * NOTE rtt + minimum amount
              * XXX this is an uninformed value.

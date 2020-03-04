@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import java.util.Collections
 import java.util.TreeMap
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.stats.NodeStatsBlock
@@ -25,7 +24,7 @@ import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 
-class DuplicateTermination(parentLogger: Logger) : TransformerNode("Probing termination") {
+class DuplicateTermination(parentLogger: Logger) : TransformerNode("Duplicate termination") {
     private val logger = createChildLogger(parentLogger)
     private val replayContexts: MutableMap<Long, MutableSet<Int>> = TreeMap()
     private var numDuplicatePacketsDropped = 0
@@ -33,7 +32,7 @@ class DuplicateTermination(parentLogger: Logger) : TransformerNode("Probing term
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
         val replayContext = replayContexts.computeIfAbsent(rtpPacket.ssrc) {
-            Collections.newSetFromMap(LRUCache(1500))
+            LRUCache.lruSet(1500, true)
         }
 
         if (!replayContext.add(rtpPacket.sequenceNumber)) {
@@ -44,10 +43,8 @@ class DuplicateTermination(parentLogger: Logger) : TransformerNode("Probing term
         return packetInfo
     }
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("num_duplicate_packets_dropped", numDuplicatePacketsDropped)
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addNumber("num_duplicate_packets_dropped", numDuplicatePacketsDropped)
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

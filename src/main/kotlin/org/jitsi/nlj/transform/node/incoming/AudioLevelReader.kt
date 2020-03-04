@@ -33,6 +33,7 @@ class AudioLevelReader(
 ) : ObserverNode("Audio level reader") {
     private var audioLevelExtId: Int? = null
     var audioLevelListener: AudioLevelListener? = null
+    private var numSilencePacketsDiscarded = 0
 
     init {
         streamInformationStore.onRtpExtensionMapping(SSRC_AUDIO_LEVEL) {
@@ -54,15 +55,14 @@ class AudioLevelReader(
                     audioLevelListener?.onLevelReceived(audioRtpPacket.ssrc, (127 - level).toPositiveLong())
                 } else {
                     packetInfo.shouldDiscard = true
+                    numSilencePacketsDiscarded++
                 }
             }
         }
     }
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addString("audio_level_ext_id", audioLevelExtId.toString())
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addString("audio_level_ext_id", audioLevelExtId.toString())
     }
 
     override fun trace(f: () -> Unit) = f.invoke()
