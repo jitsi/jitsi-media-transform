@@ -22,7 +22,6 @@ import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
-import org.jitsi.utils.logging2.createChildLogger
 
 /**
  * A node which drops packets with SSRC and sequence number pairs identical to ones

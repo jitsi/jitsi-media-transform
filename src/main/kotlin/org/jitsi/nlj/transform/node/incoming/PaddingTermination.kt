@@ -36,9 +36,7 @@ class PaddingTermination(parentLogger: Logger) : TransformerNode("Padding termin
         val rtpPacket = packetInfo.packetAs<RtpPacket>()
 
         if (rtpPacket.hasPadding) {
-            val paddingSize = rtpPacket.paddingSize
-            rtpPacket.length = max(rtpPacket.length - paddingSize, rtpPacket.headerLength)
-            rtpPacket.hasPadding = false
+            rtpPacket.removePadding()
             packetInfo.resetPayloadVerification()
             numPaddedPacketsSeen++
             if (rtpPacket.payloadLength == 0) {
@@ -58,4 +56,10 @@ class PaddingTermination(parentLogger: Logger) : TransformerNode("Padding termin
     }
 
     override fun trace(f: () -> Unit) = f.invoke()
+}
+
+fun RtpPacket.removePadding() {
+    val paddingSize = paddingSize
+    length = max(length - paddingSize, headerLength)
+    hasPadding = false
 }
