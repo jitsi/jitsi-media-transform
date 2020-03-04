@@ -35,6 +35,7 @@ class PaddingTermination(parentLogger: Logger) : TransformerNode("Padding termin
             val paddingSize = rtpPacket.paddingSize
             rtpPacket.length = max(rtpPacket.length - paddingSize, rtpPacket.headerLength)
             rtpPacket.hasPadding = false
+            packetInfo.resetPayloadVerification()
             numPaddedPacketsSeen++
             if (rtpPacket.payloadLength == 0) {
                 numPaddingOnlyPacketsSeen++
