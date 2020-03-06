@@ -29,7 +29,7 @@ class PacketInfoQueue(
     executor: ExecutorService,
     handler: (PacketInfo) -> Boolean,
     capacity: Int = 1024
-) : PacketQueue<PacketInfo>(capacity, false, null, id, handler, executor) {
+) : PacketQueue<PacketInfo>(capacity, false, id, handler, executor) {
     override fun getBuffer(packetInfo: PacketInfo): ByteArray =
         throw NotImplementedError("copy=true is not supported")
 

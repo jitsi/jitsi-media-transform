@@ -53,6 +53,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
 import org.jitsi.nlj.RtpSenderConfig.Config
+import org.jitsi.utils.queue.QueueStatistics
 
 class RtpSenderImpl(
     val id: String,
@@ -78,6 +79,8 @@ class RtpSenderImpl(
     private val outgoingRtxRoot: Node
     private val outgoingRtcpRoot: Node
     private val incomingPacketQueue = PacketInfoQueue("rtp-sender-incoming-packet-queue", executor, this::handlePacket, Config.queueSize())
+    private val incomingPacketQueueStats = QueueStatistics(incomingPacketQueue)
+    init { incomingPacketQueue.setObserver(incomingPacketQueueStats) }
     var running = true
     private var localVideoSsrc: Long? = null
     private var localAudioSsrc: Long? = null
@@ -240,7 +243,7 @@ class RtpSenderImpl(
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP sender $id").apply {
         addBlock(nackHandler.getNodeStats())
         addBlock(probingDataSender.getNodeStats())
-        addJson("packetQueue", incomingPacketQueue.debugState)
+        addJson("packetQueue", incomingPacketQueue.debugState.also { it["statistics"] = incomingPacketQueueStats.stats })
         NodeStatsVisitor(this).reverseVisit(outputPipelineTerminationNode)
 
         addString("running", running.toString())
