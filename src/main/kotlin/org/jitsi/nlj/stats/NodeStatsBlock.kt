@@ -182,20 +182,28 @@ class NodeStatsBlock(val name: String) {
         private const val AGGREGATES = "_aggregates"
 
         /**
-         * Creates a [NodeStatsBlock] from a JSON object. It's shallow and uses only strings.
+         * Creates a [NodeStatsBlock] from a JSON object.
          */
         fun fromJson(name: String, json: JSONObject): NodeStatsBlock = NodeStatsBlock(name).apply {
-            json.keys.forEach {
-                addString(it!!.toString(), json[it].toString())
+            json.forEach { (name, value) ->
+                when (value) {
+                    is JSONObject -> addJson(name.toString(), value)
+                    is OrderedJsonObject -> addJson(name.toString(), value)
+                    else -> addString(name.toString(), value.toString())
+                }
             }
         }
 
         /**
-         * Creates a [NodeStatsBlock] from an ordered JSON object. It's shallow and uses only strings.
+         * Creates a [NodeStatsBlock] from an ordered JSON object.
          */
         fun fromJson(name: String, json: OrderedJsonObject): NodeStatsBlock = NodeStatsBlock(name).apply {
-            json.keys.forEach {
-                addString(it.toString(), json[it].toString())
+            json.forEach { (name, value) ->
+                when (value) {
+                    is JSONObject -> addJson(name.toString(), value)
+                    is OrderedJsonObject -> addJson(name.toString(), value)
+                    else -> addString(name.toString(), value.toString())
+                }
             }
         }
     }
