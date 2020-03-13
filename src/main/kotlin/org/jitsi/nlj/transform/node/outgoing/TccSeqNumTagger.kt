@@ -18,6 +18,7 @@ package org.jitsi.nlj.transform.node.outgoing
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.rtp.TransportCcEngine
+import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ModifierNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
@@ -41,12 +42,14 @@ class TccSeqNumTagger(
     override fun modify(packetInfo: PacketInfo): PacketInfo {
         tccExtensionId?.let { tccExtId ->
             val rtpPacket = packetInfo.packetAs<RtpPacket>()
-            val ext = rtpPacket.getHeaderExtension(tccExtId)
-                ?: rtpPacket.addHeaderExtension(tccExtId, TccHeaderExtension.DATA_SIZE_BYTES)
+            if (rtpPacket is VideoRtpPacket) {
+                val ext = rtpPacket.getHeaderExtension(tccExtId)
+                    ?: rtpPacket.addHeaderExtension(tccExtId, TccHeaderExtension.DATA_SIZE_BYTES)
 
-            TccHeaderExtension.setSequenceNumber(ext, currTccSeqNum)
-            transportCcEngine?.mediaPacketSent(currTccSeqNum, rtpPacket.length.bytes)
-            currTccSeqNum++
+                TccHeaderExtension.setSequenceNumber(ext, currTccSeqNum)
+                transportCcEngine?.mediaPacketSent(currTccSeqNum, rtpPacket.length.bytes)
+                currTccSeqNum++
+            }
         }
 
         return packetInfo
