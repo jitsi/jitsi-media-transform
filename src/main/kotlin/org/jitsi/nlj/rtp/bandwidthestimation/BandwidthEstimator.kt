@@ -22,11 +22,11 @@ import java.util.LinkedList
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
-import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.formatMilli
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging.TimeSeriesLogger
+import org.jitsi.utils.OrderedJsonObject
 
 /**
  * An abstract interface to a bandwidth estimation algorithm.

@@ -19,6 +19,7 @@ package org.jitsi.nlj.util
 import io.kotlintest.matchers.collections.shouldContainExactly
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
+import org.jitsi.utils.OrderedJsonObject
 
 class OrderedJsonObjectTest : ShouldSpec() {
 
