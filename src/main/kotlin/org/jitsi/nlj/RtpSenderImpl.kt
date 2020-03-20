@@ -243,7 +243,7 @@ class RtpSenderImpl(
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP sender $id").apply {
         addBlock(nackHandler.getNodeStats())
         addBlock(probingDataSender.getNodeStats())
-        addJson("packetQueue", incomingPacketQueue.debugState.also { it.put("statistics", incomingPacketQueueStats.stats) })
+        addJson("packetQueue", incomingPacketQueueStats.queueDebugState)
         NodeStatsVisitor(this).reverseVisit(outputPipelineTerminationNode)
 
         addString("running", running.toString())
