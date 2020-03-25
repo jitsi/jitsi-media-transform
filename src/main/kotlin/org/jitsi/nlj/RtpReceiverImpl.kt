@@ -65,7 +65,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
 import org.jitsi.nlj.RtpReceiverConfig.Config
-import org.jitsi.utils.queue.QueueStatistics
+import org.jitsi.utils.queue.QueueObserver
 
 class RtpReceiverImpl @JvmOverloads constructor(
     val id: String,
@@ -95,7 +95,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val inputTreeRoot: Node
     private val incomingPacketQueue =
             PacketInfoQueue("rtp-receiver-incoming-packet-queue", executor, this::handleIncomingPacket, Config.queueSize())
-    private val incomingPacketQueueStats = QueueStatistics(incomingPacketQueue).also { incomingPacketQueue.setObserver(it) }
+    private val incomingPacketQueueObserver = QueueObserver(incomingPacketQueue).also { incomingPacketQueue.setObserver(it) }
     private val srtpDecryptWrapper = SrtpDecryptNode()
     private val srtcpDecryptWrapper = SrtcpDecryptNode()
     private val tccGenerator = TccGeneratorNode(rtcpSender, streamInformationStore, logger)
@@ -233,7 +233,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP receiver $id").apply {
         addBlock(super.getNodeStats())
         addString("running", running.toString())
-        addJson("packetQueue", incomingPacketQueueStats.queueDebugState)
+        addJson("packetQueue", incomingPacketQueueObserver.queueDebugState)
         NodeStatsVisitor(this).visit(inputTreeRoot)
     }
 
