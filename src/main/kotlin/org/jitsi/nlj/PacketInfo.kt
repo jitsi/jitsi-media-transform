@@ -143,9 +143,7 @@ open class PacketInfo @JvmOverloads constructor(
     }
 
     /**
-     * The list of pending actions.
-     *
-     * We use [LinkedList] because it is the lightest-weight if no actions are added.
+     * The list of pending actions, or [null] if none.
      */
     private var onSentActions: ArrayList<() -> Unit>? = null
 
