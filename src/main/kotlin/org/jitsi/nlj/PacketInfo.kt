@@ -17,6 +17,7 @@ package org.jitsi.nlj
 
 import java.time.Duration
 import org.jitsi.rtp.Packet
+import java.util.Collections
 
 class EventTimeline(
     private val timeline: MutableList<Pair<String, Long>> = mutableListOf()
@@ -169,11 +170,11 @@ open class PacketInfo @JvmOverloads constructor(
      * method.  This should be called just before, or after, this packet is sent.
      */
     fun sent() {
-        var actions: List<() -> Unit>? = null
+        var actions: List<() -> Unit> = Collections.emptyList()
         synchronized(this) {
             onSentActions?.let { actions = it; onSentActions = null } ?: run { return@sent }
         }
-        for (action in actions!!) {
+        for (action in actions) {
             action.invoke()
         }
     }
