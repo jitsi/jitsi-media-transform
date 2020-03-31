@@ -39,7 +39,12 @@ internal class PayloadTypeEncodingTest : ShouldSpec() {
                 encoding2 shouldBe encoding3
             }
             should("return OTHER in the invalid case") {
-                PayloadTypeEncoding.createFrom("blah") shouldBe PayloadTypeEncoding.OTHER
+                val fooPt = PayloadTypeEncoding.createFrom("foo")
+                val barPt = PayloadTypeEncoding.createFrom("bar")
+                fooPt shouldBe PayloadTypeEncoding.OTHER
+                barPt shouldBe PayloadTypeEncoding.OTHER
+                fooPt.unknownVal shouldBe "foo"
+                barPt.unknownVal shouldBe "bar"
             }
         }
     }
