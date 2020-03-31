@@ -132,12 +132,51 @@ open class PacketInfo @JvmOverloads constructor(
         }
         clone.receivedTime = receivedTime
         clone.payloadVerification = payloadVerification
+        clone.onSentActions = onSentActions?.clone() as ArrayList<()->Unit>?
         return clone
     }
 
     fun addEvent(desc: String) {
         if (ENABLE_TIMELINE) {
             timeline.addEvent(desc)
+        }
+    }
+
+    /**
+     * The list of pending actions.
+     *
+     * We use [LinkedList] because it is the lightest-weight if no actions are added.
+     */
+    private var onSentActions: ArrayList<() -> Unit>? = null
+
+    /**
+     * Add an action to be performed when the packet is sent (i.e. when this packet's
+     * [sent] method is called).
+     *
+     * If this [PacketInfo] object is cloned, the action will be called for every
+     * cloned instance.  If packet is dropped (i.e. [sent] is never called), the
+     * action will not be called.
+     */
+    fun onSent(action: () -> Unit) {
+        synchronized(this) {
+            if (onSentActions == null) {
+                onSentActions = ArrayList(1)
+            }
+            onSentActions!!.add(action)
+        }
+    }
+
+    /**
+     * Invoke any actions previously registered with this [PacketInfo]'s [onSent]
+     * method.  This should be called just before, or after, this packet is sent.
+     */
+    fun sent() {
+        var actions: List<() -> Unit>? = null
+        synchronized(this) {
+            onSentActions?.let { actions = it; onSentActions = null } ?: run { return@sent }
+        }
+        for (action in actions!!) {
+            action.invoke()
         }
     }
 
