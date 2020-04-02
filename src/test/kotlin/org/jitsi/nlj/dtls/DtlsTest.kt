@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import kotlin.concurrent.thread
 
-class DtlsTest2 : ShouldSpec() {
+class DtlsTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
     private val debugEnabled = true
     private val pcapEnabled = false
@@ -43,8 +43,8 @@ class DtlsTest2 : ShouldSpec() {
     }
 
     init {
-        val dtlsServer = DtlsStack2(logger).apply { actAsServer() }
-        val dtlsClient = DtlsStack2(logger).apply { actAsClient() }
+        val dtlsServer = DtlsStack(logger).apply { actAsServer() }
+        val dtlsClient = DtlsStack(logger).apply { actAsClient() }
         val pcapWriter = if (pcapEnabled) PcapWriter(logger, "/tmp/dtls-test.pcap") else null
 
         dtlsClient.remoteFingerprints = mapOf(
@@ -53,14 +53,16 @@ class DtlsTest2 : ShouldSpec() {
             dtlsClient.localFingerprintHashFunction to dtlsClient.localFingerprint)
 
         // The DTLS server's send is wired directly to the DTLS client's receive
-        dtlsServer.sender = { buf, off, len ->
-            pcapWriter?.processPacket(PacketInfo(UnparsedPacket(buf, off, len)))
-            dtlsClient.processIncomingProtocolData(buf, off, len)
+        dtlsServer.outgoingDataHandler = object : DtlsStack.OutgoingDataHandler {
+            override fun sendData(data: ByteArray, off: Int, len: Int) {
+                pcapWriter?.processPacket(PacketInfo(UnparsedPacket(data, off, len)))
+                dtlsClient.processIncomingProtocolData(data, off, len)
+            }
         }
 
         val serverReceivedData = CompletableFuture<String>()
         val serverToClientMessage = "Goodbye, world"
-        dtlsServer.incomingDataHandler = object : DtlsStack2.IncomingDataHandler {
+        dtlsServer.incomingDataHandler = object : DtlsStack.IncomingDataHandler {
             override fun dataReceived(data: ByteArray, off: Int, len: Int) {
                 val packetData = ByteBuffer.wrap(data, off, len)
                 val receivedStr = StandardCharsets.UTF_8.decode(packetData).toString()
@@ -73,13 +75,15 @@ class DtlsTest2 : ShouldSpec() {
         }
 
         // The DTLS client's send is wired directly to the DTLS server's receive
-        dtlsClient.sender = { buf, off, len ->
-            pcapWriter?.processPacket(PacketInfo(UnparsedPacket(buf, off, len)))
-            dtlsServer.processIncomingProtocolData(buf, off, len)
+        dtlsClient.outgoingDataHandler = object : DtlsStack.OutgoingDataHandler {
+            override fun sendData(data: ByteArray, off: Int, len: Int) {
+                pcapWriter?.processPacket(PacketInfo(UnparsedPacket(data, off, len)))
+                dtlsServer.processIncomingProtocolData(data, off, len)
+            }
         }
 
         val clientReceivedData = CompletableFuture<String>()
-        dtlsClient.incomingDataHandler = object : DtlsStack2.IncomingDataHandler {
+        dtlsClient.incomingDataHandler = object : DtlsStack.IncomingDataHandler {
             override fun dataReceived(data: ByteArray, off: Int, len: Int) {
                 val packetData = ByteBuffer.wrap(data, off, len)
                 val receivedStr = StandardCharsets.UTF_8.decode(packetData).toString()

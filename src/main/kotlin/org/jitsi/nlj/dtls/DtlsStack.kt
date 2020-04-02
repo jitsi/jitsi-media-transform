@@ -20,6 +20,7 @@ import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
 import org.jitsi.nlj.srtp.TlsRole
+import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
@@ -31,10 +32,26 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.math.min
 
-class DtlsStack2(
+/**
+ * A DTLS stack implementation, which can act as either the DTLS server or DTLS client, and can be used
+ * for negotiating the DTLS connection and sending and receiving data over that connection.
+ *
+ * This class does not directly communicate with the network in any way.  Raw DTLS packets must be fed into
+ * this stack via the [processIncomingProtocolData] method.  [incomingDataHandler] will be invoked with the
+ * decrypted, application data sent over the connection.
+ *
+ * Data can be sent through the DTLS connection via [sendApplicationData]; it will be encrypted by the stack and
+ * then sent out via the [outgoingDataHandler], which must be set to have the data go anywhere interesting :)
+ *
+ * [eventHandler] will be invoked when any events occur.
+ *
+ * After wiring up all the handlers, to start a connection the stack must be told which role to fullfil: client
+ * or server.  This can be done by calling either the [actAsClient] or [actAsServer] methods.  Once the role has
+ * been set, [start] can be called to start the negotiation.
+ */
+class DtlsStack(
     parentLogger: Logger
 ) {
-
     private val logger = createChildLogger(parentLogger)
     private val roleSet = CompletableFuture<Unit>()
 
@@ -42,7 +59,7 @@ class DtlsStack2(
      * The certificate info for this particular [DtlsStack] instance. We save it in a local val because the global one
      * might be refreshed.
      */
-    private val certificateInfo = DtlsStack2.certificateInfo
+    private val certificateInfo = DtlsStack.certificateInfo
 
     val localFingerprintHashFunction: String
         get() = certificateInfo.localFingerprintHashFunction
@@ -61,9 +78,14 @@ class DtlsStack2(
     var incomingDataHandler: IncomingDataHandler? = null
 
     /**
-     * The method [DtlsStack2] will invoke when it wants to send DTLS data out onto the network.
+     * The method [DtlsStack] will invoke when it wants to send DTLS data out onto the network.
      */
-    var sender: ((ByteArray, Int, Int) -> Unit)? = null
+    var outgoingDataHandler: OutgoingDataHandler? = null
+
+    /**
+     * Handle to be invoked when events occur
+     */
+    var eventHandler: EventHandler? = null
 
     private val incomingProtocolData = LinkedBlockingQueue<ByteBuffer>()
 
@@ -85,32 +107,16 @@ class DtlsStack2(
      */
     private var dtlsTransport: DTLSTransport? = null
 
-    /**
-     * The handler to be invoked when the DTLS handshake is complete.  A [ByteArray]
-     * containing the SRTP keying material is passed
-     */
-    private var handshakeCompleteHandler: (Int, TlsRole, ByteArray) -> Unit = { _, _, _ -> }
-
     private val datagramTransport: DatagramTransport = DatagramTransportImpl(
         incomingProtocolData,
         logger
     )
 
-    /**
-     * Install a handler to be invoked when the DTLS handshake is finished.
-     *
-     * NOTE this MUST be called before calling either [actAsServer] or
-     * [actAsClient]!
-     */
-    fun onHandshakeComplete(handler: (Int, TlsRole, ByteArray) -> Unit) {
-        handshakeCompleteHandler = handler
-    }
-
     fun actAsServer() {
         role = DtlsServer(
             datagramTransport,
             certificateInfo,
-            handshakeCompleteHandler,
+            { chosenSrtpProfile, tlsRole, keyingMaterial -> eventHandler?.handshakeComplete(chosenSrtpProfile, tlsRole, keyingMaterial) },
             this::verifyAndValidateRemoteCertificate,
             logger
         )
@@ -121,7 +127,7 @@ class DtlsStack2(
         role = DtlsClient(
             datagramTransport,
             certificateInfo,
-            handshakeCompleteHandler,
+            { chosenSrtpProfile, tlsRole, keyingMaterial -> eventHandler?.handshakeComplete(chosenSrtpProfile, tlsRole, keyingMaterial) },
             this::verifyAndValidateRemoteCertificate,
             logger
         )
@@ -154,6 +160,8 @@ class DtlsStack2(
             DtlsUtils.verifyAndValidateCertificate(it, remoteFingerprints)
             // The above throws an exception if the checks fail.
             logger.cdebug { "Fingerprints verified." }
+        } ?: run {
+            throw DtlsUtils.DtlsException("Remote certificate was null")
         }
     }
 
@@ -165,6 +173,10 @@ class DtlsStack2(
      * We get 'pushed' the data from a lower transport layer, but bouncycastle wants to 'pull' the data
      * itself.  To mimic this, we put the received data into a queue, and then 'pull' it through ourselves by
      * calling 'receive' on the negotiated [DTLSTransport].
+     *
+     * Note that although [data] is put into a queue, it is processed synchronously in this method
+     * (dtlsTransport.receive will invoke the receive method on DatagramTransportImpl which will read from
+     * this queue and copy the data).
      */
     fun processIncomingProtocolData(data: ByteArray, off: Int, len: Int) {
         incomingProtocolData.add(ByteBuffer.wrap(data, off, len))
@@ -175,6 +187,12 @@ class DtlsStack2(
                 incomingDataHandler?.dataReceived(dtlsAppDataBuf, 0, bytesReceived)
             }
         } while (bytesReceived > 0)
+    }
+
+    fun getDebugState(): OrderedJsonObject = OrderedJsonObject().apply {
+        put("localFingerprintHashFunction", certificateInfo.localFingerprint)
+        put("remoteFingerprints", remoteFingerprints.map { (hash, fp) -> "$hash: $fp" }.joinToString())
+        put("role", (role?.javaClass ?: "null").toString())
     }
 
     companion object {
@@ -195,6 +213,10 @@ class DtlsStack2(
             }
     }
 
+    /**
+     * An implementation of [DatagramTransport] which 'receives' from the queue in [DtlsStack] and sends out
+     * via [DtlsStack]'s [outgoingDataHandler]
+     */
     inner class DatagramTransportImpl(
         private val dataQueue: LinkedBlockingQueue<ByteBuffer>,
         parentLogger: Logger
@@ -212,7 +234,7 @@ class DtlsStack2(
         }
 
         override fun send(buf: ByteArray, off: Int, len: Int) {
-            this@DtlsStack2.sender?.invoke(buf, off, len)
+            this@DtlsStack.outgoingDataHandler?.sendData(buf, off, len)
         }
 
         /**
@@ -234,5 +256,13 @@ class DtlsStack2(
          * and must copy from it if it wants to use the data after the call has finished
          */
         fun dataReceived(data: ByteArray, off: Int, len: Int)
+    }
+
+    interface OutgoingDataHandler {
+        fun sendData(data: ByteArray, off: Int, len: Int)
+    }
+
+    interface EventHandler {
+        fun handshakeComplete(chosenSrtpProtectionProfile: Int, tlsRole: TlsRole, keyingMaterial: ByteArray)
     }
 }
