@@ -24,7 +24,7 @@ import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.utils.config.SimpleProperty
 import org.jitsi.utils.logging2.Logger
-import java.security.AccessControlException
+import java.lang.IllegalStateException
 import java.util.Date
 
 class ToggleablePcapWriter(
@@ -37,8 +37,7 @@ class ToggleablePcapWriter(
 
     fun enable() {
         if (!PcapWriterConfig.Config.pcapEnabled()) {
-            // TODO: is this the right exception type, semantically?
-            throw AccessControlException("PCAP capture is disabled in configuration")
+            throw IllegalStateException("PCAP capture is disabled in configuration")
         }
         synchronized(pcapLock) {
             if (pcapWriter == null) {
