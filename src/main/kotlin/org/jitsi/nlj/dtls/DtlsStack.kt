@@ -20,6 +20,7 @@ import org.bouncycastle.tls.Certificate
 import org.bouncycastle.tls.DTLSTransport
 import org.bouncycastle.tls.DatagramTransport
 import org.jitsi.nlj.srtp.TlsRole
+import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.cdebug
@@ -107,10 +108,10 @@ class DtlsStack(
      */
     private var dtlsTransport: DTLSTransport? = null
 
-    private val datagramTransport: DatagramTransport = DatagramTransportImpl(
-        incomingProtocolData,
-        logger
-    )
+    /**
+     * The [DatagramTransport] implementation we use for this stack.
+     */
+    private val datagramTransport: DatagramTransport = DatagramTransportImpl(logger)
 
     fun actAsServer() {
         role = DtlsServer(
@@ -174,12 +175,19 @@ class DtlsStack(
      * itself.  To mimic this, we put the received data into a queue, and then 'pull' it through ourselves by
      * calling 'receive' on the negotiated [DTLSTransport].
      *
-     * Note that although [data] is put into a queue, it is processed synchronously in this method
-     * (dtlsTransport.receive will invoke the receive method on DatagramTransportImpl which will read from
-     * this queue and copy the data).
+     * Note: the data we get here may be a DTLS protocol packet and therefore won't generate anything
+     * to be received by [dtlsTransport] or a DTLS app packet (data sent over DTLS after the handshake has
+     * completed) and will result in data being received through [dtlsTransport].  It's possible, though,
+     * that the handshake has finished and the far end has sent application data but we've not yet set
+     * [dtlsTransport], so we "miss" it.  We don't lose this data, but it will sit inside of [incomingProtocolData]
+     * until the next packet comes through.  This means that we must make a copy of the buffer we receive, as we
+     * won't necessarily be done with it by the time this method completes.
      */
     fun processIncomingProtocolData(data: ByteArray, off: Int, len: Int) {
-        incomingProtocolData.add(ByteBuffer.wrap(data, off, len))
+        val bufCopy = BufferPool.getBuffer(len).apply {
+            System.arraycopy(data, off, this, 0, len)
+        }
+        incomingProtocolData.add(ByteBuffer.wrap(bufCopy, 0, len))
         var bytesReceived: Int
         do {
             bytesReceived = dtlsTransport?.receive(dtlsAppDataBuf, 0, 1500, 1) ?: -1
@@ -217,19 +225,18 @@ class DtlsStack(
      * An implementation of [DatagramTransport] which 'receives' from the queue in [DtlsStack] and sends out
      * via [DtlsStack]'s [outgoingDataHandler]
      */
-    inner class DatagramTransportImpl(
-        private val dataQueue: LinkedBlockingQueue<ByteBuffer>,
-        parentLogger: Logger
-    ) : DatagramTransport {
+    inner class DatagramTransportImpl(parentLogger: Logger) : DatagramTransport {
         private val logger = createChildLogger(parentLogger)
+
         override fun receive(buf: ByteArray, off: Int, len: Int, waitMillis: Int): Int {
-            val data = dataQueue.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
+            val data = this@DtlsStack.incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
             val length = min(len, data.limit())
             if (length < data.limit()) {
                 logger.warn("Passed buffer size ($len) was too small to hold incoming data size (${data.limit()}; " +
                     "data was truncated")
             }
             System.arraycopy(data.array(), data.arrayOffset(), buf, off, length)
+            BufferPool.returnBuffer(data.array())
             return length
         }
 
