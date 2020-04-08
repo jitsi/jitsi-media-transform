@@ -192,7 +192,10 @@ class DtlsStack(
         do {
             bytesReceived = dtlsTransport?.receive(dtlsAppDataBuf, 0, 1500, 1) ?: -1
             if (bytesReceived > 0) {
-                incomingDataHandler?.dataReceived(dtlsAppDataBuf, 0, bytesReceived)
+                val bufCopy2 = BufferPool.getBuffer(bytesReceived).apply {
+                    System.arraycopy(dtlsAppDataBuf, 0, this, 0, bytesReceived)
+                }
+                incomingDataHandler?.dataReceived(bufCopy2, 0, bytesReceived)
             }
         } while (bytesReceived > 0)
     }
