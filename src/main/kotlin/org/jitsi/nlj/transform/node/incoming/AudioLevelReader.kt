@@ -40,10 +40,6 @@ class AudioLevelReader(
         }
     }
 
-    companion object {
-        const val MUTED_LEVEL = 127
-    }
-
     override fun observe(packetInfo: PacketInfo) {
         val audioRtpPacket = packetInfo.packet as? AudioRtpPacket ?: return
 
@@ -66,4 +62,8 @@ class AudioLevelReader(
     }
 
     override fun trace(f: () -> Unit) = f.invoke()
+
+    companion object {
+        const val MUTED_LEVEL = 127
+    }
 }
