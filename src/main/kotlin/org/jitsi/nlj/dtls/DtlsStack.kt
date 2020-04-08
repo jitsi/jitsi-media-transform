@@ -192,6 +192,7 @@ class DtlsStack(
         do {
             bytesReceived = dtlsTransport?.receive(dtlsAppDataBuf, 0, 1500, 1) ?: -1
             if (bytesReceived > 0) {
+                // Copy again to copy out of dtlsAppDataBuf, which we re-use.
                 val bufCopy2 = BufferPool.getBuffer(bytesReceived).apply {
                     System.arraycopy(dtlsAppDataBuf, 0, this, 0, bytesReceived)
                 }
@@ -262,8 +263,8 @@ class DtlsStack(
 
     interface IncomingDataHandler {
         /**
-         * Notify the handler that data has been received.  The handler does *not* own the passed buffer,
-         * and must copy from it if it wants to use the data after the call has finished
+         * Notify the handler that data has been received.  The handler takes ownership of the passed
+         * buffer, and it should be returned to the buffer pool when done with it.
          */
         fun dataReceived(data: ByteArray, off: Int, len: Int)
     }
