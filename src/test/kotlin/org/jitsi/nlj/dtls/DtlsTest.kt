@@ -98,7 +98,6 @@ class DtlsTest : ShouldSpec() {
             debug("Server accepted connection")
         }
 
-        Thread.sleep(3000)
         debug("Client connecting")
         dtlsClient.start()
         // Ensure the server has fully established things on its side as well before we send the
