@@ -153,6 +153,13 @@ class DtlsStack(
         }
     }
 
+    fun close() {
+        datagramTransport.close()
+        incomingProtocolData.forEach {
+            BufferPool.returnBuffer(it.array())
+        }
+    }
+
     /**
      * Checks that a specific [Certificate] matches the remote fingerprints sent to us over the signaling path.
      */
@@ -258,11 +265,7 @@ class DtlsStack(
          */
         override fun getSendLimit(): Int = 1500 - 84 - 8
 
-        override fun close() {
-            incomingProtocolData.forEach {
-                BufferPool.returnBuffer(it.array())
-            }
-        }
+        override fun close() {}
     }
 
     interface IncomingDataHandler {
