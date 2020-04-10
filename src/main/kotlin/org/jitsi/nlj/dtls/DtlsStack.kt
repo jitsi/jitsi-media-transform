@@ -258,7 +258,11 @@ class DtlsStack(
          */
         override fun getSendLimit(): Int = 1500 - 84 - 8
 
-        override fun close() {}
+        override fun close() {
+            incomingProtocolData.forEach {
+                BufferPool.returnBuffer(it.array())
+            }
+        }
     }
 
     interface IncomingDataHandler {
