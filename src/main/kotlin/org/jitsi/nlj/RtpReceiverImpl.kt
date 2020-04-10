@@ -196,7 +196,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 predicate = PacketPredicate { it is VideoRtpPacket }
                                 path = pipeline {
                                     node(RtxHandler(streamInformationStore, logger))
-                                    node(DuplicateTermination(logger))
+                                    node(DuplicateTermination())
                                     node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
                                     node(paddingOnlyDiscarder)
                                     node(VideoParser(streamInformationStore, logger))

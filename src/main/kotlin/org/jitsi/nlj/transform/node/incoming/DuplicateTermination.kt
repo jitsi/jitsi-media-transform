@@ -21,7 +21,6 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.utils.LRUCache
-import org.jitsi.utils.logging2.Logger
 
 /**
  * A node which drops packets with SSRC and sequence number pairs identical to ones
@@ -30,7 +29,7 @@ import org.jitsi.utils.logging2.Logger
  * (Since SRTP also has anti-replay protection, the normal case where duplicates
  * will occur is after the [RtxHandler], since duplicate packets are sent over RTX for probing.)
  */
-class DuplicateTermination(parentLogger: Logger) : TransformerNode("Duplicate termination") {
+class DuplicateTermination() : TransformerNode("Duplicate termination") {
     private val replayContexts: MutableMap<Long, MutableSet<Int>> = TreeMap()
     private var numDuplicatePacketsDropped = 0
 
