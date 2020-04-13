@@ -27,8 +27,8 @@ import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import java.nio.ByteBuffer
 import java.time.Duration
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.math.min
@@ -88,7 +88,8 @@ class DtlsStack(
      */
     var eventHandler: EventHandler? = null
 
-    private val incomingProtocolData = LinkedBlockingQueue<ByteBuffer>()
+    private val incomingProtocolData = ArrayBlockingQueue<ByteBuffer>(50)
+    private var numPacketDropsQueueFull = 0
 
     /**
      * The [DtlsRole] 'plugin' that will determine how this stack operates (as a client
@@ -194,7 +195,11 @@ class DtlsStack(
         val bufCopy = BufferPool.getBuffer(len).apply {
             System.arraycopy(data, off, this, 0, len)
         }
-        incomingProtocolData.add(ByteBuffer.wrap(bufCopy, 0, len))
+        if (!incomingProtocolData.offer(ByteBuffer.wrap(bufCopy, 0, len))) {
+            logger.warn("DTLS stack queue full, dropping packet")
+            BufferPool.returnBuffer(bufCopy)
+            numPacketDropsQueueFull++
+        }
         var bytesReceived: Int
         do {
             bytesReceived = dtlsTransport?.receive(dtlsAppDataBuf, 0, 1500, 1) ?: -1
@@ -212,6 +217,7 @@ class DtlsStack(
         put("localFingerprintHashFunction", certificateInfo.localFingerprint)
         put("remoteFingerprints", remoteFingerprints.map { (hash, fp) -> "$hash: $fp" }.joinToString())
         put("role", (role?.javaClass ?: "null").toString())
+        put("num_packet_drops_queue_full", numPacketDropsQueueFull)
     }
 
     companion object {
