@@ -85,7 +85,7 @@ class PcapWriterConfig {
             class PcapEnabledProperty : SimpleProperty<Boolean>(
                 newConfigAttributes {
                     readOnce()
-                    name("jmt.pcap.enabled")
+                    name("jmt.debug.pcap.enabled")
                 }
             )
             private val pcapEnabledProperty =
