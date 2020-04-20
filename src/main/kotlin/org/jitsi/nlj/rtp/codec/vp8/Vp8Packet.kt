@@ -22,7 +22,7 @@ import org.jitsi.utils.logging2.cwarn
 import org.jitsi.rtp.extensions.bytearray.hashCodeOfSegment
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi_modified.impl.neomedia.codec.video.vp8.DePacketizer
-import kotlin.properties.Delegates
+import org.jitsi.utils.properties.Delegates
 
 /**
  * If this [Vp8Packet] instance is being created via a clone,
@@ -75,7 +75,7 @@ class Vp8Packet private constructor (
 
     val hasTL0PICIDX = DePacketizer.VP8PayloadDescriptor.hasTL0PICIDX(buffer, payloadOffset, payloadLength)
 
-    var TL0PICIDX: Int by Delegates.observable(TL0PICIDX ?: DePacketizer.VP8PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)) {
+    var TL0PICIDX: Int by Delegates.observableInt(TL0PICIDX ?: DePacketizer.VP8PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)) {
         _, _, newValue ->
             if (newValue != -1 && !DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
                     buffer, payloadOffset, payloadLength, newValue)) {
@@ -83,7 +83,7 @@ class Vp8Packet private constructor (
             }
         }
 
-    var pictureId: Int by Delegates.observable(pictureId ?: DePacketizer.VP8PayloadDescriptor.getPictureId(buffer, payloadOffset)) {
+    var pictureId: Int by Delegates.observableInt(pictureId ?: DePacketizer.VP8PayloadDescriptor.getPictureId(buffer, payloadOffset)) {
         _, _, newValue ->
             if (!DePacketizer.VP8PayloadDescriptor.setExtendedPictureId(
                     buffer, payloadOffset, payloadLength, newValue)) {
