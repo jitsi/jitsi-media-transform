@@ -329,7 +329,7 @@ public class DePacketizer
         public static boolean hasTL0PICIDX(byte[] buf, int off, int len)
         {
             int loff = getLayerIndexOffset(buf, off, len);
-            if (loff < 0 || loff + 1 < off+len)
+            if (loff < 0 || loff + 1 >= off+len)
             {
                 return false;
             }

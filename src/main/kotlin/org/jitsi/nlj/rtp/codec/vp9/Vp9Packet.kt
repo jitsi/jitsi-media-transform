@@ -21,7 +21,6 @@ import org.jitsi.utils.logging2.cwarn
 import org.jitsi.rtp.extensions.bytearray.hashCodeOfSegment
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi_modified.impl.neomedia.codec.video.vp9.DePacketizer
-import kotlin.properties.Delegates
 
 /**
  * If this [Vp9Packet] instance is being created via a clone,
@@ -56,7 +55,6 @@ class Vp9Packet private constructor (
         TL0PICIDX = null
     )
 
-    /** Due to the format of the VP9 payload, this value is only reliable for packets where [isStartOfFrame] is true. */
     override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.VP9PayloadDescriptor.isKeyFrame(this.buffer, payloadOffset, payloadLength)
 
     override val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP9PayloadDescriptor.isStartOfFrame(buffer, payloadOffset, payloadLength)
@@ -75,16 +73,24 @@ class Vp9Packet private constructor (
 
     val hasTL0PICIDX = DePacketizer.VP9PayloadDescriptor.hasTL0PICIDX(buffer, payloadOffset, payloadLength)
 
-    var TL0PICIDX: Int by Delegates.observable(TL0PICIDX ?: DePacketizer.VP9PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)) {
-        _, _, newValue ->
+    private var _TL0PICIDX = TL0PICIDX ?: DePacketizer.VP9PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
+
+    var TL0PICIDX: Int
+        get() = _TL0PICIDX
+        set(newValue) {
+            _TL0PICIDX = newValue
             if (newValue != -1 && !DePacketizer.VP9PayloadDescriptor.setTL0PICIDX(
                     buffer, payloadOffset, payloadLength, newValue)) {
                 logger.cwarn { "Failed to set the TL0PICIDX of a VP9 packet." }
             }
         }
 
-    var pictureId: Int by Delegates.observable(pictureId ?: DePacketizer.VP9PayloadDescriptor.getPictureId(buffer, payloadOffset, payloadLength)) {
-        _, _, newValue ->
+    private var _pictureId = pictureId ?: DePacketizer.VP9PayloadDescriptor.getPictureId(buffer, payloadOffset, payloadLength)
+
+    var pictureId: Int
+        get() = _pictureId
+        set(newValue) {
+            _pictureId = newValue
             if (!DePacketizer.VP9PayloadDescriptor.setExtendedPictureId(
                     buffer, payloadOffset, payloadLength, newValue)) {
                 logger.cwarn { "Failed to set the picture id of a VP9 packet." }
@@ -93,6 +99,7 @@ class Vp9Packet private constructor (
 
     val temporalLayerIndex: Int = DePacketizer.VP9PayloadDescriptor.getTemporalLayerIndex(buffer, payloadOffset, payloadLength)
 
+    /* TODO */
     override var height: Int = height ?: -1
 
     /**
@@ -104,7 +111,7 @@ class Vp9Packet private constructor (
             val rtpPayloadOffset = payloadOffset
             val VP9pdSize = DePacketizer.VP9PayloadDescriptor.getSize(buffer, rtpPayloadOffset, rtpPayloadLength)
             val VP9PayloadLength = rtpPayloadLength - VP9pdSize
-            val hashCode = buffer.hashCodeOfSegment(payloadOffset + VP9pdSize, rtpPayloadOffset + rtpPayloadLength)
+            val hashCode = buffer.hashCodeOfSegment(rtpPayloadOffset + VP9pdSize, rtpPayloadOffset + rtpPayloadLength)
             return "type=VP9Packet len=$VP9PayloadLength hashCode=$hashCode"
         }
 
