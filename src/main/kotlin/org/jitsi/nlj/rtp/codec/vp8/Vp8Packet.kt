@@ -79,7 +79,7 @@ class Vp8Packet private constructor (
         get() = _TL0PICIDX
         set(newValue) {
             _TL0PICIDX = newValue
-            if (newValue != 1 && !DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
+            if (newValue != -1 && !DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
                     buffer, payloadOffset, payloadLength, newValue)) {
                 logger.cwarn { "Failed to set the TL0PICIDX of a VP8 packet." }
             }
