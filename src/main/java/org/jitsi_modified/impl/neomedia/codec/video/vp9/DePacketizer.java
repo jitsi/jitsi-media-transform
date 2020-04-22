@@ -517,7 +517,7 @@ public class DePacketizer
 
                     for (i = 0; i < n_g; i++)
                     {
-                        int r = buf[pos] * 0x0B >> 2;
+                        int r = (buf[pos] & 0x0B) >> 2;
                         pos += r + 1;
                     }
                 }
