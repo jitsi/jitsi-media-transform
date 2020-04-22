@@ -78,13 +78,10 @@ class Vp8Packet private constructor (
     var TL0PICIDX: Int
         get() = _TL0PICIDX
         set(newValue) {
-            if (newValue != 1) {
-                if (DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
-                        buffer, payloadOffset, payloadLength, newValue)) {
-                    _TL0PICIDX = newValue
-                } else {
-                    logger.cwarn { "Failed to set the TL0PICIDX of a VP8 packet." }
-                }
+            _TL0PICIDX = newValue
+            if (newValue != 1 && !DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
+                    buffer, payloadOffset, payloadLength, newValue)) {
+                logger.cwarn { "Failed to set the TL0PICIDX of a VP8 packet." }
             }
         }
 
@@ -92,10 +89,9 @@ class Vp8Packet private constructor (
     var pictureId: Int
         get() = _pictureId
         set(newValue) {
-            if (DePacketizer.VP8PayloadDescriptor.setExtendedPictureId(
+            _pictureId = newValue
+            if (!DePacketizer.VP8PayloadDescriptor.setExtendedPictureId(
                     buffer, payloadOffset, payloadLength, newValue)) {
-                _pictureId = newValue
-            } else {
                 logger.cwarn { "Failed to set the picture id of a VP8 packet." }
             }
         }
