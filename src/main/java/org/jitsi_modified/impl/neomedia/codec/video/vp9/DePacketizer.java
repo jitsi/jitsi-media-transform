@@ -86,6 +86,12 @@ public class DePacketizer
     private static final byte D_BIT = (byte) (1);
 
     /**
+     * N bit from the picture difference byte of the Payload Descriptor:
+     * more picture diffs present.  Only present if P and F are true in the first byte.
+     */
+    private static final byte N_BIT = (byte) (1);
+    
+    /**
      * A class that represents the VP9 Payload Descriptor structure defined
      * in {@link "https://tools.ietf.org/html/draft-ietf-payload-vp9-02"}
      */
@@ -477,12 +483,13 @@ public class DePacketizer
             if (!isValid(buf, off, len))
                 return -1;
 
-            int pos = off;
+            int pos = off + 1;
 
             if ((buf[off] & I_BIT) != 0)
             {
+                boolean extended = (buf[pos] & M_BIT) != 0;
                 pos++;
-                if ((buf[pos] & M_BIT) != 0)
+                if (extended)
                 {
                     pos++;
                 }
@@ -497,12 +504,20 @@ public class DePacketizer
                 }
             }
 
+            if ((buf[off] & F_BIT) != 0 && (buf[off] & P_BIT) != 0)
+            {
+                do {
+                    pos++;
+                } while ((buf[pos] & N_BIT) != 0);
+            }
+
             if ((buf[off] & V_BIT) != 0)
             {
                 /* SS present */
                 int n_s = (buf[pos] & 0xE0) >> 5;
                 boolean resPresent = ((buf[pos] & (1 << 4)) != 0);
                 boolean pgPresent = ((buf[pos] & (1 << 3)) != 0);
+                pos++;
 
                 if (resPresent)
                 {
@@ -517,13 +532,13 @@ public class DePacketizer
 
                     for (i = 0; i < n_g; i++)
                     {
-                        int r = (buf[pos] & 0x0B) >> 2;
+                        int r = (buf[pos] & 0x0C) >> 2;
                         pos += r + 1;
                     }
                 }
             }
 
-            return pos - off + 1;
+            return pos - off;
         }
     }
 }
