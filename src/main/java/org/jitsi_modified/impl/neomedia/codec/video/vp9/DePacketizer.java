@@ -90,7 +90,7 @@ public class DePacketizer
      * more picture diffs present.  Only present if P and F are true in the first byte.
      */
     private static final byte N_BIT = (byte) (1);
-    
+
     /**
      * A class that represents the VP9 Payload Descriptor structure defined
      * in {@link "https://tools.ietf.org/html/draft-ietf-payload-vp9-02"}
@@ -464,7 +464,7 @@ public class DePacketizer
                 return false;
             }
 
-            return (buf[loff] & U_BIT) != 0;
+            return (buf[loff] & D_BIT) != 0;
         }
 
         /**

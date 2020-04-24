@@ -36,6 +36,7 @@ class Vp9Packet private constructor (
     length: Int,
     isKeyframe: Boolean?,
     isStartOfFrame: Boolean?,
+    isEndOfFrame: Boolean?,
     encodingIndex: Int?,
     height: Int?,
     pictureId: Int?,
@@ -49,6 +50,7 @@ class Vp9Packet private constructor (
     ) : this(buffer, offset, length,
         isKeyframe = null,
         isStartOfFrame = null,
+        isEndOfFrame = null,
         encodingIndex = null,
         height = null,
         pictureId = null,
@@ -59,9 +61,11 @@ class Vp9Packet private constructor (
 
     override val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP9PayloadDescriptor.isStartOfFrame(buffer, payloadOffset, payloadLength)
 
-    /** End of VP9 frame is the marker bit. */
-    /* TODO: frame/picture distinction here */
-    override val isEndOfFrame: Boolean
+    override val isEndOfFrame: Boolean = isEndOfFrame ?: DePacketizer.VP9PayloadDescriptor.isEndOfFrame(buffer, payloadOffset, payloadLength)
+
+    /** End of VP9 picture is the marker bit. Note frame/picture distinction. */
+    /* TODO: not sure this should be the override from [ParsedVideoPacket] */
+    val isEndOfPicture: Boolean
         /** This uses [get] rather than initialization because [isMarked] is a var. */
         get() = isMarked
 
@@ -97,7 +101,15 @@ class Vp9Packet private constructor (
             }
         }
 
+    /* TODO: avoid recomputing these on clone */
+
     val temporalLayerIndex: Int = DePacketizer.VP9PayloadDescriptor.getTemporalLayerIndex(buffer, payloadOffset, payloadLength)
+
+    val spatialLayerIndex: Int = DePacketizer.VP9PayloadDescriptor.getSpatialLayerIndex(buffer, payloadOffset, payloadLength)
+
+    val isSwitchingUpPoint: Boolean = DePacketizer.VP9PayloadDescriptor.isSwitchingUpPoint(buffer, payloadOffset, payloadLength)
+
+    val usesInterLayerDependency: Boolean = DePacketizer.VP9PayloadDescriptor.usesInterLayerDependency(buffer, payloadOffset, payloadLength)
 
     /* TODO */
     override var height: Int = height ?: -1
@@ -122,6 +134,7 @@ class Vp9Packet private constructor (
             length,
             isKeyframe = isKeyframe,
             isStartOfFrame = isStartOfFrame,
+            isEndOfFrame = isEndOfFrame,
             encodingIndex = qualityIndex,
             height = height,
             pictureId = pictureId,
