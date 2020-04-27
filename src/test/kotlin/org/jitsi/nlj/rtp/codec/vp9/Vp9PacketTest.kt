@@ -52,7 +52,7 @@ class Vp9PacketTest : ShouldSpec() {
 
     /* Packets captured from Chrome VP9 call */
     private val testPackets = arrayOf(
-        /* Live video */
+        /* Live video - Chrome 81 */
         SampleVp9Packet(
             // RTP
         "906536b69f3077686098017b" +
@@ -364,7 +364,7 @@ class Vp9PacketTest : ShouldSpec() {
             tL0PICIDX = 253,
             descriptorSize = 5),
 
-        /* App share */
+        /* Window capture - Chrome 81 */
         SampleVp9Packet(
             "90656dc9440dac37184b0cc4" +
                 "bede0002" + "326bcdd351000100" +
@@ -460,7 +460,95 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = null,
-            descriptorSize = 3)
+            descriptorSize = 3),
+
+        /* Live video - Firefox 75 */
+        SampleVp9Packet(
+            "9065385f33e8e7666538459e" +
+                "bede0001" + "32a4e45a" +
+                // I=1,P=0,L=0,F=0,B=1,E=0,V=1,(Z=0)
+                "8a" +
+                // M=1,PID=0x5bd8=23512
+                "dbd8" +
+                // Begin SS: N_S=0,Y=1,G=1
+                "18" +
+                // WIDTH=1280
+                "0500" +
+                // HEIGHT=720
+                "02d0" +
+                // N_G=1
+                "01" +
+                // TID=0,U=0,R=1
+                "04" +
+                // P_DIFF=1
+                "01" +
+                // VP9 media.  Truncated.
+                "83498342004ff02cf050e0907063486011805fcf",
+            isStartOfFrame = true,
+            isEndOfFrame = false,
+            isEndOfPicture = false,
+            isKeyframe = true,
+            pictureId = 23512,
+            hasExtendedPictureId = true,
+            tid = null,
+            sid = null,
+            isSwitchingUpPoint = false,
+            usesInterLayerDependency = false,
+            tL0PICIDX = null,
+            descriptorSize = 11),
+
+        /* Live video - Firefox 77 Nightly */
+        SampleVp9Packet(
+            "90656563e256bc64a4d04528" +
+                "bede0001" + "329c676d" +
+                // I=1,P=0,L=1,F=0,B=1,E=0,V=1,(Z=0)
+                "aa" +
+                // M=1,PID=0x653e=25918
+                "e53e" +
+                // TID=0,U=0,SID=0,D=0
+                "00" +
+                // TL0PICIDX=0x5b=91
+                "5b" +
+                // Begin SS: N_S=0,Y=1,G=1
+                "18" +
+                // WIDTH=1280
+                "0500" +
+                // HEIGHT=720
+                "02d0" +
+                // N_G=4
+                "04" +
+                // TID=0,U=0,R=1
+                "04" +
+                // P_DIFF=4
+                "04" +
+                // TID=2,U=1,R=1
+                "54" +
+                // P_DIFF=1
+                "01" +
+                // TID=1,U=1,R=1
+                "34" +
+                // P_DIFF=2
+                "02" +
+                // TID=2,U=0,R=2
+                "48" +
+                // P_DIFF=1
+                "01" +
+                // P_DIFF=2
+                "02" +
+                // VP9 media.  Truncated.
+                "83498342004ff02cf098e0907064a0600f005fcb",
+            isStartOfFrame = true,
+            isEndOfFrame = false,
+            isEndOfPicture = false,
+            isKeyframe = true,
+            pictureId = 25918,
+            hasExtendedPictureId = true,
+            tid = 0,
+            sid = 0,
+            isSwitchingUpPoint = false,
+            usesInterLayerDependency = false,
+            tL0PICIDX = 91,
+            descriptorSize = 20)
         )
 
     /*
