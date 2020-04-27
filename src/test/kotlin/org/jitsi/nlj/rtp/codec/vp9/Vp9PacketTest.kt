@@ -52,6 +52,7 @@ class Vp9PacketTest : ShouldSpec() {
 
     /* Packets captured from Chrome VP9 call */
     private val testPackets = arrayOf(
+        /* Live video */
         SampleVp9Packet(
             // RTP
         "906536b69f3077686098017b" +
@@ -361,7 +362,105 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = true,
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
-            descriptorSize = 5)
+            descriptorSize = 5),
+
+        /* App share */
+        SampleVp9Packet(
+            "90656dc9440dac37184b0cc4" +
+                "bede0002" + "326bcdd351000100" +
+                // I=1,P=0,L=0,F=0,B=1,E=0,V=1,(Z=1)
+                "8b" +
+                // M=1,PID=0x2558=9560
+                "a558" +
+                // Begin SS: N_S=0,Y=1,G=1
+                "18" +
+                // WIDTH=1576
+                "0628" +
+                // HEIGHT=1158
+                "0486" +
+                // N_G=1
+                "01" +
+                // TID=0,U=0,R=1
+                "04" +
+                // P_DIFF=1
+                "01" +
+                // VP9 media.  Truncated.
+                "8249834200627048547638241c19a01803105f85",
+            isStartOfFrame = true,
+            isEndOfFrame = false,
+            isEndOfPicture = false,
+            isKeyframe = true,
+            pictureId = 9560,
+            hasExtendedPictureId = true,
+            tid = null,
+            sid = null,
+            isSwitchingUpPoint = false,
+            usesInterLayerDependency = false,
+            tL0PICIDX = null,
+            descriptorSize = 11),
+        SampleVp9Packet(
+            "90656dca440dac37184b0cc4" +
+                "bede0002" + "326bd1ec51000200" +
+                // I=1,P=0,L=0,F=0,B=0,E=0,V=0,(Z=1)
+                "81" +
+                // M=1,PID=0x2558=9560
+                "a558" +
+                // VP9 media.  Truncated.
+                "9089bebb979590638f183ac76bc650cde64144de",
+            isStartOfFrame = false,
+            isEndOfFrame = false,
+            isEndOfPicture = false,
+            isKeyframe = true,
+            pictureId = 9560,
+            hasExtendedPictureId = true,
+            tid = null,
+            sid = null,
+            isSwitchingUpPoint = false,
+            usesInterLayerDependency = false,
+            tL0PICIDX = null,
+            descriptorSize = 3),
+        SampleVp9Packet(
+            "90e56de4440dac37184b0cc4" +
+                "bede0002" + "326cf8d551001c00" +
+                // I=1,P=0,L=0,F=0,B=0,E=1,V=0,(Z=1)
+                "85" +
+                // M=1,PID=0x2558=9560
+                "a558" +
+                // VP9 media.  Truncated.
+                "7da09c7d64214a918874bb6b9cde16ef67545921",
+            isStartOfFrame = false,
+            isEndOfFrame = true,
+            isEndOfPicture = true,
+            isKeyframe = true,
+            pictureId = 9560,
+            hasExtendedPictureId = true,
+            tid = null,
+            sid = null,
+            isSwitchingUpPoint = false,
+            usesInterLayerDependency = false,
+            tL0PICIDX = null,
+            descriptorSize = 3),
+        SampleVp9Packet(
+            "90656e01440eb32f184b0cc4" +
+                "bede0002" + "326e77cf51003900" +
+                // I=1,P=1,L=0,F=0,B=1,E=1,V=0,(Z=1)
+                "c9" +
+                // M=1,PID=0x255A=9562
+                "a55a" +
+                // VP9 media.  Truncated.
+                "8600409218fc5a0330101c060301f8c9e03049a2",
+            isStartOfFrame = true,
+            isEndOfFrame = false,
+            isEndOfPicture = false,
+            isKeyframe = false,
+            pictureId = 9562,
+            hasExtendedPictureId = true,
+            tid = null,
+            sid = null,
+            isSwitchingUpPoint = false,
+            usesInterLayerDependency = false,
+            tL0PICIDX = null,
+            descriptorSize = 3)
         )
 
     /*
@@ -391,6 +490,7 @@ class Vp9PacketTest : ShouldSpec() {
                     p.isStartOfFrame shouldBe t.isStartOfFrame
                     p.isEndOfFrame shouldBe t.isEndOfFrame
                     p.isEndOfPicture shouldBe t.isEndOfPicture
+                    p.isKeyframe shouldBe t.isKeyframe
                     if (t.pictureId != null) {
                         p.hasPictureId shouldBe true
                         p.pictureId shouldBe t.pictureId
