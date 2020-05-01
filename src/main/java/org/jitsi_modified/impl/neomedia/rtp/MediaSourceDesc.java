@@ -16,75 +16,72 @@
 package org.jitsi_modified.impl.neomedia.rtp;
 
 import org.jitsi.nlj.rtp.*;
-import org.jitsi.nlj.rtp.codec.vp8.*;
 import org.jitsi.utils.*;
 
 import java.util.*;
 
 /**
- * Represents a collection of {@link RTPEncodingDesc}s that encode the same
+ * Represents a collection of {@link RtpLayerDesc}s that encode the same
  * media source. This specific implementation provides webrtc simulcast stream
  * suspension detection.
  *
  * @author George Politis
- *
- * NOTE(brian): similar to the original but it doesn't reference a MediaStreamTrackReceiver
  */
-public class MediaStreamTrackDesc
+public class MediaSourceDesc
 {
     /**
-     * The {@link RTPEncodingDesc}s that this {@link MediaStreamTrackDesc}
+     * The {@link RtpLayerDesc}s that this {@link MediaSourceDesc}
      * possesses, ordered by their subjective quality from low to high.
      */
-    private final RTPEncodingDesc[] rtpEncodings;
+    private final RtpLayerDesc[] rtpLayers;
 
     /**
-     * Allow the lookup of an encoding by the encoding id of a received packet.
+     * Allow the lookup of a layer by the layer id of a received packet.
      */
-    private final Map<Long, RTPEncodingDesc> encodingsById = new HashMap<>();
+    private final Map<Long, RtpLayerDesc> layersById = new HashMap<>();
 
     /**
-     * A string which identifies the owner of this track (e.g. the endpoint
-     * which is the sender of the track).
+     * A string which identifies the owner of this source (e.g. the endpoint
+     * which is the sender of the source).
      */
     private final String owner;
 
     /**
      * Ctor.
      *
-     * @param rtpEncodings The {@link RTPEncodingDesc}s that this instance
+     * @param rtpLayers The {@link RtpLayerDesc}s that this instance
      * possesses.
      */
-    public MediaStreamTrackDesc(
-        RTPEncodingDesc[] rtpEncodings)
+    public MediaSourceDesc(
+        RtpLayerDesc[] rtpLayers)
     {
-        this(rtpEncodings, null);
+        this(rtpLayers, null);
     }
 
     /**
      * Ctor.
      *
-     * @param rtpEncodings The {@link RTPEncodingDesc}s that this instance
+     * @param rtpLayers The {@link RtpLayerDesc}s that this instance
      * possesses.
      */
-    public MediaStreamTrackDesc(
-        RTPEncodingDesc[] rtpEncodings,
+    public MediaSourceDesc(
+        RtpLayerDesc[] rtpLayers,
         String owner)
     {
-        this.rtpEncodings = rtpEncodings;
+        this.rtpLayers = rtpLayers;
         this.owner = owner;
     }
 
-    public void updateEncodingCache()
+    public void updateLayerCache()
     {
-        for (RTPEncodingDesc encoding : this.rtpEncodings)
+        for (RtpLayerDesc layer : this.rtpLayers)
         {
-            encodingsById.put(encoding.getEncodingId(), encoding);
+            layersById.put(layer.getEncodingId(), layer);
         }
     }
 
     /**
-     * @return the identifier of the owner of this track.
+     * @return the identifier of the owner of this source.
      */
     public String getOwner()
     {
@@ -92,15 +89,15 @@ public class MediaStreamTrackDesc
     }
 
     /**
-     * Returns an array of all the {@link RTPEncodingDesc}s for this instance,
+     * Returns an array of all the {@link RtpLayerDesc}s for this instance,
      * in subjective quality ascending order.
      *
-     * @return an array of all the {@link RTPEncodingDesc}s for this instance,
+     * @return an array of all the {@link RtpLayerDesc}s for this instance,
      * in subjective quality ascending order.
      */
-    public RTPEncodingDesc[] getRTPEncodings()
+    public RtpLayerDesc[] getRtpLayers()
     {
-        return rtpEncodings;
+        return rtpLayers;
     }
 
     /**
@@ -113,7 +110,7 @@ public class MediaStreamTrackDesc
      */
     public long getBitrateBps(long nowMs, int idx)
     {
-        if (ArrayUtils.isNullOrEmpty(rtpEncodings))
+        if (ArrayUtils.isNullOrEmpty(rtpLayers))
         {
             return 0;
         }
@@ -122,7 +119,7 @@ public class MediaStreamTrackDesc
         {
             for (int i = idx; i > -1; i--)
             {
-                long bps = rtpEncodings[i].getBitrateBps(nowMs);
+                long bps = rtpLayers[i].getBitrateBps(nowMs);
                 if (bps > 0)
                 {
                     return bps;
@@ -133,22 +130,22 @@ public class MediaStreamTrackDesc
         return 0;
     }
 
-    public RTPEncodingDesc findRtpEncodingDesc(VideoRtpPacket videoRtpPacket)
+    public RtpLayerDesc findRtpLayerDesc(VideoRtpPacket videoRtpPacket)
     {
-        if (ArrayUtils.isNullOrEmpty(rtpEncodings))
+        if (ArrayUtils.isNullOrEmpty(rtpLayers))
         {
             return null;
         }
 
-        long encodingId = RTPEncodingDesc.getEncodingId(videoRtpPacket);
-        RTPEncodingDesc desc = encodingsById.get(encodingId);
+        long encodingId = RtpLayerDesc.getEncodingId(videoRtpPacket);
+        RtpLayerDesc desc = layersById.get(encodingId);
         if (desc != null)
         {
             return desc;
         }
 
-        return Arrays.stream(rtpEncodings)
-                .filter(encoding -> encoding.matches(videoRtpPacket))
+        return Arrays.stream(rtpLayers)
+                .filter(layer -> layer.matches(videoRtpPacket))
                 .findFirst()
                 .orElse(null);
     }
@@ -157,10 +154,10 @@ public class MediaStreamTrackDesc
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("MediaStreamTrackDesc ").append(hashCode()).append(" has encodings:\n");
-        for (RTPEncodingDesc encodingDesc : rtpEncodings)
+        sb.append("MediaSourceDesc ").append(hashCode()).append(" has layers:\n");
+        for (RtpLayerDesc layerDesc : rtpLayers)
         {
-            sb.append("  ").append(encodingDesc.toString());
+            sb.append("  ").append(layerDesc.toString());
             sb.append("\n");
         }
 
@@ -169,14 +166,14 @@ public class MediaStreamTrackDesc
 
     /**
      * FIXME: this should probably check whether the specified SSRC is part
-     * of this track (i.e. check all encodings and include secondary SSRCs).
+     * of this source (i.e. check all layers and include secondary SSRCs).
      *
      * @param ssrc the SSRC to match.
      * @return {@code true} if the specified {@code ssrc} is the primary SSRC
-     * for this track.
+     * for this source.
      */
     public boolean matches(long ssrc)
     {
-        return rtpEncodings.length > 0 && rtpEncodings[0].getPrimarySSRC() == ssrc;
+        return rtpLayers.length > 0 && rtpLayers[0].getPrimarySSRC() == ssrc;
     }
 }

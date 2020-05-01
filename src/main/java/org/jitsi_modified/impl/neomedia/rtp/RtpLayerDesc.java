@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
  *
  * @author George Politis
  */
-public class RTPEncodingDesc
+public class RtpLayerDesc
 {
     /**
      * The quality that is used to represent that forwarding is suspended.
@@ -55,7 +55,7 @@ public class RTPEncodingDesc
     private static final int AVERAGE_BITRATE_WINDOW_MS = 5000;
 
     /**
-     * The primary SSRC for this layering/encoding.
+     * The primary SSRC for this encoding.
      */
     private final long primarySSRC;
 
@@ -66,7 +66,7 @@ public class RTPEncodingDesc
     private final Map<Long, SsrcAssociationType> secondarySsrcs = new HashMap<>();
 
     /**
-     * The index of this instance in the track encodings array.
+     * The index of this instance in the source layers array.
      */
     private final int idx;
 
@@ -94,45 +94,45 @@ public class RTPEncodingDesc
     private final double frameRate;
 
     /**
-     * The root {@link RTPEncodingDesc of the dependencies DAG. Useful for
+     * The root {@link RtpLayerDesc} of the dependencies DAG. Useful for
      * simulcast handling.
      */
-    private final RTPEncodingDesc base;
+    private final RtpLayerDesc base;
 
     /**
-     * The {@link MediaStreamTrackDesc} that this {@link RTPEncodingDesc
+     * The {@link MediaSourceDesc} that this {@link RtpLayerDesc}
      * belongs to.
      */
-    private final MediaStreamTrackDesc track;
+    private final MediaSourceDesc source;
 
     /**
      * The {@link RateStatistics} instance used to calculate the receiving
-     * bitrate of this RTP encoding.
+     * bitrate of this RTP layer.
      */
     private final RateStatistics rateStatistics
         = new RateStatistics(AVERAGE_BITRATE_WINDOW_MS);
 
     /**
-     * The {@link RTPEncodingDesc on which this layer depends.
+     * The {@link RtpLayerDesc on which this layer depends.
      */
-    private final RTPEncodingDesc[] dependencyEncodings;
+    private final RtpLayerDesc[] dependencyLayers;
 
     /**
-     * The number of receivers for this encoding.
+     * The number of receivers for this layer.
      */
     private AtomicInteger numOfReceivers = new AtomicInteger();
 
     /**
      * Ctor.
      *
-     * @param track the {@link MediaStreamTrackDesc} that this instance
+     * @param source the {@link MediaSourceDesc} that this instance
      * belongs to.
      * @param primarySSRC The primary SSRC for this layering/encoding.
      */
-    public RTPEncodingDesc(
-            MediaStreamTrackDesc track, long primarySSRC)
+    public RtpLayerDesc(
+            MediaSourceDesc source, long primarySSRC)
     {
-        this(track, 0, primarySSRC, -1 /* tid */, -1 /* sid */,
+        this(source, 0, primarySSRC, -1 /* tid */, -1 /* sid */,
             NO_HEIGHT /* height */, NO_FRAME_RATE /* frame rate */,
             null /* dependencies */);
     }
@@ -140,51 +140,51 @@ public class RTPEncodingDesc
     /**
      * Ctor.
      *
-     * @param track the {@link MediaStreamTrackDesc} that this instance belongs
+     * @param source the {@link MediaSourceDesc} that this instance belongs
      * to.
      * @param idx the subjective quality index for this
-     * layering/encoding.
-     * @param primarySSRC The primary SSRC for this layering/encoding.
-     * @param tid temporal layer ID for this layering/encoding.
-     * @param sid spatial layer ID for this layering/encoding.
-     * @param height the max height of this encoding
-     * @param frameRate the max frame rate (in fps) of this encoding
-     * @param dependencyEncodings  The {@link RTPEncodingDesc on which this
+     * layer/encoding.
+     * @param primarySSRC The primary SSRC for this layer/encoding.
+     * @param tid temporal layer ID for this layer/encoding.
+     * @param sid spatial layer ID for this layer/encoding.
+     * @param height the max height of this layer
+     * @param frameRate the max frame rate (in fps) of this layer
+     * @param dependencyLayers  The {@link RtpLayerDesc}s on which this
      * layer depends.
      */
-    public RTPEncodingDesc(
-            MediaStreamTrackDesc track, int idx,
+    public RtpLayerDesc(
+            MediaSourceDesc source, int idx,
             long primarySSRC,
             int tid, int sid,
             int height,
             double frameRate,
-            RTPEncodingDesc[] dependencyEncodings)
+            RtpLayerDesc[] dependencyLayers)
     {
-        // XXX we should be able to snif the actual height from the RTP
+        // XXX we should be able to sniff the actual height from the RTP
         // packets.
         this.height = height;
         this.frameRate = frameRate;
         this.primarySSRC = primarySSRC;
-        this.track = track;
+        this.source = source;
         this.idx = idx;
         this.tid = tid;
         this.sid = sid;
-        this.dependencyEncodings = dependencyEncodings;
-        if (ArrayUtils.isNullOrEmpty(dependencyEncodings))
+        this.dependencyLayers = dependencyLayers;
+        if (ArrayUtils.isNullOrEmpty(dependencyLayers))
         {
             this.base = this;
         }
         else
         {
-            this.base = dependencyEncodings[0].getBaseLayer();
+            this.base = dependencyLayers[0].getBaseLayer();
         }
     }
 
     /**
-     * @return the "id" of this encoding. This is a server-side id and should
+     * @return the "id" of this layer/encoding. This is a server-side id and should
      * not be confused with any encoding id defined in the client (such us the
-     * rid). This server-side id is used in the encodings lookup table that is
-     * maintained in {@link MediaStreamTrackDesc}.
+     * rid). This server-side id is used in the layer lookup table that is
+     * maintained in {@link MediaSourceDesc}.
      */
     public long getEncodingId()
     {
@@ -199,7 +199,7 @@ public class RTPEncodingDesc
 
     /**
      * @param videoRtpPacket the video packet
-     * @return gets the server-side encoding id (see
+     * @return gets the server-side layer/encoding id (see
      * {@link #getEncodingId(VideoRtpPacket)}) of a video packet.
      */
     public static long getEncodingId(@NotNull VideoRtpPacket videoRtpPacket)
@@ -229,9 +229,9 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Gets the primary SSRC for this layering/encoding.
+     * Gets the primary SSRC for this layer/encoding.
      *
-     * @return the primary SSRC for this layering/encoding.
+     * @return the primary SSRC for this layer/encoding.
      */
     public long getPrimarySSRC()
     {
@@ -239,10 +239,10 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Get the secondary ssrc for this stream that corresponds to the given
+     * Get the secondary ssrc for this encoding that corresponds to the given
      * type
      * @param type the type of the secondary ssrc (e.g. RTX)
-     * @return the ssrc for the stream that corresponds to the given type,
+     * @return the ssrc for the encoding that corresponds to the given type,
      * if it exists; otherwise -1
      */
     public long getSecondarySsrc(SsrcAssociationType type)
@@ -335,22 +335,22 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Gets the cumulative bitrate (in bps) of this {@link RTPEncodingDesc and
+     * Gets the cumulative bitrate (in bps) of this {@link RtpLayerDesc} and
      * its dependencies.
      *
      * @param nowMs
-     * @return the cumulative bitrate (in bps) of this {@link RTPEncodingDesc
+     * @return the cumulative bitrate (in bps) of this {@link RtpLayerDesc}
      * and its dependencies.
      */
     public long getBitrateBps(long nowMs)
     {
-        RTPEncodingDesc[] encodings = track.getRTPEncodings();
-        if (ArrayUtils.isNullOrEmpty(encodings))
+        RtpLayerDesc[] layers = source.getRtpLayers();
+        if (ArrayUtils.isNullOrEmpty(layers))
         {
             return 0;
         }
 
-        long[] rates = new long[encodings.length];
+        long[] rates = new long[layers.length];
         getBitrateBps(nowMs, rates);
 
         long bitrate = 0;
@@ -363,7 +363,7 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Recursively adds the bitrate (in bps) of this {@link RTPEncodingDesc and
+     * Recursively adds the bitrate (in bps) of this {@link RtpLayerDesc} and
      * its dependencies in the array passed in as an argument.
      *
      * @param nowMs
@@ -375,9 +375,9 @@ public class RTPEncodingDesc
             rates[idx] = rateStatistics.getRate(nowMs);
         }
 
-        if (!ArrayUtils.isNullOrEmpty(dependencyEncodings))
+        if (!ArrayUtils.isNullOrEmpty(dependencyLayers))
         {
-            for (RTPEncodingDesc dependency : dependencyEncodings)
+            for (RtpLayerDesc dependency : dependencyLayers)
             {
                 dependency.getBitrateBps(nowMs, rates);
             }
@@ -385,13 +385,13 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Gets the root {@link RTPEncodingDesc of the dependencies DAG. Useful for
+     * Gets the root {@link RtpLayerDesc} of the dependencies DAG. Useful for
      * simulcast handling.
      *
-     * @return the root {@link RTPEncodingDesc of the dependencies DAG. Useful for
+     * @return the root {@link RtpLayerDesc} of the dependencies DAG. Useful for
      * simulcast handling.
      */
-    public RTPEncodingDesc getBaseLayer()
+    public RtpLayerDesc getBaseLayer()
     {
         return base;
     }
@@ -419,9 +419,9 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Gets the number of receivers for this encoding.
+     * Gets the number of receivers for this layer.
      *
-     * @return the number of receivers for this encoding.
+     * @return the number of receivers for this layer.
      */
     public boolean isReceived()
     {
@@ -429,7 +429,7 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Gets this encoding's temporal layer ID.
+     * Gets this layers's temporal layer ID.
      * @return
      */
     public int getTid()
@@ -438,7 +438,7 @@ public class RTPEncodingDesc
     }
 
     /**
-     * Gets this encoding's spatial layer ID.
+     * Gets this layer's spatial layer ID.
      */
     public int getSid()
     {

@@ -16,11 +16,11 @@
 package org.jitsi.nlj
 
 import org.jitsi.utils.MediaType
-import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
+import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 interface Event
 
-class SetMediaStreamTracksEvent(val mediaStreamTrackDescs: Array<MediaStreamTrackDesc>) : Event
+class SetMediaSourcesEvent(val mediaSourceDescs: Array<MediaSourceDesc>) : Event
 
 class SetLocalSsrcEvent(val mediaType: MediaType, val ssrc: Long) : Event
 
