@@ -24,7 +24,7 @@ import org.jitsi.utils.stats.RateStatistics
 import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 /**
- * Keeps track of how many channels receive it, its subjective quality index,
+ * Keeps track of its subjective quality index,
  * its last stable bitrate and other useful things for adaptivity/routing.
  *
  * @author George Politis
