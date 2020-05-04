@@ -79,7 +79,6 @@ fun RtpLayerDesc.getNodeStats() = NodeStatsBlock(primarySSRC.toString()).apply {
     addNumber("height", height)
     addNumber("index", index)
     addNumber("bitrate_bps", getBitrateBps(System.currentTimeMillis()))
-    addBoolean("is_received", isReceived)
     addNumber("rtx_ssrc", getSecondarySsrc(SsrcAssociationType.RTX))
     addNumber("fec_ssrc", getSecondarySsrc(SsrcAssociationType.FEC))
     addNumber("tid", tid)

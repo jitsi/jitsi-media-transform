@@ -118,11 +118,6 @@ public class RtpLayerDesc
     private final RtpLayerDesc[] dependencyLayers;
 
     /**
-     * The number of receivers for this layer.
-     */
-    private AtomicInteger numOfReceivers = new AtomicInteger();
-
-    /**
      * Ctor.
      *
      * @param source the {@link MediaSourceDesc} that this instance
@@ -416,16 +411,6 @@ public class RtpLayerDesc
     public double getFrameRate()
     {
         return frameRate;
-    }
-
-    /**
-     * Gets the number of receivers for this layer.
-     *
-     * @return the number of receivers for this layer.
-     */
-    public boolean isReceived()
-    {
-        return numOfReceivers.get() > 0;
     }
 
     /**
