@@ -224,8 +224,8 @@ class RtpLayerDesc(
         if (rates[index] == 0L) {
             rates[index] = rateStatistics.getRate(nowMs)
         }
-        if (!ArrayUtils.isNullOrEmpty(dependencyLayers)) {
-            for (dependency in dependencyLayers!!) {
+        if (dependencyLayers != null) {
+            for (dependency in dependencyLayers) {
                 dependency.getBitrateBps(nowMs, rates)
             }
         }
