@@ -61,7 +61,7 @@ public class RtpLayerDesc
 
     /**
      * The ssrcs associated with this encoding (for example, RTX or FLEXFEC)
-     * Maps ssrc -> type {@link Constants} (rtx, etc.)
+     * Maps ssrc -> type {@link SsrcAssociationType} (rtx, etc.)
      */
     private final Map<Long, SsrcAssociationType> secondarySsrcs = new HashMap<>();
 
