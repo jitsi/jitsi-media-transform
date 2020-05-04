@@ -28,7 +28,7 @@ import org.jitsi.rtp.extensions.bytearray.toHex
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
-import org.jitsi_modified.impl.neomedia.rtp.RtpLayerDesc
+import org.jitsi.nlj.RtpLayerDesc
 import java.util.concurrent.atomic.AtomicInteger
 
 /**

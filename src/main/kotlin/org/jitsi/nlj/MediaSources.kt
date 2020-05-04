@@ -16,11 +16,9 @@
 
 package org.jitsi.nlj
 
-import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
-import org.jitsi_modified.impl.neomedia.rtp.RtpLayerDesc
 
 /**
  * Maintains an array of [MediaSourceDesc]. The set method preserves the existing sources that match one of the new
@@ -68,19 +66,4 @@ class MediaSources : NodeStatsProducer {
             addBlock(sourceBlock)
         }
     }
-}
-
-/**
- * Extracts a [NodeStatsBlock] from an [RtpLayerDesc]. This is here temporarily, once we make [RtpLayerDesc]
- * a native class of JMT it should go away.
- */
-fun RtpLayerDesc.getNodeStats() = NodeStatsBlock(primarySSRC.toString()).apply {
-    addNumber("frameRate", frameRate)
-    addNumber("height", height)
-    addNumber("index", index)
-    addNumber("bitrate_bps", getBitrateBps(System.currentTimeMillis()))
-    addNumber("rtx_ssrc", getSecondarySsrc(SsrcAssociationType.RTX))
-    addNumber("fec_ssrc", getSecondarySsrc(SsrcAssociationType.FEC))
-    addNumber("tid", tid)
-    addNumber("sid", sid)
 }

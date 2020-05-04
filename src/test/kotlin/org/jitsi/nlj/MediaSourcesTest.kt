@@ -19,7 +19,6 @@ import io.kotlintest.IsolationMode
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
-import org.jitsi_modified.impl.neomedia.rtp.RtpLayerDesc
 
 class MediaSourcesTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf

@@ -29,7 +29,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.utils.stats.RateStatistics
 import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
-import org.jitsi_modified.impl.neomedia.rtp.RtpLayerDesc
+import org.jitsi.nlj.RtpLayerDesc
 
 /**
  * When deciding what can be forwarded, we want to know the bitrate of a stream so we can fill the receiver's
