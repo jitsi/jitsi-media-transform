@@ -40,9 +40,9 @@ class MediaSources : NodeStatsProducer {
 
         var cntMatched = 0
         val mergedSources: Array<MediaSourceDesc> = Array(newSources.size) { i ->
-            val newEncoding = newSources[i].rtpLayers[0]
+            val newPrimarySSRC = newSources[i].primarySSRC
             for (j in 0 until oldSources.size) {
-                if (oldSources[j].matches(newEncoding.primarySSRC)) {
+                if (oldSources[j].matches(newPrimarySSRC)) {
                     cntMatched++
                     // TODO: update the old source instance with the
                     // configuration of the new one.
@@ -62,7 +62,10 @@ class MediaSources : NodeStatsProducer {
         sources.forEachIndexed { i, source ->
             val sourceBlock = NodeStatsBlock("source_$i")
             source.owner?.let { sourceBlock.addString("owner", it) }
-            source.rtpLayers.forEach { sourceBlock.addBlock(it.getNodeStats()) }
+            // TODO: add some iterator-based accessor?
+            for (j in 0..source.numRtpLayers()) {
+                sourceBlock.addBlock(source.getRtpLayerByQualityIdx(j).getNodeStats())
+            }
             addBlock(sourceBlock)
         }
     }

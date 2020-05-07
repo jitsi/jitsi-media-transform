@@ -90,18 +90,6 @@ public class MediaSourceDesc
     }
 
     /**
-     * Returns an array of all the {@link RtpLayerDesc}s for this instance,
-     * in subjective quality ascending order.
-     *
-     * @return an array of all the {@link RtpLayerDesc}s for this instance,
-     * in subjective quality ascending order.
-     */
-    public RtpLayerDesc[] getRtpLayers()
-    {
-        return rtpLayers;
-    }
-
-    /**
      * Gets the last "stable" bitrate (in bps) of the encoding of the specified
      * index. The "stable" bitrate is measured on every new frame and with a
      * 5000ms window.
@@ -129,6 +117,44 @@ public class MediaSourceDesc
         }
 
         return 0;
+    }
+
+    public boolean hasRtpLayers()
+    {
+        return !ArrayUtils.isNullOrEmpty(rtpLayers);
+    }
+
+    public int numRtpLayers()
+    {
+        if (ArrayUtils.isNullOrEmpty(rtpLayers))
+        {
+            return 0;
+        }
+        return rtpLayers.length;
+    }
+
+    public long getPrimarySSRC()
+    {
+        if (ArrayUtils.isNullOrEmpty(rtpLayers))
+        {
+            return -1;
+        }
+        return rtpLayers[0].getPrimarySSRC();
+    }
+
+    public RtpLayerDesc getRtpLayerByQualityIdx(int idx)
+    {
+        if (ArrayUtils.isNullOrEmpty(rtpLayers))
+        {
+            return null;
+        }
+
+        if (idx >= rtpLayers.length)
+        {
+            return null;
+        }
+
+        return rtpLayers[idx];
     }
 
     public RtpLayerDesc findRtpLayerDesc(VideoRtpPacket videoRtpPacket)

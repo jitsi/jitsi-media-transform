@@ -19,7 +19,6 @@ import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
-import org.jitsi.utils.ArrayUtils
 import org.jitsi.utils.stats.RateStatistics
 import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
@@ -201,34 +200,16 @@ class RtpLayerDesc(
      * and its dependencies.
      */
     fun getBitrateBps(nowMs: Long): Long {
-        val layers = source.rtpLayers
-        if (ArrayUtils.isNullOrEmpty(layers)) {
-            return 0
-        }
-        val rates = LongArray(layers.size)
-        getBitrateBps(nowMs, rates)
-        var bitrate: Long = 0
-        for (i in rates.indices) {
-            bitrate += rates[i]
-        }
-        return bitrate
-    }
+        var bitrate = rateStatistics.getRate(nowMs)
 
-    /**
-     * Recursively adds the bitrate (in bps) of this [RtpLayerDesc] and
-     * its dependencies in the array passed in as an argument.
-     *
-     * @param nowMs
-     */
-    private fun getBitrateBps(nowMs: Long, rates: LongArray) {
-        if (rates[index] == 0L) {
-            rates[index] = rateStatistics.getRate(nowMs)
-        }
+        /* TODO: does the wrong thing if we have multiple dependencies */
         if (dependencyLayers != null) {
             for (dependency in dependencyLayers) {
-                dependency.getBitrateBps(nowMs, rates)
+                bitrate += dependency.getBitrateBps(nowMs)
             }
         }
+
+        return bitrate
     }
 
     /**
