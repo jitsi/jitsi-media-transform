@@ -91,7 +91,7 @@ class MediaSourcesTest : ShouldSpec() {
             val encodings = Array<RtpLayerDesc?>(ssrcs.size) { null }
             val source = MediaSourceDesc(encodings)
             ssrcs.forEachIndexed { i, ssrc ->
-                encodings[i] = RtpLayerDesc(source, ssrc)
+                encodings[i] = RtpLayerDesc(ssrc)
             }
 
             return source

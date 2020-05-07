@@ -30,11 +30,6 @@ import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
  */
 class RtpLayerDesc(
     /**
-     * The [MediaSourceDesc] that this [RtpLayerDesc]
-     * belongs to.
-     */
-    private val source: MediaSourceDesc,
-    /**
      * The index of this instance in the source layers array.
      */
     val index: Int,
@@ -98,14 +93,13 @@ class RtpLayerDesc(
      * @param primarySSRC The primary SSRC for this layering/encoding.
      */
     constructor(
-        source: MediaSourceDesc,
         primarySSRC: Long
-    ) : this(source, 0, primarySSRC, -1 /* tid */, -1 /* sid */,
+    ) : this(0, primarySSRC, -1 /* tid */, -1 /* sid */,
         NO_HEIGHT /* height */, NO_FRAME_RATE /* frame rate */,
         null /* dependencies */)
 
     /**
-     * @return the "id" of this layer/encoding. This is a server-side id and should
+     * @return the "id" of this layer within this source, across all encodings. This is a server-side id and should
      * not be confused with any encoding id defined in the client (such us the
      * rid). This server-side id is used in the layer lookup table that is
      * maintained in [MediaSourceDesc].
