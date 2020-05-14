@@ -31,10 +31,10 @@ import java.util.*;
 public class MediaSourceDesc
 {
     /**
-     * The {@link RtpLayerDesc}s that this {@link MediaSourceDesc}
+     * The {@link RtpEncodingDesc}s that this {@link MediaSourceDesc}
      * possesses, ordered by their subjective quality from low to high.
      */
-    private final RtpLayerDesc[] rtpLayers;
+    private final RtpEncodingDesc[] rtpEncodings;
 
     /**
      * Allow the lookup of a layer by the layer id of a received packet.
@@ -50,34 +50,37 @@ public class MediaSourceDesc
     /**
      * Ctor.
      *
-     * @param rtpLayers The {@link RtpLayerDesc}s that this instance
+     * @param rtpEncodings The {@link RtpEncodingDesc}s that this instance
      * possesses.
      */
     public MediaSourceDesc(
-        RtpLayerDesc[] rtpLayers)
+        RtpEncodingDesc[] rtpEncodings)
     {
-        this(rtpLayers, null);
+        this(rtpEncodings, null);
     }
 
     /**
      * Ctor.
      *
-     * @param rtpLayers The {@link RtpLayerDesc}s that this instance
+     * @param rtpEncodings The {@link RtpEncodingDesc}s that this instance
      * possesses.
      */
     public MediaSourceDesc(
-        RtpLayerDesc[] rtpLayers,
+        RtpEncodingDesc[] rtpEncodings,
         String owner)
     {
-        this.rtpLayers = rtpLayers;
+        this.rtpEncodings = rtpEncodings;
         this.owner = owner;
     }
 
     public void updateLayerCache()
     {
-        for (RtpLayerDesc layer : this.rtpLayers)
+        for (RtpEncodingDesc encoding: this.rtpEncodings)
         {
-            layersById.put(layer.getEncodingId(), layer);
+            for (RtpLayerDesc layer: encoding.getLayers())
+            {
+                layersById.put(encoding.encodingId(layer), layer);
+            }
         }
     }
 
@@ -90,6 +93,18 @@ public class MediaSourceDesc
     }
 
     /**
+     * Returns an array of all the {@link RtpEncodingDesc}s for this instance,
+     * in subjective quality ascending order.
+     *
+     * @return an array of all the {@link RtpEncodingDesc}s for this instance,
+     * in subjective quality ascending order.
+     */
+    public RtpEncodingDesc[] getRtpEncodings()
+    {
+        return rtpEncodings;
+    }
+
+    /**
      * Gets the last "stable" bitrate (in bps) of the encoding of the specified
      * index. The "stable" bitrate is measured on every new frame and with a
      * 5000ms window.
@@ -99,67 +114,64 @@ public class MediaSourceDesc
      */
     public long getBitrateBps(long nowMs, int idx)
     {
-        if (ArrayUtils.isNullOrEmpty(rtpLayers))
+        RtpLayerDesc layer = getRtpLayerByQualityIdx(idx);
+        if (layer == null)
         {
             return 0;
         }
 
-        if (idx > -1)
-        {
-            for (int i = idx; i > -1; i--)
-            {
-                long bps = rtpLayers[i].getBitrateBps(nowMs);
-                if (bps > 0)
-                {
-                    return bps;
-                }
-            }
-        }
-
-        return 0;
+        // TODO: previous code returned a lower layer if this layer's bitrate was 0.
+        // Do we still need this?
+        return layer.getBitrateBps(nowMs);
     }
 
     public boolean hasRtpLayers()
     {
-        return !ArrayUtils.isNullOrEmpty(rtpLayers);
+        for (RtpEncodingDesc encoding: rtpEncodings)
+        {
+            if (encoding.getLayers().length > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public int numRtpLayers()
     {
-        if (ArrayUtils.isNullOrEmpty(rtpLayers))
+        int total = 0;
+        for (RtpEncodingDesc encoding: rtpEncodings)
         {
-            return 0;
+            total += encoding.getLayers().length;
         }
-        return rtpLayers.length;
+
+        return total;
     }
 
     public long getPrimarySSRC()
     {
-        if (ArrayUtils.isNullOrEmpty(rtpLayers))
-        {
-            return -1;
-        }
-        return rtpLayers[0].getPrimarySSRC();
+        return rtpEncodings[0].getPrimarySSRC();
     }
 
     public RtpLayerDesc getRtpLayerByQualityIdx(int idx)
     {
-        if (ArrayUtils.isNullOrEmpty(rtpLayers))
+        for (RtpEncodingDesc encoding: rtpEncodings)
         {
-            return null;
+            RtpLayerDesc[] encLayers = encoding.getLayers();
+            if (idx < encLayers.length)
+            {
+                return encLayers[idx];
+            }
+            idx -= encLayers.length;
         }
 
-        if (idx >= rtpLayers.length)
-        {
-            return null;
-        }
-
-        return rtpLayers[idx];
+        return null;
     }
 
     public RtpLayerDesc findRtpLayerDesc(VideoRtpPacket videoRtpPacket)
     {
-        if (ArrayUtils.isNullOrEmpty(rtpLayers))
+        if (ArrayUtils.isNullOrEmpty(rtpEncodings))
         {
             return null;
         }
@@ -171,20 +183,24 @@ public class MediaSourceDesc
             return desc;
         }
 
-        return Arrays.stream(rtpLayers)
-                .filter(layer -> layer.matches(videoRtpPacket))
-                .findFirst()
-                .orElse(null);
+        for (RtpEncodingDesc encoding: rtpEncodings)
+        {
+            if (encoding.matches(videoRtpPacket.getSsrc()))
+            {
+                return encoding.findRtpLayerDesc(videoRtpPacket);
+            }
+        }
+        return null;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("MediaSourceDesc ").append(hashCode()).append(" has layers:\n");
-        for (RtpLayerDesc layerDesc : rtpLayers)
+        sb.append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n");
+        for (RtpEncodingDesc encodingDesc : rtpEncodings)
         {
-            sb.append("  ").append(layerDesc.toString());
+            sb.append("  ").append(encodingDesc.toString());
             sb.append("\n");
         }
 
@@ -201,6 +217,6 @@ public class MediaSourceDesc
      */
     public boolean matches(long ssrc)
     {
-        return rtpLayers.length > 0 && rtpLayers[0].getPrimarySSRC() == ssrc;
+        return rtpEncodings.length > 0 && rtpEncodings[0].getPrimarySSRC() == ssrc;
     }
 }

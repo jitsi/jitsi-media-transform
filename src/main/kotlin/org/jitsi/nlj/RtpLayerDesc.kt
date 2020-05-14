@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj
 
-import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
@@ -33,10 +32,6 @@ class RtpLayerDesc(
      * The index of this instance in the source layers array.
      */
     val index: Int,
-    /**
-     * The primary SSRC for this encoding.
-     */
-    val primarySSRC: Long,
     /**
      * The temporal layer ID of this instance.
      */
@@ -64,22 +59,6 @@ class RtpLayerDesc(
     private val dependencyLayers: Array<RtpLayerDesc>?
 ) {
     /**
-     * The ssrcs associated with this encoding (for example, RTX or FLEXFEC)
-     * Maps ssrc -> type [SsrcAssociationType] (rtx, etc.)
-     */
-    private val secondarySsrcs: MutableMap<Long, SsrcAssociationType> = HashMap()
-
-    /**
-     * The root [RtpLayerDesc] of the dependencies DAG. Useful for
-     * simulcast handling.
-     */
-    var baseLayer: RtpLayerDesc =
-        if (dependencyLayers == null || dependencyLayers.isEmpty())
-            this
-        else
-            dependencyLayers[0].baseLayer
-
-    /**
      * The [RateStatistics] instance used to calculate the receiving
      * bitrate of this RTP layer.
      */
@@ -94,60 +73,34 @@ class RtpLayerDesc(
      */
     constructor(
         primarySSRC: Long
-    ) : this(0, primarySSRC, -1 /* tid */, -1 /* sid */,
+    ) : this(0, -1 /* tid */, -1 /* sid */,
         NO_HEIGHT /* height */, NO_FRAME_RATE /* frame rate */,
         null /* dependencies */)
 
     /**
-     * @return the "id" of this layer within this source, across all encodings. This is a server-side id and should
+     * @return the "id" of this layer within this encoding. This is a server-side id and should
      * not be confused with any encoding id defined in the client (such us the
-     * rid). This server-side id is used in the layer lookup table that is
-     * maintained in [MediaSourceDesc].
+     * rid).
      */
-    val encodingId: Long
+    val layerId: Int
         get() {
-            var encodingId = primarySSRC
-            if (tid > -1) {
-                encodingId = encodingId or (tid.toLong() shl 32)
-            }
-            return encodingId
-        }
+            val t = if (tid < 0) 0 else tid
+            val s = if (sid < 0) 0 else sid
 
-    fun addSecondarySsrc(ssrc: Long, type: SsrcAssociationType) {
-        secondarySsrcs[ssrc] = type
-    }
-
-    /**
-     * Get the secondary ssrc for this encoding that corresponds to the given
-     * type
-     * @param type the type of the secondary ssrc (e.g. RTX)
-     * @return the ssrc for the encoding that corresponds to the given type,
-     * if it exists; otherwise -1
-     */
-    fun getSecondarySsrc(type: SsrcAssociationType): Long {
-        for ((key, value) in secondarySsrcs) {
-            if (value == type) {
-                return key
-            }
+            return (s shl 3) or t
         }
-        return -1
-    }
 
     /**
      * {@inheritDoc}
      */
     override fun toString(): String {
         return "subjective_quality=" + index +
-            ",primary_ssrc=" + primarySSRC +
-            ",secondary_ssrcs=" + secondarySsrcs +
             ",temporal_id=" + tid +
             ",spatial_id=" + sid
     }
 
     fun matches(packet: VideoRtpPacket): Boolean {
-        return if (!matches(packet.ssrc)) {
-            false
-        } else if (tid == -1 && sid == -1) {
+        return if (tid == -1 && sid == -1) {
             true
         } else if (packet is Vp8Packet) {
             // NOTE(brian): the spatial layer index of an encoding is only currently used for in-band spatial
@@ -161,18 +114,6 @@ class RtpLayerDesc(
         } else {
             true
         }
-    }
-
-    /**
-     * Gets a boolean indicating whether or not the SSRC specified in the
-     * arguments matches this encoding or not.
-     *
-     * @param ssrc the SSRC to match.
-     */
-    fun matches(ssrc: Long): Boolean {
-        return if (primarySSRC == ssrc) {
-            true
-        } else secondarySsrcs.containsKey(ssrc)
     }
 
     /**
@@ -209,13 +150,11 @@ class RtpLayerDesc(
     /**
      * Extracts a [NodeStatsBlock] from an [RtpLayerDesc].
      */
-    fun getNodeStats() = NodeStatsBlock(primarySSRC.toString()).apply {
+    fun getNodeStats() = NodeStatsBlock(layerId.toString()).apply {
         addNumber("frameRate", frameRate)
         addNumber("height", height)
         addNumber("index", index)
         addNumber("bitrate_bps", getBitrateBps(System.currentTimeMillis()))
-        addNumber("rtx_ssrc", getSecondarySsrc(SsrcAssociationType.RTX))
-        addNumber("fec_ssrc", getSecondarySsrc(SsrcAssociationType.FEC))
         addNumber("tid", tid)
         addNumber("sid", sid)
     }

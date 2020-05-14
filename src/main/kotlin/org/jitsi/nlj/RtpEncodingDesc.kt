@@ -18,6 +18,7 @@ package org.jitsi.nlj
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
+import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 /**
  * Keeps track of information specific to an encoded RTP stream.
@@ -34,7 +35,7 @@ constructor(
     /**
      * The [RtpLayerDesc]s describing the encoding's layers.
      */
-    private val layers: Array<RtpLayerDesc>? = null
+    val layers: Array<RtpLayerDesc> = arrayOf()
 ) {
     /**
      * The ssrcs associated with this encoding (for example, RTX or FLEXFEC)
@@ -45,6 +46,15 @@ constructor(
     fun addSecondarySsrc(ssrc: Long, type: SsrcAssociationType) {
         secondarySsrcs[ssrc] = type
     }
+
+    /**
+     * @return the "id" of a layer within this source, across all encodings. This is a server-side id and should
+     * not be confused with any encoding id defined in the client (such us the
+     * rid). This server-side id is used in the layer lookup table that is
+     * maintained in [MediaSourceDesc].
+     */
+    fun encodingId(layer: RtpLayerDesc): Long =
+        primarySSRC or (layer.layerId.toLong() shl 32)
 
     /**
      * Get the secondary ssrc for this encoding that corresponds to the given
@@ -67,13 +77,22 @@ constructor(
      */
     override fun toString(): String {
         return "primary_ssrc=$primarySSRC,secondary_ssrcs=$secondarySsrcs," +
-            "layers=${layers?.joinToString(separator = "\n")}"
+            "layers=${layers.joinToString(separator = "\n")}"
+    }
+
+    fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? {
+        for (layer in layers) {
+            if (layer.matches(packet)) {
+                return layer
+            }
+        }
+        return null
     }
 
     fun matches(packet: VideoRtpPacket): Boolean {
         if (!matches(packet.ssrc)) {
             return false
-        } else if (layers == null) {
+        } else if (layers.isEmpty()) {
             return true // ???
         } else for (layer in layers) {
             if (layer.matches(packet)) {
@@ -101,5 +120,8 @@ constructor(
     fun getNodeStats() = NodeStatsBlock(primarySSRC.toString()).apply {
         addNumber("rtx_ssrc", getSecondarySsrc(SsrcAssociationType.RTX))
         addNumber("fec_ssrc", getSecondarySsrc(SsrcAssociationType.FEC))
+        for (layer in layers) {
+            addBlock(layer.getNodeStats())
+        }
     }
 }

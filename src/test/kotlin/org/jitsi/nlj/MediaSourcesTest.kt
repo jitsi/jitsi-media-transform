@@ -88,10 +88,10 @@ class MediaSourcesTest : ShouldSpec() {
 
     companion object {
         fun createSource(vararg ssrcs: Long): MediaSourceDesc {
-            val encodings = Array<RtpLayerDesc?>(ssrcs.size) { null }
+            val encodings = Array<RtpEncodingDesc?>(ssrcs.size) { null }
             val source = MediaSourceDesc(encodings)
             ssrcs.forEachIndexed { i, ssrc ->
-                encodings[i] = RtpLayerDesc(ssrc)
+                encodings[i] = RtpEncodingDesc(ssrc)
             }
 
             return source
