@@ -138,6 +138,11 @@ public class MediaSourceDesc
         return false;
     }
 
+    public Iterable<RtpLayerDesc> getRtpLayers()
+    {
+        return Arrays.stream(rtpEncodings).flatMap(e -> Arrays.stream(e.getLayers()))::iterator;
+    }
+
     public int numRtpLayers()
     {
         int total = 0;
