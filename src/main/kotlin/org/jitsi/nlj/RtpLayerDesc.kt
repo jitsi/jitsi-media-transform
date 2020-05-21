@@ -19,7 +19,6 @@ import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.utils.stats.RateStatistics
-import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 /**
  * Keeps track of its subjective quality index,
@@ -27,7 +26,8 @@ import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
  *
  * @author George Politis
  */
-class RtpLayerDesc(
+class RtpLayerDesc
+constructor(
     /**
      * The index of this instance in the source layers array.
      */
@@ -58,24 +58,14 @@ class RtpLayerDesc(
      */
     private val dependencyLayers: Array<RtpLayerDesc>?
 ) {
+    init { if (tid > 7) throw IllegalArgumentException("Invalid temporal ID $tid") }
+    init { if (sid > 7) throw IllegalArgumentException("Invalid spatial ID $sid") }
+
     /**
      * The [RateStatistics] instance used to calculate the receiving
      * bitrate of this RTP layer.
      */
     private val rateStatistics = RateStatistics(AVERAGE_BITRATE_WINDOW_MS)
-
-    /**
-     * Ctor.
-     *
-     * @param source the [MediaSourceDesc] that this instance
-     * belongs to.
-     * @param primarySSRC The primary SSRC for this layering/encoding.
-     */
-    constructor(
-        primarySSRC: Long
-    ) : this(0, -1 /* tid */, -1 /* sid */,
-        NO_HEIGHT /* height */, NO_FRAME_RATE /* frame rate */,
-        null /* dependencies */)
 
     /**
      * @return the "id" of this layer within this encoding. This is a server-side id and should
