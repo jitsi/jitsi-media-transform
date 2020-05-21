@@ -29,9 +29,9 @@ import org.jitsi.utils.stats.RateStatistics
 class RtpLayerDesc
 constructor(
     /**
-     * The index of this instance in the source layers array.
+     * The index of this instance's encoding in the source encoding array.
      */
-    val index: Int,
+    val eid: Int,
     /**
      * The temporal layer ID of this instance.
      */
@@ -72,13 +72,12 @@ constructor(
      * not be confused with any encoding id defined in the client (such us the
      * rid).
      */
-    val layerId: Int
-        get() {
-            val t = if (tid < 0) 0 else tid
-            val s = if (sid < 0) 0 else sid
+    val layerId = getIndex(0, sid, tid)
 
-            return (s shl 3) or t
-        }
+    /**
+     * A local index of this track.
+     */
+    val index = getIndex(eid, sid, tid)
 
     /**
      * {@inheritDoc}
@@ -194,5 +193,23 @@ constructor(
             }
             return encodingId
         }
+
+        @JvmStatic
+        fun getIndex(eid: Int, sid: Int, tid: Int): Int {
+            val e = if (eid < 0) 0 else eid
+            val s = if (sid < 0) 0 else sid
+            val t = if (tid < 0) 0 else tid
+
+            return (e shl 6) or (s shl 3) or t
+        }
+
+        @JvmStatic
+        fun getEidFromIndex(index: Int) = index shr 6
+
+        @JvmStatic
+        fun getSidFromIndex(index: Int) = (index and 0x38) shr 3
+
+        @JvmStatic
+        fun getTidFromIndex(index: Int) = index and 0x7
     }
 }

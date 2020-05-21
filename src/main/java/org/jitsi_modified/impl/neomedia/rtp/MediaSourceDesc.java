@@ -37,9 +37,14 @@ public class MediaSourceDesc
     private final RtpEncodingDesc[] rtpEncodings;
 
     /**
-     * Allow the lookup of a layer by the layer id of a received packet.
+     * Allow the lookup of a layer by the encoding id of a received packet.
      */
     private final Map<Long, RtpLayerDesc> layersById = new HashMap<>();
+
+    /**
+     * Allow the lookup of a layer by index .
+     */
+    private final Map<Integer, RtpLayerDesc> layersByIndex = new HashMap<>();
 
     /**
      * A string which identifies the owner of this source (e.g. the endpoint
@@ -75,11 +80,15 @@ public class MediaSourceDesc
 
     public void updateLayerCache()
     {
+        layersById.clear();
+        layersByIndex.clear();
+
         for (RtpEncodingDesc encoding: this.rtpEncodings)
         {
             for (RtpLayerDesc layer: encoding.getLayers())
             {
                 layersById.put(encoding.encodingId(layer), layer);
+                layersByIndex.put(layer.getIndex(), layer);
             }
         }
     }
@@ -127,15 +136,7 @@ public class MediaSourceDesc
 
     public boolean hasRtpLayers()
     {
-        for (RtpEncodingDesc encoding: rtpEncodings)
-        {
-            if (encoding.getLayers().length > 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return !layersByIndex.isEmpty();
     }
 
     public Iterable<RtpLayerDesc> getRtpLayers()
@@ -161,17 +162,7 @@ public class MediaSourceDesc
 
     public RtpLayerDesc getRtpLayerByQualityIdx(int idx)
     {
-        for (RtpEncodingDesc encoding: rtpEncodings)
-        {
-            RtpLayerDesc[] encLayers = encoding.getLayers();
-            if (idx < encLayers.length)
-            {
-                return encLayers[idx];
-            }
-            idx -= encLayers.length;
-        }
-
-        return null;
+        return layersByIndex.get(idx);
     }
 
     public RtpLayerDesc findRtpLayerDesc(VideoRtpPacket videoRtpPacket)
