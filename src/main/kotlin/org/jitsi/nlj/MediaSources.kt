@@ -61,7 +61,6 @@ class MediaSources : NodeStatsProducer {
         sources.forEachIndexed { i, source ->
             val sourceBlock = NodeStatsBlock("source_$i")
             source.owner?.let { sourceBlock.addString("owner", it) }
-            // TODO: add some iterator-based accessor?
             for (layer in source.rtpLayers) {
                 sourceBlock.addBlock(layer.getNodeStats())
             }
