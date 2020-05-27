@@ -117,10 +117,7 @@ class MediaSourceDesc
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n")
-        for (encodingDesc in rtpEncodings) {
-            sb.append("  ").append(encodingDesc.toString())
-            sb.append("\n")
-        }
+        sb.append(rtpEncodings.joinToString(separator = "\n  "))
         return sb.toString()
     }
 
