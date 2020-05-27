@@ -38,7 +38,6 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.cinfo
 import org.jitsi.utils.logging2.createChildLogger
-import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 import java.time.Clock
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService

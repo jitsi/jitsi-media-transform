@@ -18,7 +18,6 @@ package org.jitsi.nlj
 import io.kotlintest.IsolationMode
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
-import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 class MediaSourcesTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -88,11 +87,10 @@ class MediaSourcesTest : ShouldSpec() {
 
     companion object {
         fun createSource(vararg ssrcs: Long): MediaSourceDesc {
-            val encodings = Array<RtpEncodingDesc?>(ssrcs.size) { null }
-            val source = MediaSourceDesc(encodings)
-            ssrcs.forEachIndexed { i, ssrc ->
-                encodings[i] = RtpEncodingDesc(ssrc)
+            val encodings = Array(ssrcs.size) {
+                i -> RtpEncodingDesc(ssrcs[i])
             }
+            val source = MediaSourceDesc(encodings)
 
             return source
         }

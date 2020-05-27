@@ -18,7 +18,6 @@ package org.jitsi.nlj
 
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeStatsProducer
-import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 /**
  * Maintains an array of [MediaSourceDesc]. The set method preserves the existing sources that match one of the new
@@ -63,8 +62,8 @@ class MediaSources : NodeStatsProducer {
             val sourceBlock = NodeStatsBlock("source_$i")
             source.owner?.let { sourceBlock.addString("owner", it) }
             // TODO: add some iterator-based accessor?
-            for (j in 0..source.numRtpLayers()) {
-                sourceBlock.addBlock(source.getRtpLayerByQualityIdx(j).getNodeStats())
+            for (layer in source.rtpLayers) {
+                sourceBlock.addBlock(layer.getNodeStats())
             }
             addBlock(sourceBlock)
         }

@@ -18,7 +18,6 @@ package org.jitsi.nlj
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
-import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 /**
  * Keeps track of information specific to an encoded RTP stream.

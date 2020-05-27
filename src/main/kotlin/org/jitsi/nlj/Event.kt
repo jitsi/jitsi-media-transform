@@ -16,7 +16,6 @@
 package org.jitsi.nlj
 
 import org.jitsi.utils.MediaType
-import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
 
 interface Event
 

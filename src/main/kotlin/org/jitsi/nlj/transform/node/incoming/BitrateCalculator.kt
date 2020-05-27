@@ -28,7 +28,7 @@ import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.utils.stats.RateStatistics
-import org.jitsi_modified.impl.neomedia.rtp.MediaSourceDesc
+import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.RtpLayerDesc
 
 /**
