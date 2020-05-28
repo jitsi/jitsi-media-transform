@@ -34,7 +34,7 @@ constructor(
     /**
      * The [RtpLayerDesc]s describing the encoding's layers.
      */
-    val layers: Array<RtpLayerDesc> = arrayOf()
+    initialLayers: Array<RtpLayerDesc> = arrayOf()
 ) {
     /**
      * The ssrcs associated with this encoding (for example, RTX or FLEXFEC)
@@ -45,6 +45,20 @@ constructor(
     fun addSecondarySsrc(ssrc: Long, type: SsrcAssociationType) {
         secondarySsrcs[ssrc] = type
     }
+
+    internal var layers = initialLayers
+        set(newLayers) {
+            for (newLayer in newLayers) {
+                /* TODO: indices should be in order, so traverse old and new layers in linear not quadratic time? */
+                for (oldLayer in field) {
+                    if (oldLayer.layerId == newLayer.layerId) {
+                        newLayer.inheritStatistics(oldLayer)
+                        break
+                    }
+                }
+            }
+            field = newLayers
+        }
 
     /**
      * @return the "id" of a layer within this source, across all encodings. This is a server-side id and should

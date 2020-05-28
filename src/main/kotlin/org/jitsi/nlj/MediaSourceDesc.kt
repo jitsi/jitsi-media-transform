@@ -127,6 +127,25 @@ class MediaSourceDesc
         }
     }
 
+    private fun findRtpEncodingDesc(ssrc: Long): RtpEncodingDesc? {
+        synchronized(this) {
+            for (enc in rtpEncodings) {
+                if (enc.matches(ssrc)) {
+                    return enc
+                }
+            }
+        }
+        return null
+    }
+
+    fun setEncodingLayers(layers: Array<RtpLayerDesc>, ssrc: Long) {
+        synchronized(this) {
+            val enc = findRtpEncodingDesc(ssrc) ?: return
+            enc.layers = layers
+            updateLayerCache()
+        }
+    }
+
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n")

@@ -65,7 +65,7 @@ constructor(
      * The [RateStatistics] instance used to calculate the receiving
      * bitrate of this RTP layer.
      */
-    private val rateStatistics = RateStatistics(AVERAGE_BITRATE_WINDOW_MS)
+    private var rateStatistics = RateStatistics(AVERAGE_BITRATE_WINDOW_MS)
 
     /**
      * @return the "id" of this layer within this encoding. This is a server-side id and should
@@ -103,6 +103,13 @@ constructor(
         } else {
             true
         }
+    }
+
+    /**
+     * Inherit another layer description's rateStatistics object.
+     */
+    internal fun inheritStatistics(other: RtpLayerDesc) {
+        rateStatistics = other.rateStatistics
     }
 
     /**
