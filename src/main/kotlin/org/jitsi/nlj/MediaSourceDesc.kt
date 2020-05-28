@@ -51,9 +51,9 @@ class MediaSourceDesc
     private val layersByIndex: MutableMap<Int, RtpLayerDesc> = HashMap()
 
     /**
-     * @return the identifier of the owner of this source.
+     * Update the layer cache.  Should be synchronized on [this].
      */
-    fun updateLayerCache() {
+    private fun updateLayerCache() {
         layersById.clear()
         layersByIndex.clear()
 
@@ -64,6 +64,8 @@ class MediaSourceDesc
             }
         }
     }
+
+    init { updateLayerCache() }
 
     /**
      * Gets the last "stable" bitrate (in bps) of the encoding of the specified
@@ -81,37 +83,48 @@ class MediaSourceDesc
         return layer.getBitrateBps(nowMs)
     }
 
-    fun hasRtpLayers(): Boolean {
-        return !layersByIndex.isEmpty()
-    }
+    fun hasRtpLayers(): Boolean =
+        synchronized(this) {
+            !layersByIndex.isEmpty()
+        }
 
+    /**
+     * Get an iterator over the source's RTP layers, in quality order.  Should be synchronized on [this].
+     */
     val rtpLayers: Iterable<RtpLayerDesc>
         get() = Iterable { Arrays.stream(rtpEncodings).flatMap { e: RtpEncodingDesc -> Arrays.stream(e.layers) }.iterator() }
 
-    fun numRtpLayers(): Int = layersByIndex.size
+    fun numRtpLayers(): Int =
+        synchronized(this) {
+            layersByIndex.size
+        }
 
     val primarySSRC: Long
         get() = rtpEncodings[0].primarySSRC
 
-    fun getRtpLayerByQualityIdx(idx: Int): RtpLayerDesc? {
-        return layersByIndex[idx]
-    }
+    fun getRtpLayerByQualityIdx(idx: Int): RtpLayerDesc? =
+        synchronized(this) {
+            layersByIndex[idx]
+        }
 
     fun findRtpLayerDesc(videoRtpPacket: VideoRtpPacket): RtpLayerDesc? {
-        if (ArrayUtils.isNullOrEmpty(rtpEncodings)) {
+        synchronized(this) {
+            if (ArrayUtils.isNullOrEmpty(rtpEncodings)) {
+                return null
+            }
+            val encodingId = getEncodingId(videoRtpPacket)
+            val desc = layersById[encodingId]
+            if (desc != null) {
+                return desc
+            }
+            /* ??? Does this part actually get used? */
+            for (encoding in rtpEncodings) {
+                if (encoding.matches(videoRtpPacket.ssrc)) {
+                    return encoding.findRtpLayerDesc(videoRtpPacket)
+                }
+            }
             return null
         }
-        val encodingId = getEncodingId(videoRtpPacket)
-        val desc = layersById[encodingId]
-        if (desc != null) {
-            return desc
-        }
-        for (encoding in rtpEncodings) {
-            if (encoding.matches(videoRtpPacket.ssrc)) {
-                return encoding.findRtpLayerDesc(videoRtpPacket)
-            }
-        }
-        return null
     }
 
     override fun toString(): String {
