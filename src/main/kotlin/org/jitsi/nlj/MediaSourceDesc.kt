@@ -15,10 +15,10 @@
  */
 package org.jitsi.nlj
 
-import java.util.Arrays
 import org.jitsi.nlj.RtpLayerDesc.Companion.getEncodingId
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.utils.ArrayUtils
+import java.util.Collections
 
 /**
  * Represents a collection of [RtpLayerDesc]s that encode the same
@@ -41,6 +41,11 @@ class MediaSourceDesc
     val owner: String? = null
 ) {
     /**
+     * Current single-list view of all the encodings' layers.
+     */
+    private lateinit var layers: List<RtpLayerDesc>
+
+    /**
      * Allow the lookup of a layer by the encoding id of a received packet.
      */
     private val layersById: MutableMap<Long, RtpLayerDesc> = HashMap()
@@ -56,13 +61,16 @@ class MediaSourceDesc
     private fun updateLayerCache() {
         layersById.clear()
         layersByIndex.clear()
+        val layers_ = ArrayList<RtpLayerDesc>()
 
         for (encoding in rtpEncodings) {
             for (layer in encoding.layers) {
                 layersById[encoding.encodingId(layer)] = layer
                 layersByIndex[layer.index] = layer
+                layers_.add(layer)
             }
         }
+        layers = Collections.unmodifiableList(layers_)
     }
 
     init { updateLayerCache() }
@@ -85,14 +93,14 @@ class MediaSourceDesc
 
     fun hasRtpLayers(): Boolean =
         synchronized(this) {
-            !layersByIndex.isEmpty()
+            layers.isNotEmpty()
         }
 
     /**
-     * Get an iterator over the source's RTP layers, in quality order.  Should be synchronized on [this].
+     * Get a view of the source's RTP layers, in quality order.
      */
-    val rtpLayers: Iterable<RtpLayerDesc>
-        get() = Iterable { Arrays.stream(rtpEncodings).flatMap { e: RtpEncodingDesc -> Arrays.stream(e.layers) }.iterator() }
+    val rtpLayers: List<RtpLayerDesc>
+        get() = synchronized(this) { layers }
 
     fun numRtpLayers(): Int =
         synchronized(this) {
