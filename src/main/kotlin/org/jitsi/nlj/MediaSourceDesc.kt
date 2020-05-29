@@ -127,16 +127,10 @@ class MediaSourceDesc
         }
     }
 
-    private fun findRtpEncodingDesc(ssrc: Long): RtpEncodingDesc? {
+    private fun findRtpEncodingDesc(ssrc: Long): RtpEncodingDesc? =
         synchronized(this) {
-            for (enc in rtpEncodings) {
-                if (enc.matches(ssrc)) {
-                    return enc
-                }
-            }
+            rtpEncodings.find { it.matches(ssrc) }
         }
-        return null
-    }
 
     fun setEncodingLayers(layers: Array<RtpLayerDesc>, ssrc: Long) {
         synchronized(this) {

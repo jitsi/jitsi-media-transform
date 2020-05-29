@@ -93,14 +93,8 @@ constructor(
             "layers=${layers.joinToString(separator = "\n    ")}"
     }
 
-    fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? {
-        for (layer in layers) {
-            if (layer.matches(packet)) {
-                return layer
-            }
-        }
-        return null
-    }
+    fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? =
+        layers.find { it.matches(packet) }
 
     fun matches(packet: VideoRtpPacket): Boolean {
         if (!matches(packet.ssrc)) {
