@@ -20,7 +20,8 @@ import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
 
 /**
- * Keeps track of information specific to an encoded RTP stream.
+ * Keeps track of information specific to an RTP encoded stream
+ * (and its associated secondary sources).
  *
  * @author Jonathan Lennox
  */
@@ -62,7 +63,7 @@ constructor(
 
     /**
      * @return the "id" of a layer within this source, across all encodings. This is a server-side id and should
-     * not be confused with any encoding id defined in the client (such us the
+     * not be confused with any encoding id defined in the client (such as the
      * rid). This server-side id is used in the layer lookup table that is
      * maintained in [MediaSourceDesc].
      */

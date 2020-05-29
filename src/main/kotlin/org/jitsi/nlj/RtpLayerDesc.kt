@@ -58,8 +58,10 @@ constructor(
      */
     private val dependencyLayers: Array<RtpLayerDesc>?
 ) {
-    init { if (tid > 7) throw IllegalArgumentException("Invalid temporal ID $tid") }
-    init { if (sid > 7) throw IllegalArgumentException("Invalid spatial ID $sid") }
+    init {
+        if (tid > 7) throw IllegalArgumentException("Invalid temporal ID $tid")
+        if (sid > 7) throw IllegalArgumentException("Invalid spatial ID $sid")
+    }
 
     /**
      * The [RateStatistics] instance used to calculate the receiving
@@ -69,7 +71,7 @@ constructor(
 
     /**
      * @return the "id" of this layer within this encoding. This is a server-side id and should
-     * not be confused with any encoding id defined in the client (such us the
+     * not be confused with any encoding id defined in the client (such as the
      * rid).
      */
     val layerId = getIndex(0, sid, tid)
@@ -201,6 +203,11 @@ constructor(
             return encodingId
         }
 
+        /**
+         * Calculate the "id" of a layer based on its encoding, spatial, and temporal ID.
+         * This is a server-side id and should not be confused with any encoding id defined
+         * in the client (such as the rid).
+         */
         @JvmStatic
         fun getIndex(eid: Int, sid: Int, tid: Int): Int {
             val e = if (eid < 0) 0 else eid

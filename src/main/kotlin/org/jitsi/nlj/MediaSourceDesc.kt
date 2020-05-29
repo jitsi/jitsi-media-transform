@@ -25,6 +25,9 @@ import java.util.Collections
  * media source. This specific implementation provides webrtc simulcast stream
  * suspension detection.
  *
+ * We take the definition of "Media Source" from RFC 7656.  It takes a single
+ * logical source of media, which might be represented by multiple encoded streams.
+ *
  * @author George Politis
  */
 class MediaSourceDesc
@@ -91,68 +94,60 @@ class MediaSourceDesc
         return layer.getBitrateBps(nowMs)
     }
 
-    fun hasRtpLayers(): Boolean =
-        synchronized(this) {
-            layers.isNotEmpty()
-        }
+    @Synchronized
+    fun hasRtpLayers(): Boolean = layers.isNotEmpty()
 
     /**
      * Get a view of the source's RTP layers, in quality order.
      */
     val rtpLayers: List<RtpLayerDesc>
-        get() = synchronized(this) { layers }
+        @Synchronized
+        get() = layers
 
+    @Synchronized
     fun numRtpLayers(): Int =
-        synchronized(this) {
-            layersByIndex.size
-        }
+        layersByIndex.size
 
     val primarySSRC: Long
         get() = rtpEncodings[0].primarySSRC
 
+    @Synchronized
     fun getRtpLayerByQualityIdx(idx: Int): RtpLayerDesc? =
-        synchronized(this) {
-            layersByIndex[idx]
-        }
+        layersByIndex[idx]
 
+    @Synchronized
     fun findRtpLayerDesc(videoRtpPacket: VideoRtpPacket): RtpLayerDesc? {
-        synchronized(this) {
-            if (ArrayUtils.isNullOrEmpty(rtpEncodings)) {
-                return null
-            }
-            val encodingId = getEncodingId(videoRtpPacket)
-            val desc = layersById[encodingId]
-            if (desc != null) {
-                return desc
-            }
-            /* ??? Does this part actually get used? */
-            for (encoding in rtpEncodings) {
-                if (encoding.matches(videoRtpPacket.ssrc)) {
-                    return encoding.findRtpLayerDesc(videoRtpPacket)
-                }
-            }
+        if (ArrayUtils.isNullOrEmpty(rtpEncodings)) {
             return null
         }
+        val encodingId = getEncodingId(videoRtpPacket)
+        val desc = layersById[encodingId]
+        if (desc != null) {
+            return desc
+        }
+        /* ??? Does this part actually get used? */
+        for (encoding in rtpEncodings) {
+            if (encoding.matches(videoRtpPacket.ssrc)) {
+                return encoding.findRtpLayerDesc(videoRtpPacket)
+            }
+        }
+        return null
     }
 
+    @Synchronized
     private fun findRtpEncodingDesc(ssrc: Long): RtpEncodingDesc? =
-        synchronized(this) {
-            rtpEncodings.find { it.matches(ssrc) }
-        }
+        rtpEncodings.find { it.matches(ssrc) }
 
+    @Synchronized
     fun setEncodingLayers(layers: Array<RtpLayerDesc>, ssrc: Long) {
-        synchronized(this) {
-            val enc = findRtpEncodingDesc(ssrc) ?: return
-            enc.layers = layers
-            updateLayerCache()
-        }
+        val enc = findRtpEncodingDesc(ssrc) ?: return
+        enc.layers = layers
+        updateLayerCache()
     }
 
-    override fun toString(): String {
-        val sb = StringBuilder()
-        sb.append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n")
-        sb.append(rtpEncodings.joinToString(separator = "\n  "))
-        return sb.toString()
+    override fun toString(): String = buildString {
+        append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n")
+        append(rtpEncodings.joinToString(separator = "\n  "))
     }
 
     /**
@@ -163,7 +158,5 @@ class MediaSourceDesc
      * @return `true` if the specified `ssrc` is the primary SSRC
      * for this source.
      */
-    fun matches(ssrc: Long): Boolean {
-        return rtpEncodings.size > 0 && rtpEncodings[0].primarySSRC == ssrc
-    }
+    fun matches(ssrc: Long) = rtpEncodings.getOrNull(0)?.primarySSRC == ssrc
 }
