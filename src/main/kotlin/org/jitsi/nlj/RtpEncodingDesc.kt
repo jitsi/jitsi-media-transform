@@ -49,13 +49,18 @@ constructor(
 
     internal var layers = initialLayers
         set(newLayers) {
+            /* Copy the rate statistics objects from the old layers to the new layers
+             * with matching layer IDs.
+             */
+            /* Note: because layer arrays are sorted by ID we could avoid creating this
+             * intermediate map object, and do this in a single pass in O(1) space.
+             * The number of layers is small enough that this more complicated code
+             * is probably unnecessary, though.
+             */
+            val oldLayerMap = field.associateBy { it.layerId }
             for (newLayer in newLayers) {
-                /* TODO: indices should be in order, so traverse old and new layers in linear not quadratic time? */
-                for (oldLayer in field) {
-                    if (oldLayer.layerId == newLayer.layerId) {
-                        newLayer.inheritStatistics(oldLayer)
-                        break
-                    }
+                oldLayerMap[newLayer.layerId]?.let {
+                    newLayer.inheritStatistics(it)
                 }
             }
             field = newLayers
