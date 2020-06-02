@@ -59,6 +59,13 @@ class MediaSourceDesc
     private val layersByIndex: MutableMap<Int, RtpLayerDesc> = HashMap()
 
     /**
+     * Get a view of the source's RTP layers, in quality order.
+     */
+    val rtpLayers: List<RtpLayerDesc>
+        @Synchronized
+        get() = layers
+
+    /**
      * Update the layer cache.  Should be synchronized on [this].
      */
     private fun updateLayerCache() {
@@ -97,13 +104,6 @@ class MediaSourceDesc
     @Synchronized
     fun hasRtpLayers(): Boolean = layers.isNotEmpty()
 
-    /**
-     * Get a view of the source's RTP layers, in quality order.
-     */
-    val rtpLayers: List<RtpLayerDesc>
-        @Synchronized
-        get() = layers
-
     @Synchronized
     fun numRtpLayers(): Int =
         layersByIndex.size
@@ -125,7 +125,9 @@ class MediaSourceDesc
         if (desc != null) {
             return desc
         }
-        /* ??? Does this part actually get used? */
+        /* ??? Does this part actually get used?
+         * I think it won't, because ssrc should always be
+         * the encoding's primary SSRC by this point. */
         for (encoding in rtpEncodings) {
             if (encoding.matches(videoRtpPacket.ssrc)) {
                 return encoding.findRtpLayerDesc(videoRtpPacket)
@@ -151,8 +153,10 @@ class MediaSourceDesc
     }
 
     /**
-     * FIXME: this should probably check whether the specified SSRC is part
-     * of this source (i.e. check all layers and include secondary SSRCs).
+     * Checks whether the given SSRC matches this source's [primarySSRC].
+     * This is mostly useful only for determining quickly whether two source
+     * descriptions describe the same source; other functions should be used
+     * to match received media packets.
      *
      * @param ssrc the SSRC to match.
      * @return `true` if the specified `ssrc` is the primary SSRC

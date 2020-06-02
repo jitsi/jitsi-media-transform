@@ -43,8 +43,11 @@ class MediaSources : NodeStatsProducer {
             for (j in 0 until oldSources.size) {
                 if (oldSources[j].matches(newPrimarySSRC)) {
                     cntMatched++
-                    // TODO: update the old source instance with the
-                    // configuration of the new one.
+                    // NOTE: we deliberately do not update the old source instance
+                    // with the encodings of the new one.  Values set on the
+                    // source are more likely to be correct than ones generated
+                    // from signaling about the source.  (Revisit this if we
+                    // encounter a scenario where this isn't true...)
                     return@Array oldSources[j]
                 }
             }
