@@ -17,6 +17,7 @@ package org.jitsi.nlj
 
 import org.jitsi.nlj.rtp.SsrcAssociationType
 import org.jitsi.nlj.rtp.VideoRtpPacket
+import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 
 /**
@@ -73,7 +74,7 @@ constructor(
      * maintained in [MediaSourceDesc].
      */
     fun encodingId(layer: RtpLayerDesc): Long =
-        primarySSRC or (layer.layerId.toLong() shl 32)
+        calcEncodingId(primarySSRC, layer.layerId)
 
     /**
      * Get the secondary ssrc for this encoding that corresponds to the given
@@ -135,6 +136,38 @@ constructor(
         addNumber("fec_ssrc", getSecondarySsrc(SsrcAssociationType.FEC))
         for (layer in layers) {
             addBlock(layer.getNodeStats())
+        }
+    }
+
+    companion object {
+        private fun calcEncodingId(ssrc: Long, layerId: Int) =
+            ssrc or (layerId.toLong() shl 32)
+
+        /**
+         * @param videoRtpPacket the video packet
+         * @return gets the server-side layer/encoding id of a video packet.
+         * This is used by the encodings cache for fast lookup.  See
+         * [encodingId]
+         */
+        @JvmStatic
+        fun getEncodingId(videoRtpPacket: VideoRtpPacket): Long {
+            val layerId =
+                if (videoRtpPacket is Vp8Packet) {
+                    // note(george) we've observed that a client may announce but not
+                    // send simulcast (it is not clear atm who's to blame for this
+                    // "bug", chrome or our client code). In any case, when this happens
+                    // we "pretend" that the encoding of the packet is the base temporal
+                    // layer of the encoding.
+                    val tid = videoRtpPacket.temporalLayerIndex
+                    if (tid >= 0) {
+                        tid
+                    } else {
+                        0
+                    }
+                } else {
+                    0
+                }
+            return calcEncodingId(videoRtpPacket.ssrc, layerId)
         }
     }
 }

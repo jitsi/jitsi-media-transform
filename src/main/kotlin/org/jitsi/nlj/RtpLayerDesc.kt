@@ -181,32 +181,10 @@ constructor(
         private const val AVERAGE_BITRATE_WINDOW_MS = 5000
 
         /**
-         * @param videoRtpPacket the video packet
-         * @return gets the server-side layer/encoding id (see
-         * [.getEncodingId]) of a video packet.
-         */
-        @JvmStatic
-        fun getEncodingId(videoRtpPacket: VideoRtpPacket): Long {
-            var encodingId = videoRtpPacket.ssrc
-            if (videoRtpPacket is Vp8Packet) {
-                // note(george) we've observed that a client may announce but not
-                // send simulcast (it is not clear atm who's to blame for this
-                // "bug", chrome or our client code). In any case, when this happens
-                // we "pretend" that the encoding of the packet is the base temporal
-                // layer of the rtp stream (ssrc) of the packet.
-                var tid = videoRtpPacket.temporalLayerIndex
-                if (tid < 0) {
-                    tid = 0
-                }
-                encodingId = encodingId or (tid.toLong() shl 32)
-            }
-            return encodingId
-        }
-
-        /**
          * Calculate the "id" of a layer based on its encoding, spatial, and temporal ID.
          * This is a server-side id and should not be confused with any encoding id defined
-         * in the client (such as the rid).
+         * in the client (such as the rid) or the encodingId.  This is used by the videobridge's
+         * adaptive source projection for filtering.
          */
         @JvmStatic
         fun getIndex(eid: Int, sid: Int, tid: Int): Int {

@@ -15,7 +15,7 @@
  */
 package org.jitsi.nlj
 
-import org.jitsi.nlj.RtpLayerDesc.Companion.getEncodingId
+import org.jitsi.nlj.RtpEncodingDesc.Companion.getEncodingId
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.utils.ArrayUtils
 import java.util.Collections
