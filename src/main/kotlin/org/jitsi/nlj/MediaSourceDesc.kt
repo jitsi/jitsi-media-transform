@@ -15,7 +15,6 @@
  */
 package org.jitsi.nlj
 
-import org.jitsi.nlj.RtpEncodingDesc.Companion.getEncodingId
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.utils.ArrayUtils
 import java.util.Collections
@@ -120,7 +119,7 @@ class MediaSourceDesc
         if (ArrayUtils.isNullOrEmpty(rtpEncodings)) {
             return null
         }
-        val encodingId = getEncodingId(videoRtpPacket)
+        val encodingId = videoRtpPacket.getEncodingId()
         val desc = layersById[encodingId]
         if (desc != null) {
             return desc

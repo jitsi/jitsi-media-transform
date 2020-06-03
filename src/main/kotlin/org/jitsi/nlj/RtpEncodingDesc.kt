@@ -140,34 +140,27 @@ constructor(
     }
 
     companion object {
-        private fun calcEncodingId(ssrc: Long, layerId: Int) =
+        fun calcEncodingId(ssrc: Long, layerId: Int) =
             ssrc or (layerId.toLong() shl 32)
-
-        /**
-         * @param videoRtpPacket the video packet
-         * @return gets the server-side layer/encoding id of a video packet.
-         * This is used by the encodings cache for fast lookup.  See
-         * [encodingId]
-         */
-        @JvmStatic
-        fun getEncodingId(videoRtpPacket: VideoRtpPacket): Long {
-            val layerId =
-                if (videoRtpPacket is Vp8Packet) {
-                    // note(george) we've observed that a client may announce but not
-                    // send simulcast (it is not clear atm who's to blame for this
-                    // "bug", chrome or our client code). In any case, when this happens
-                    // we "pretend" that the encoding of the packet is the base temporal
-                    // layer of the encoding.
-                    val tid = videoRtpPacket.temporalLayerIndex
-                    if (tid >= 0) {
-                        tid
-                    } else {
-                        0
-                    }
-                } else {
-                    0
-                }
-            return calcEncodingId(videoRtpPacket.ssrc, layerId)
-        }
     }
+}
+
+fun VideoRtpPacket.getEncodingId(): Long {
+    val layerId =
+        if (this is Vp8Packet) {
+            // note(george) we've observed that a client may announce but not
+            // send simulcast (it is not clear atm who's to blame for this
+            // "bug", chrome or our client code). In any case, when this happens
+            // we "pretend" that the encoding of the packet is the base temporal
+            // layer of the encoding.
+            val tid = temporalLayerIndex
+            if (tid >= 0) {
+                tid
+            } else {
+                0
+            }
+        } else {
+            0
+        }
+    return RtpEncodingDesc.calcEncodingId(ssrc, layerId)
 }
