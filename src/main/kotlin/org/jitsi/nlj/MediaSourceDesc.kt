@@ -18,6 +18,8 @@ package org.jitsi.nlj
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.utils.ArrayUtils
 import java.util.Collections
+import java.util.NavigableMap
+import java.util.TreeMap
 
 /**
  * Represents a collection of [RtpLayerDesc]s that encode the same
@@ -55,7 +57,7 @@ class MediaSourceDesc
     /**
      * Allow the lookup of a layer by index.
      */
-    private val layersByIndex: MutableMap<Int, RtpLayerDesc> = HashMap()
+    private val layersByIndex: NavigableMap<Int, RtpLayerDesc> = TreeMap()
 
     /**
      * Get a view of the source's RTP layers, in quality order.
@@ -89,15 +91,20 @@ class MediaSourceDesc
      * index. The "stable" bitrate is measured on every new frame and with a
      * 5000ms window.
      *
-     * @return the last "stable" bitrate (bps) of the encoding at the specified
-     * index.
+     * If the bitrate for the specified index is 0, return bitrate of the highest-
+     * index layer less than the index with a non-zero bitrate.
+     *
+     * @return the last "stable" bitrate (bps) of the encoding with a non-zero rate
+     * at or below the specified index.
      */
     fun getBitrateBps(nowMs: Long, idx: Int): Long {
-        val layer = getRtpLayerByQualityIdx(idx) ?: return 0
-
-        // TODO: previous code returned a lower layer if this layer's bitrate was 0.
-        // Do we still need this?
-        return layer.getBitrateBps(nowMs)
+        for (entry in layersByIndex.tailMap(idx, true).descendingMap()) {
+            val bps = entry.value.getBitrateBps(nowMs)
+            if (bps > 0) {
+                return bps
+            }
+        }
+        return 0
     }
 
     @Synchronized
