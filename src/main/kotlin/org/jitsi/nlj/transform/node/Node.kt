@@ -325,7 +325,7 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
         var maxProcessingDurationNs: Long = -1
     ) {
         private val maxProcessingDurationMs: Double
-            get() = maxProcessingDurationNs / 1000_000.0
+            get() = if (maxProcessingDurationMs > 0) maxProcessingDurationNs / 1_000_000.0 else -1.0
 
         fun appendTo(block: NodeStatsBlock) {
             block.apply {
