@@ -16,10 +16,12 @@
 
 package org.jitsi.nlj.rtp.codec.vp9
 
+import org.jitsi.nlj.RtpEncodingDesc
+import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi.nlj.rtp.ParsedVideoPacket
-import org.jitsi.utils.logging2.cwarn
 import org.jitsi.rtp.extensions.bytearray.hashCodeOfSegment
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.utils.logging2.cwarn
 import org.jitsi_modified.impl.neomedia.codec.video.vp9.DePacketizer
 
 /**
@@ -77,6 +79,8 @@ class Vp9Packet private constructor (
 
     val hasTL0PICIDX = DePacketizer.VP9PayloadDescriptor.hasTL0PICIDX(buffer, payloadOffset, payloadLength)
 
+    val hasScalabilityStructure = DePacketizer.VP9PayloadDescriptor.hasScalabilityStructure(buffer, payloadOffset, payloadLength)
+
     private var _TL0PICIDX = TL0PICIDX ?: DePacketizer.VP9PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
 
     var TL0PICIDX: Int
@@ -111,6 +115,93 @@ class Vp9Packet private constructor (
 
     val usesInterLayerDependency: Boolean = DePacketizer.VP9PayloadDescriptor.usesInterLayerDependency(buffer, payloadOffset, payloadLength)
 
+    fun getScalabilityStructure(
+        eid: Int = 0,
+        baseFrameRate: Double = 30.0
+    ): RtpEncodingDesc? {
+        var off = DePacketizer.VP9PayloadDescriptor.getScalabilityStructureOffset(buffer, payloadOffset, payloadLength)
+        if (off == -1) {
+            return null
+        }
+        val ssHeader = buffer[off].toInt()
+
+        val numSpatial = ((ssHeader and 0xE0) shr 5) + 1
+        val hasResolution = (ssHeader and Y_BIT) != 0
+        val hasPictureGroup = (ssHeader and G_BIT) != 0
+
+        off++
+
+        val heights = if (hasResolution) Array(numSpatial) { 0 } else null
+        if (hasResolution) {
+            for (i in 0 until numSpatial) {
+                off += 2 // We only record height, not width
+
+                heights!![i] = ((buffer[off].toInt() and 0xff) shl 8) or
+                    (buffer[off + 1].toInt() and 0xff)
+                off += 2
+            }
+        }
+
+        val tlCounts = Array(MAX_NUM_TLAYERS) { 0 }
+        val groupSize = if (hasPictureGroup) {
+            val groupSize = buffer[off].toInt()
+            off++
+
+            for (i in 0 until groupSize) {
+                val descByte = buffer[off].toInt()
+                val tid = (descByte and 0xE0) shr 5
+                val numRefs = (descByte and 0x0C) shr 2
+                off++
+
+                tlCounts[tid]++
+
+                /* TODO: do something with U, R, P_DIFF? */
+                for (j in 0 until numRefs) {
+                    off++
+                }
+            }
+            groupSize
+        } else {
+            tlCounts[0] = 1
+            1
+        }
+
+        val numTemporal = tlCounts.indexOfLast { it > 0 } + 1
+
+        for (t in 1 until numTemporal) {
+            /* Sum up frames per picture group */
+            tlCounts[t] += tlCounts[t - 1]
+        }
+
+        val layers = ArrayList<RtpLayerDesc>()
+
+        for (s in 0 until numSpatial) {
+            for (t in 0 until numTemporal) {
+                val dependencies = ArrayList<RtpLayerDesc>()
+                if (s > 0) {
+                    /* TODO: wrong for K-SVC */
+                    layers.find { it.sid == s - 1 && it.tid == t }?.let { dependencies.add(it) }
+                }
+                if (t > 0) {
+                    layers.find { it.sid == s && it.tid == t - 1 }?.let { dependencies.add(it) }
+                }
+                val layerDesc = RtpLayerDesc(
+                    eid = eid,
+                    tid = t,
+                    sid = s,
+                    height = if (hasResolution) { heights!![s] } else { RtpLayerDesc.NO_HEIGHT },
+                    frameRate = if (hasPictureGroup) { baseFrameRate * tlCounts[t] / groupSize } else { RtpLayerDesc.NO_FRAME_RATE },
+                    dependencyLayers = if (dependencies.isNotEmpty()) { dependencies.toArray(arrayOf()) } else { null }
+                )
+                layers.add(layerDesc)
+            }
+        }
+
+        /* TODO */
+
+        return RtpEncodingDesc(ssrc, layers.toArray(arrayOf()))
+    }
+
     /* TODO */
     override var height: Int = height ?: -1
 
@@ -144,5 +235,10 @@ class Vp9Packet private constructor (
 
     companion object {
         private val logger = createLogger()
+
+        private val Y_BIT = 1 shl 4
+        private val G_BIT = 1 shl 3
+
+        private val MAX_NUM_TLAYERS = 8
     }
 }

@@ -1,7 +1,10 @@
 package org.jitsi.nlj.rtp.codec.vp9
 
 import io.kotlintest.shouldBe
+import io.kotlintest.shouldNotBe
 import io.kotlintest.specs.ShouldSpec
+import org.jitsi.nlj.RtpEncodingDesc
+import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi_modified.impl.neomedia.codec.video.vp9.DePacketizer
 import javax.xml.bind.DatatypeConverter
 
@@ -19,7 +22,8 @@ class Vp9PacketTest : ShouldSpec() {
         val isSwitchingUpPoint: Boolean,
         val usesInterLayerDependency: Boolean,
         val tL0PICIDX: Int?,
-        val descriptorSize: Int
+        val descriptorSize: Int,
+        val scalabilityStructure: RtpEncodingDesc? = null
     ) {
         constructor(
             hexData: String,
@@ -34,7 +38,8 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint: Boolean,
             usesInterLayerDependency: Boolean,
             tL0PICIDX: Int?,
-            descriptorSize: Int
+            descriptorSize: Int,
+            scalabilityStructure: RtpEncodingDesc? = null
         ) : this(data = DatatypeConverter.parseHexBinary(hexData),
             isStartOfFrame = isStartOfFrame,
             isEndOfFrame = isEndOfFrame,
@@ -47,7 +52,9 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = isSwitchingUpPoint,
             usesInterLayerDependency = usesInterLayerDependency,
             tL0PICIDX = tL0PICIDX,
-            descriptorSize = descriptorSize)
+            descriptorSize = descriptorSize,
+            scalabilityStructure = scalabilityStructure
+        )
     }
 
     /* Packets captured from Chrome VP9 call */
@@ -111,7 +118,19 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
-            descriptorSize = 27
+            descriptorSize = 27,
+            scalabilityStructure = RtpEncodingDesc(0x6098017bL,
+                arrayOf(
+                    RtpLayerDesc(0, 0, 0, 180, 7.5, null),
+                    RtpLayerDesc(0, 1, 0, 180, 15.0, null /* TODO */),
+                    RtpLayerDesc(0, 2, 0, 180, 30.0, null /* TODO */),
+                    RtpLayerDesc(0, 0, 1, 360, 7.5, null /* TODO */),
+                    RtpLayerDesc(0, 1, 1, 360, 15.0, null /* TODO */),
+                    RtpLayerDesc(0, 2, 1, 360, 30.0, null /* TODO */),
+                    RtpLayerDesc(0, 0, 2, 720, 7.5, null /* TODO */),
+                    RtpLayerDesc(0, 1, 2, 720, 15.0, null /* TODO */),
+                    RtpLayerDesc(0, 2, 2, 720, 30.0, null /* TODO */)
+                    ))
         ),
         SampleVp9Packet(
             "906536b79f3077686098017b" +
@@ -397,7 +416,12 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = null,
-            descriptorSize = 11),
+            descriptorSize = 11,
+            scalabilityStructure = RtpEncodingDesc(0x184b0cc4L,
+                arrayOf(
+                    RtpLayerDesc(0, 0, 0, 1158, 30.0, null)
+            ))
+        ),
         SampleVp9Packet(
             "90656dca440dac37184b0cc4" +
                 "bede0002" + "326bd1ec51000200" +
@@ -495,7 +519,12 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = null,
-            descriptorSize = 11),
+            descriptorSize = 11,
+            scalabilityStructure = RtpEncodingDesc(0x6538459eL,
+                arrayOf(
+                    RtpLayerDesc(0, 0, 0, 720, 30.0, null)
+            ))
+        ),
 
         /* Live video - Firefox 77 Nightly */
         SampleVp9Packet(
@@ -548,7 +577,14 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = 91,
-            descriptorSize = 20)
+            descriptorSize = 20,
+            scalabilityStructure = RtpEncodingDesc(0xa4d04528L,
+                arrayOf(
+                    RtpLayerDesc(0, 0, 0, 720, 7.5, null),
+                    RtpLayerDesc(0, 1, 0, 720, 15.0, null),
+                    RtpLayerDesc(0, 2, 0, 720, 30.0, null)
+                ))
+        )
         )
 
     /*
@@ -598,6 +634,27 @@ class Vp9PacketTest : ShouldSpec() {
                     } else { p.hasTL0PICIDX shouldBe false }
                     p.isSwitchingUpPoint shouldBe t.isSwitchingUpPoint
                     p.usesInterLayerDependency shouldBe t.usesInterLayerDependency
+                    if (t.scalabilityStructure != null) {
+                        val tss = t.scalabilityStructure
+                        p.hasScalabilityStructure shouldBe true
+                        val ss = p.getScalabilityStructure()
+                        ss shouldNotBe null
+                        ss!!.primarySSRC shouldBe tss.primarySSRC
+                        ss.layers.size shouldBe tss.layers.size
+                        for ((index, layer) in ss.layers.withIndex()) {
+                            val tLayer = tss.layers[index]
+                            layer.layerId shouldBe tLayer.layerId
+                            layer.index shouldBe tLayer.index
+                            layer.sid shouldBe tLayer.sid
+                            layer.tid shouldBe tLayer.tid
+                            layer.height shouldBe tLayer.height
+                            layer.frameRate shouldBe tLayer.frameRate
+                            /* TODO: dependency layers */
+                        }
+                    } else {
+                        p.hasScalabilityStructure shouldBe false
+                        p.getScalabilityStructure() shouldBe null
+                    }
 
                     val descSz = DePacketizer.VP9PayloadDescriptor.getSize(p.buffer, p.payloadOffset, p.payloadLength)
                     descSz shouldBe t.descriptorSize

@@ -147,12 +147,12 @@ constructor(
         /**
          * A value used to designate the absence of height information.
          */
-        private const val NO_HEIGHT = -1
+        const val NO_HEIGHT = -1
 
         /**
          * A value used to designate the absence of frame rate information.
          */
-        private const val NO_FRAME_RATE = -1.0
+        const val NO_FRAME_RATE = -1.0
 
         /**
          * The default window size in ms for the bitrate estimation.

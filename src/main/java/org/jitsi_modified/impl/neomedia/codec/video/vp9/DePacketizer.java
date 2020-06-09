@@ -169,6 +169,21 @@ public class DePacketizer
         }
 
         /**
+         * Returns <tt>true</tt> if the packet contains a scalabity structure
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
+         *
+         * @return  <tt>true</tt> if the packet contains a scalability structure,
+         * false otherwise
+         */
+        public static boolean hasScalabilityStructure(byte[] buf, int off, int len)
+        {
+            return isValid(buf, off, len) && (buf[off] & V_BIT) != 0;
+        }
+
+        /**
          * Returns <tt>true</tt> if the packet has a picture ID.
          *
          * @param buf the byte buffer that holds the VP9 payload.
@@ -469,14 +484,14 @@ public class DePacketizer
 
         /**
          * The size in bytes of the Payload Descriptor at off
-         * <tt>off</tt> in <tt>buf</tt>. The size is between 1 and XXX.
+         * <tt>off</tt> in <tt>buf</tt>. The size is at least 1.
          *
          * @param buf  buf
          * @param off off
          * @param len len
          * @return The size in bytes of the Payload Descriptor at off
          * <tt>off</tt> in <tt>buf</tt>, or -1 if the buffer is not a valid
-         * VP9 Payload Descriptor. The size is between 1 and XXX.
+         * VP9 Payload Descriptor. The size is at least 1.
          */
         public static int getSize(byte[] buf, int off, int len)
         {
@@ -539,6 +554,55 @@ public class DePacketizer
             }
 
             return pos - off;
+        }
+
+        /**
+         * The offset of the scalability structure within the buffer, if
+         * the buffer contains a VP9 packet with a scalability structure; otherwise -1.
+         *
+         * @param buf  buf
+         * @param off off
+         * @param len len
+         * @return The size in bytes of the Payload Descriptor at off
+         * <tt>off</tt> in <tt>buf</tt>, or -1 if the buffer is not a valid
+         * VP9 Payload Descriptor. The size is at least 1.
+         */
+        public static int getScalabilityStructureOffset(byte[] buf, int off, int len)
+        {
+            if (!hasScalabilityStructure(buf, off, len))
+            {
+                return -1;
+            }
+
+            int pos = off + 1;
+
+            if ((buf[off] & I_BIT) != 0)
+            {
+                boolean extended = (buf[pos] & M_BIT) != 0;
+                pos++;
+                if (extended)
+                {
+                    pos++;
+                }
+            }
+
+            if ((buf[off] & L_BIT) != 0)
+            {
+                pos++;
+                if ((buf[off] & F_BIT) == 0)
+                {
+                    pos++;
+                }
+            }
+
+            if ((buf[off] & F_BIT) != 0 && (buf[off] & P_BIT) != 0)
+            {
+                do {
+                    pos++;
+                } while ((buf[pos] & N_BIT) != 0);
+            }
+
+            return pos;
         }
     }
 }
