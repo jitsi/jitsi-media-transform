@@ -40,7 +40,6 @@ class Vp9Packet private constructor (
     isStartOfFrame: Boolean?,
     isEndOfFrame: Boolean?,
     encodingIndex: Int?,
-    height: Int?,
     pictureId: Int?,
     TL0PICIDX: Int?
 ) : ParsedVideoPacket(buffer, offset, length, encodingIndex) {
@@ -54,7 +53,6 @@ class Vp9Packet private constructor (
         isStartOfFrame = null,
         isEndOfFrame = null,
         encodingIndex = null,
-        height = null,
         pictureId = null,
         TL0PICIDX = null
     )
@@ -205,9 +203,6 @@ class Vp9Packet private constructor (
         return RtpEncodingDesc(ssrc, layers.toArray(arrayOf()))
     }
 
-    /* TODO */
-    override var height: Int = height ?: -1
-
     /**
      * For [Vp9Packet] the payload excludes the VP9 Payload Descriptor.
      */
@@ -230,7 +225,6 @@ class Vp9Packet private constructor (
             isStartOfFrame = isStartOfFrame,
             isEndOfFrame = isEndOfFrame,
             encodingIndex = qualityIndex,
-            height = height,
             pictureId = pictureId,
             TL0PICIDX = TL0PICIDX
         )

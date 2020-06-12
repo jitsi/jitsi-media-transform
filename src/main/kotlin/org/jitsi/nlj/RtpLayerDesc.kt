@@ -62,6 +62,22 @@ constructor(
     }
 
     /**
+     * Constructor that clones an existing layer desc, inheriting its statistics,
+     * modifying only specific values.
+     */
+    constructor(
+        orig: RtpLayerDesc,
+        eid: Int = orig.eid,
+        tid: Int = orig.tid,
+        sid: Int = orig.sid,
+        height: Int = orig.height,
+        frameRate: Double = orig.frameRate,
+        dependencyLayers: Array<RtpLayerDesc>? = orig.dependencyLayers
+    ) {
+        RtpLayerDesc(eid, tid, sid, height, frameRate, dependencyLayers)
+    }
+
+    /**
      * The [RateStatistics] instance used to calculate the receiving
      * bitrate of this RTP layer.
      */

@@ -132,7 +132,7 @@ class MediaSourceDesc
     }
 
     @Synchronized
-    private fun findRtpEncodingDesc(ssrc: Long): RtpEncodingDesc? =
+    fun findRtpEncodingDesc(ssrc: Long): RtpEncodingDesc? =
         rtpEncodings.find { it.matches(ssrc) }
 
     @Synchronized

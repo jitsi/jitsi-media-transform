@@ -29,6 +29,8 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.RtpLayerDesc
+import org.jitsi.nlj.format.Vp9PayloadType
+import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
 import org.jitsi.rtp.rtp.RtpPacket
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -44,10 +46,6 @@ class VideoParser(
     private val numPacketsDroppedUnknownPt = AtomicInteger()
     private val numPacketsDroppedNoEncoding = AtomicInteger()
 
-    // TODO: things we want to detect here:
-    // does this packet belong to a keyframe?
-    // does this packet represent the start of a frame?
-    // does this packet represent the end of a frame?
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val packet = packetInfo.packetAs<RtpPacket>()
         val payloadType = streamInformationStore.rtpPayloadTypes[packet.payloadType.toByte()] ?: run {
@@ -60,6 +58,11 @@ class VideoParser(
                 is Vp8PayloadType -> {
                     val vp8Packet = packetInfo.packet.toOtherType(::Vp8Packet)
                     packetInfo.packet = vp8Packet
+                    packetInfo.resetPayloadVerification()
+                }
+                is Vp9PayloadType -> {
+                    val vp9Packet = packetInfo.packet.toOtherType(::Vp9Packet)
+                    packetInfo.packet = vp9Packet
                     packetInfo.resetPayloadVerification()
                 }
             }
