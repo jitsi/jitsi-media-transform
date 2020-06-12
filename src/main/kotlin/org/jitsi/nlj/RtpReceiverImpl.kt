@@ -66,6 +66,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
 import org.jitsi.nlj.RtpReceiverConfig.Config
+import org.jitsi.nlj.transform.node.incoming.LayerLookup
 import org.jitsi.nlj.transform.node.incoming.Vp9Parser
 import org.jitsi.nlj.util.BufferPool
 
@@ -203,6 +204,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                     node(VideoParser(streamInformationStore, logger))
                                     node(Vp8Parser(logger))
                                     node(Vp9Parser(logger))
+                                    node(LayerLookup(logger))
                                     node(videoBitrateCalculator)
                                     node(packetHandlerWrapper)
                                 }

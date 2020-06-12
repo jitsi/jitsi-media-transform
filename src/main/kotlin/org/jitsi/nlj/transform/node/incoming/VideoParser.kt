@@ -15,11 +15,8 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import org.jitsi.nlj.Event
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.SetMediaSourcesEvent
 import org.jitsi.nlj.format.Vp8PayloadType
-import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
@@ -27,24 +24,20 @@ import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.rtp.extensions.bytearray.toHex
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
-import org.jitsi.nlj.MediaSourceDesc
-import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi.nlj.format.Vp9PayloadType
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
 import org.jitsi.rtp.rtp.RtpPacket
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Parse video packets at a codec level and set appropriate meta-information
+ * Parse video packets at a codec level
  */
 class VideoParser(
     private val streamInformationStore: ReadOnlyStreamInformationStore,
     parentLogger: Logger
 ) : TransformerNode("Video parser") {
     private val logger = createChildLogger(parentLogger)
-    private var sources: Array<MediaSourceDesc> = arrayOf()
     private val numPacketsDroppedUnknownPt = AtomicInteger()
-    private val numPacketsDroppedNoEncoding = AtomicInteger()
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val packet = packetInfo.packetAs<RtpPacket>()
@@ -71,40 +64,13 @@ class VideoParser(
             return null
         }
 
-        val videoPacket = packetInfo.packetAs<VideoRtpPacket>()
-        val encodingDesc = findRtpLayerDesc(videoPacket) ?: run {
-            logger.warn("Unable to find encoding matching packet! packet=$videoPacket, encodings=${sources.joinToString(separator = "\n", limit = 1, truncated = "[${sources.size - 1} more source descriptions omitted]")}")
-            numPacketsDroppedNoEncoding.incrementAndGet()
-            return null
-        }
-        videoPacket.qualityIndex = encodingDesc.index
-
         return packetInfo
-    }
-
-    private fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? {
-        for (source in sources) {
-            source.findRtpLayerDesc(packet)?.let {
-                return it
-            }
-        }
-        return null
-    }
-
-    override fun handleEvent(event: Event) {
-        when (event) {
-            is SetMediaSourcesEvent -> {
-                sources = event.mediaSourceDescs
-            }
-        }
-        super.handleEvent(event)
     }
 
     override fun trace(f: () -> Unit) = f.invoke()
 
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
-            addNumber("num_packets_dropped_no_encoding", numPacketsDroppedNoEncoding.get())
             addNumber("num_packets_dropped_unknown_pt", numPacketsDroppedUnknownPt.get())
         }
     }
