@@ -100,22 +100,6 @@ constructor(
             "layers=${layers.joinToString(separator = "\n    ")}"
     }
 
-    fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? =
-        layers.find { it.matches(packet) }
-
-    fun matches(packet: VideoRtpPacket): Boolean {
-        if (!matches(packet.ssrc)) {
-            return false
-        } else if (layers.isEmpty()) {
-            return true // ???
-        } else for (layer in layers) {
-            if (layer.matches(packet)) {
-                return true
-            }
-        }
-        return false
-    }
-
     /**
      * Gets a boolean indicating whether or not the SSRC specified in the
      * arguments matches this encoding or not.
