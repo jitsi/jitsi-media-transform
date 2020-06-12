@@ -66,6 +66,8 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
 import org.jitsi.nlj.RtpReceiverConfig.Config
+import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
+import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
 import org.jitsi.nlj.transform.node.incoming.LayerLookup
 import org.jitsi.nlj.transform.node.incoming.Vp9Parser
 import org.jitsi.nlj.util.BufferPool
@@ -161,6 +163,12 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
         incomingPacketQueue.setErrorHandler(queueErrorCounter)
 
+        val videoPathTail = pipeline {
+            node(LayerLookup(logger))
+            node(videoBitrateCalculator)
+            node(packetHandlerWrapper)
+        }
+
         inputTreeRoot = pipeline {
             node(packetStreamStats)
             demux("SRTP/SRTCP") {
@@ -202,11 +210,29 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                     node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
                                     node(paddingOnlyDiscarder)
                                     node(VideoParser(streamInformationStore, logger))
-                                    node(Vp8Parser(logger))
-                                    node(Vp9Parser(logger))
-                                    node(LayerLookup(logger))
-                                    node(videoBitrateCalculator)
-                                    node(packetHandlerWrapper)
+                                    demux("Payload Type") {
+                                        packetPath {
+                                            name = "VP8"
+                                            predicate = PacketPredicate { it is Vp8Packet }
+                                            path = pipeline {
+                                                node(Vp8Parser(logger))
+                                                node(videoPathTail)
+                                            }
+                                            packetPath {
+                                                name = "VP9"
+                                                predicate = PacketPredicate { it is Vp9Packet }
+                                                path = pipeline {
+                                                    node(Vp9Parser(logger))
+                                                    node(videoPathTail)
+                                                }
+                                            }
+                                            packetPath {
+                                                name = "Other payloads"
+                                                predicate = PacketPredicate { true }
+                                                path = videoPathTail
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
