@@ -58,6 +58,8 @@ class Vp9Parser(
                 }
             }
         }
+        /* VP9 marks keyframes in every packet of the keyframe - only count the start of the frame so the count is correct. */
+        /* Alternately we could keep track of keyframes we've already seen, by timestamp, but that seems unnecessary. */
         if (vp9Packet.isKeyframe && vp9Packet.isStartOfFrame) {
             logger.cdebug { "Received a keyframe for ssrc ${vp9Packet.ssrc} ${vp9Packet.sequenceNumber}" }
             numKeyframes++
