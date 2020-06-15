@@ -51,7 +51,6 @@ class Vp8Parser(
 
     override fun observe(packetInfo: PacketInfo) {
         val vp8Packet = packetInfo.packet as Vp8Packet
-        // If this was part of a keyframe, it will have it set
         if (vp8Packet.height > -1) {
             // TODO: handle case where new height is from a packet older than the
             // latest height we've seen.
