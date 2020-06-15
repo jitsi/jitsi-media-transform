@@ -52,9 +52,9 @@ class Vp9Parser(
             // latest SS we've seen.
             val enc = findRtpEncodingDesc(vp9Packet)
             if (enc != null) {
-                val newEnc = vp9Packet.getScalabilityStructure(eid = enc.layers[0].eid)
+                val newEnc = vp9Packet.getScalabilityStructure(eid = enc.second.layers[0].eid)
                 if (newEnc != null) {
-                    enc.layers = newEnc.layers
+                    enc.first.setEncodingLayers(newEnc.layers, vp9Packet.ssrc)
                 }
             }
         }
@@ -81,10 +81,11 @@ class Vp9Parser(
         super.handleEvent(event)
     }
 
-    private fun findRtpEncodingDesc(packet: VideoRtpPacket): RtpEncodingDesc? {
+    /* TODO: this return value is clumsy */
+    private fun findRtpEncodingDesc(packet: VideoRtpPacket): Pair<MediaSourceDesc, RtpEncodingDesc>? {
         for (source in sources) {
             source.findRtpEncodingDesc(packet.ssrc)?.let {
-                return it
+                return Pair(source, it)
             }
         }
         return null
