@@ -132,14 +132,33 @@ constructor(
     fun getBitrateBps(nowMs: Long): Long {
         var bitrate = rateStatistics.getRate(nowMs)
 
-        /* TODO: does the wrong thing if we have multiple dependencies */
+        val rates = HashMap<Int, Long>()
+
+        getBitrateBps(nowMs, rates)
+
+        return rates.values.sum()
+    }
+
+    /**
+     * Recursively adds the bitrate (in bps) of this [RTPLayerDesc] and
+     * its dependencies in the map passed in as an argument.
+     *
+     * This is necessary to ensure we don't double-count layers in cases
+     * of multiple dependencies.
+     *
+     * @param nowMs
+     */
+    private fun getBitrateBps(nowMs: Long, rates: MutableMap<Int, Long>) {
+        if (rates.containsKey(index)) {
+            return
+        }
+        rates[index] = rateStatistics.getRate(nowMs)
+
         if (dependencyLayers != null) {
             for (dependency in dependencyLayers) {
-                bitrate += dependency.getBitrateBps(nowMs)
+                dependency.getBitrateBps(nowMs, rates)
             }
         }
-
-        return bitrate
     }
 
     /**
