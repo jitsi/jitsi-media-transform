@@ -73,9 +73,7 @@ constructor(
         height: Int = orig.height,
         frameRate: Double = orig.frameRate,
         dependencyLayers: Array<RtpLayerDesc>? = orig.dependencyLayers
-    ) {
-        RtpLayerDesc(eid, tid, sid, height, frameRate, dependencyLayers)
-    }
+    ) : this(eid, tid, sid, height, frameRate, dependencyLayers)
 
     /**
      * The [RateStatistics] instance used to calculate the receiving
