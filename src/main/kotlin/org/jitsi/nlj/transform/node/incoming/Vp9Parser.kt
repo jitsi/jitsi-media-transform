@@ -50,8 +50,9 @@ class Vp9Parser(
         if (vp9Packet.hasScalabilityStructure) {
             // TODO: handle case where new SS is from a packet older than the
             // latest SS we've seen.
-            val (src, enc) = findRtpEncodingDesc(vp9Packet)
-            if (src != null && enc != null) {
+            val srcAndEnc = findRtpEncodingDesc(vp9Packet)
+            if (srcAndEnc != null) {
+                val (src, enc) = srcAndEnc
                 val newEnc = vp9Packet.getScalabilityStructure(eid = enc.layers[0].eid)
                 if (newEnc != null) {
                     src.setEncodingLayers(newEnc.layers, vp9Packet.ssrc)
@@ -82,13 +83,13 @@ class Vp9Parser(
     }
 
     /* TODO: this return value is clumsy */
-    private fun findRtpEncodingDesc(packet: VideoRtpPacket): Pair<MediaSourceDesc?, RtpEncodingDesc?> {
+    private fun findRtpEncodingDesc(packet: VideoRtpPacket): Pair<MediaSourceDesc, RtpEncodingDesc>? {
         for (source in sources) {
             source.findRtpEncodingDesc(packet.ssrc)?.let {
                 return Pair(source, it)
             }
         }
-        return Pair(null, null)
+        return null
     }
 
     override fun getNodeStats(): NodeStatsBlock {
