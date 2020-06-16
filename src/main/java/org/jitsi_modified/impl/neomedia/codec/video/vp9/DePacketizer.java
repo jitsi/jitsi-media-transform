@@ -65,7 +65,11 @@ public class DePacketizer
      */
     private static final byte V_BIT = (byte) (1 << 1);
 
-    /* TODO: Z bit (not yet in spec) */
+    /**
+     * Z bit from first byte of the Payload Descriptor:
+     * Not an upper-level reference frame
+     */
+    private static final byte Z_BIT = (byte)1;
 
     /**
      * M bit from the first picture ID byte of the Payload Descriptor:
@@ -181,6 +185,23 @@ public class DePacketizer
         public static boolean hasScalabilityStructure(byte[] buf, int off, int len)
         {
             return isValid(buf, off, len) && (buf[off] & V_BIT) != 0;
+        }
+
+        /**
+         * Returns <tt>true</tt> if the packet might be an upper-level reference.
+         *
+         * (Note this is inverted from the sense of the Z bit in the payload header.)
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
+         *
+         * @return  <tt>true</tt> if the packet contains a scalability structure,
+         * false otherwise
+         */
+        public static boolean isUpperLevelReference(byte[] buf, int off, int len)
+        {
+            return isValid(buf, off, len) && (buf[off] & Z_BIT) == 0;
         }
 
         /**

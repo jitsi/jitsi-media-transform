@@ -82,6 +82,8 @@ class Vp9Packet private constructor (
 
     val hasScalabilityStructure = DePacketizer.VP9PayloadDescriptor.hasScalabilityStructure(buffer, payloadOffset, payloadLength)
 
+    val isUpperLevelReference = DePacketizer.VP9PayloadDescriptor.isUpperLevelReference(buffer, payloadOffset, payloadLength)
+
     private var _TL0PICIDX = TL0PICIDX ?: DePacketizer.VP9PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
 
     var TL0PICIDX: Int

@@ -17,6 +17,7 @@ class Vp9PacketTest : ShouldSpec() {
         val isKeyframe: Boolean,
         val pictureId: Int?,
         val hasExtendedPictureId: Boolean,
+        val isUpperLevelReference: Boolean,
         val tid: Int?,
         val sid: Int?,
         val isSwitchingUpPoint: Boolean,
@@ -33,6 +34,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe: Boolean,
             pictureId: Int?,
             hasExtendedPictureId: Boolean,
+            isUpperLevelReference: Boolean,
             tid: Int?,
             sid: Int?,
             isSwitchingUpPoint: Boolean,
@@ -47,6 +49,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = isKeyframe,
             pictureId = pictureId,
             hasExtendedPictureId = hasExtendedPictureId,
+            isUpperLevelReference = isUpperLevelReference,
             tid = tid,
             sid = sid,
             isSwitchingUpPoint = isSwitchingUpPoint,
@@ -65,7 +68,7 @@ class Vp9PacketTest : ShouldSpec() {
         "906536b69f3077686098017b" +
                 // RTP header extension
                 "bede0002" + "3202168751210700" +
-                // I=1,P=0,L=1,F=0,B=1,E=0,V=1,(Z=0)
+                // I=1,P=0,L=1,F=0,B=1,E=0,V=1,Z=0
                 "aa" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -113,6 +116,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 0,
             isSwitchingUpPoint = false,
@@ -135,7 +139,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536b79f3077686098017b" +
                 "bede0002" + "3202168751210800" +
-                // I=1,P=0,L=1,F=0,B=0,E=0,V=0,(Z=0)
+                // I=1,P=0,L=1,F=0,B=0,E=0,V=0,Z=0
                 "a0" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -151,6 +155,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 0,
             isSwitchingUpPoint = false,
@@ -160,7 +165,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536bb9f3077686098017b" +
                 "bede0002" + "32021ba651210c00" +
-                // I=1,P=0,L=1,F=0,B=0,E=1,V=0,(Z=0)
+                // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=0
                 "a4" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -176,6 +181,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 0,
             isSwitchingUpPoint = false,
@@ -185,7 +191,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536bc9f3077686098017b" +
                 "bede0002" + "32021ba651210d00" +
-                // I=1,P=0,L=1,F=0,B=1,E=0,V=0,(Z=0)
+                // I=1,P=0,L=1,F=0,B=1,E=0,V=0,Z=0
                 "a8" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -201,6 +207,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 1,
             isSwitchingUpPoint = false,
@@ -210,7 +217,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536c09f3077686098017b" +
                 "bede0002" + "320221cb51211100" +
-                // I=1,P=0,L=1,F=0,B=0,E=0,V=0,(Z=0)
+                // I=1,P=0,L=1,F=0,B=0,E=0,V=0,Z=0
                 "a0" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -226,6 +233,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 1,
             isSwitchingUpPoint = false,
@@ -235,7 +243,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536c39f3077686098017b" +
                 "bede0002" + "320227f051211400" +
-                // I=1,P=0,L=1,F=0,B=0,E=1,V=0,(Z=0)
+                // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=0
                 "a4" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -251,6 +259,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 1,
             isSwitchingUpPoint = false,
@@ -260,7 +269,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536c49f3077686098017b" +
                 "bede0002" + "320227f051211500" +
-                // I=1,P=0,L=1,F=0,B=1,E=0,V=0,(Z=1)
+                // I=1,P=0,L=1,F=0,B=1,E=0,V=0,Z=1
                 "a9" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -276,6 +285,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = 0,
             sid = 2,
             isSwitchingUpPoint = false,
@@ -285,7 +295,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "90e536dd9f3077686098017b" +
                 "bede0002" + "32025a1d51212e00" +
-                // I=1,P=0,L=1,F=0,B=0,E=1,V=0,(Z=1)
+                // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=1
                 "a5" +
                 // M=1,PID=0x1e65=7781
                 "9e65" +
@@ -301,6 +311,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = 0,
             sid = 2,
             isSwitchingUpPoint = false,
@@ -310,7 +321,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536de9f3081f46098017b" +
                 "bede0002" + "32025a1d51212f00" +
-                // I=1,P=1,L=1,F=0,B=1,E=1,V=0,(Z=1)
+                // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
                 "ed" +
                 // M=1,PID=0x1e66=7782
                 "9e66" +
@@ -326,6 +337,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7782,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = 2,
             sid = 0,
             isSwitchingUpPoint = true,
@@ -335,7 +347,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "906536df9f3081f46098017b" +
                 "bede0002" + "32025a1d51213000" +
-                // I=1,P=1,L=1,F=0,B=1,E=1,V=0,(Z=1)
+                // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
                 "ed" +
                 // M=1,PID=0x1e66=7782
                 "9e66" +
@@ -351,6 +363,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7782,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = 2,
             sid = 1,
             isSwitchingUpPoint = true,
@@ -360,7 +373,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "90e536e09f3081f46098017b" +
                 "bede0002" + "32025a1d51213100" +
-                // I=1,P=1,L=1,F=0,B=1,E=1,V=0,(Z=1)
+                // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
                 "ed" +
                 // M=1,PID=0x1e66=7782
                 "9e66" +
@@ -376,6 +389,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7782,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = 2,
             sid = 2,
             isSwitchingUpPoint = true,
@@ -387,7 +401,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "90656dc9440dac37184b0cc4" +
                 "bede0002" + "326bcdd351000100" +
-                // I=1,P=0,L=0,F=0,B=1,E=0,V=1,(Z=1)
+                // I=1,P=0,L=0,F=0,B=1,E=0,V=1,Z=1
                 "8b" +
                 // M=1,PID=0x2558=9560
                 "a558" +
@@ -411,6 +425,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 9560,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = null,
             sid = null,
             isSwitchingUpPoint = false,
@@ -425,7 +440,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "90656dca440dac37184b0cc4" +
                 "bede0002" + "326bd1ec51000200" +
-                // I=1,P=0,L=0,F=0,B=0,E=0,V=0,(Z=1)
+                // I=1,P=0,L=0,F=0,B=0,E=0,V=0,Z=1
                 "81" +
                 // M=1,PID=0x2558=9560
                 "a558" +
@@ -437,6 +452,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 9560,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = null,
             sid = null,
             isSwitchingUpPoint = false,
@@ -446,7 +462,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "90e56de4440dac37184b0cc4" +
                 "bede0002" + "326cf8d551001c00" +
-                // I=1,P=0,L=0,F=0,B=0,E=1,V=0,(Z=1)
+                // I=1,P=0,L=0,F=0,B=0,E=1,V=0,Z=1
                 "85" +
                 // M=1,PID=0x2558=9560
                 "a558" +
@@ -458,6 +474,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 9560,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = null,
             sid = null,
             isSwitchingUpPoint = false,
@@ -467,7 +484,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "90656e01440eb32f184b0cc4" +
                 "bede0002" + "326e77cf51003900" +
-                // I=1,P=1,L=0,F=0,B=1,E=1,V=0,(Z=1)
+                // I=1,P=1,L=0,F=0,B=1,E=1,V=0,Z=1
                 "c9" +
                 // M=1,PID=0x255A=9562
                 "a55a" +
@@ -479,6 +496,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 9562,
             hasExtendedPictureId = true,
+            isUpperLevelReference = false,
             tid = null,
             sid = null,
             isSwitchingUpPoint = false,
@@ -490,7 +508,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "9065385f33e8e7666538459e" +
                 "bede0001" + "32a4e45a" +
-                // I=1,P=0,L=0,F=0,B=1,E=0,V=1,(Z=0)
+                // I=1,P=0,L=0,F=0,B=1,E=0,V=1,Z=0
                 "8a" +
                 // M=1,PID=0x5bd8=23512
                 "dbd8" +
@@ -514,6 +532,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 23512,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = null,
             sid = null,
             isSwitchingUpPoint = false,
@@ -530,7 +549,7 @@ class Vp9PacketTest : ShouldSpec() {
         SampleVp9Packet(
             "90656563e256bc64a4d04528" +
                 "bede0001" + "329c676d" +
-                // I=1,P=0,L=1,F=0,B=1,E=0,V=1,(Z=0)
+                // I=1,P=0,L=1,F=0,B=1,E=0,V=1,Z=0
                 "aa" +
                 // M=1,PID=0x653e=25918
                 "e53e" +
@@ -572,6 +591,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = true,
             pictureId = 25918,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 0,
             isSwitchingUpPoint = false,
@@ -598,6 +618,7 @@ class Vp9PacketTest : ShouldSpec() {
             isKeyframe = false,
             pictureId = 7781,
             hasExtendedPictureId = true,
+            isUpperLevelReference = true,
             tid = 0,
             sid = 1,
             isSwitchingUpPoint = false,
@@ -620,6 +641,7 @@ class Vp9PacketTest : ShouldSpec() {
                         p.pictureId shouldBe t.pictureId
                     } else { p.hasPictureId shouldBe false }
                     p.hasExtendedPictureId shouldBe t.hasExtendedPictureId
+                    p.isUpperLevelReference shouldBe t.isUpperLevelReference
                     if (t.tid != null) {
                         p.hasLayerIndices shouldBe true
                         p.temporalLayerIndex shouldBe t.tid
