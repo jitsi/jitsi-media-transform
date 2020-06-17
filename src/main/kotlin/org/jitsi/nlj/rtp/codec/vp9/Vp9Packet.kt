@@ -84,6 +84,8 @@ class Vp9Packet private constructor (
 
     val isUpperLevelReference = DePacketizer.VP9PayloadDescriptor.isUpperLevelReference(buffer, payloadOffset, payloadLength)
 
+    val isInterPicturePredicted = DePacketizer.VP9PayloadDescriptor.isInterPicturePredicted(buffer, payloadOffset, payloadLength)
+
     private var _TL0PICIDX = TL0PICIDX ?: DePacketizer.VP9PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
 
     var TL0PICIDX: Int

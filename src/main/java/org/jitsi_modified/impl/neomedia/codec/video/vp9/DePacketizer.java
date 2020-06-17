@@ -287,6 +287,22 @@ public class DePacketizer
         }
 
         /**
+         * Returns <tt>true</tt> if the packet contains an inter-picture
+         * predicted frame.
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
+         *
+         * @return <tt>true</tt> if the packet contains an inter-picture
+         * predicted frame, <tt>false</tt> if not.
+         */
+        public static boolean isInterPicturePredicted(byte[] buf, int off, int len)
+        {
+            return isValid(buf, off, len) && (buf[off] & P_BIT) != 0;
+        }
+
+        /**
          * Returns <tt>true</tt> if the packet is part of a keyframe.
          *
          * @param buf the byte buffer that holds the VP9 payload.
