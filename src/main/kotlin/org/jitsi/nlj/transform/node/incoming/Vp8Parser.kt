@@ -46,7 +46,7 @@ class Vp8Parser(
 
     private val pictureIdState = StateChangeLogger("picture id", logger)
     private val extendedPictureIdState = StateChangeLogger("extended picture ID", logger)
-    private val tl0PicIdxWithoutTidState = StateChangeLogger("TL0PICIDX without TID", logger)
+    private val tl0PicIdxWithoutTidState = StateChangeLogger("TID without TL0PICIDX", logger)
 
     override fun modify(packetInfo: PacketInfo): PacketInfo {
         val videoRtpPacket: VideoRtpPacket = packetInfo.packet as VideoRtpPacket
@@ -70,7 +70,7 @@ class Vp8Parser(
             extendedPictureIdState.setState(videoRtpPacket.hasExtendedPictureId, videoRtpPacket) {
                 "Packet Data: ${videoRtpPacket.toHex(80)}"
             }
-            tl0PicIdxWithoutTidState.setState(videoRtpPacket.hasTL0PICIDX && !videoRtpPacket.hasTemporalLayerIndex, videoRtpPacket) {
+            tl0PicIdxWithoutTidState.setState(videoRtpPacket.hasTL0PICIDX || !videoRtpPacket.hasTemporalLayerIndex, videoRtpPacket) {
                 "Packet Data: ${videoRtpPacket.toHex(80)}"
             }
         }
