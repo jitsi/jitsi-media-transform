@@ -32,9 +32,9 @@ class StateChangeLogger(
     fun setState(newState: Boolean, instance: Any, instanceDesc: () -> String) {
         if (state != newState) {
             if (newState == false) {
-                logger.cinfo { "Packet $instance does not have $desc.  ${instanceDesc()}" }
+                logger.cinfo { "Packet $instance has $desc.  ${instanceDesc()}" }
             } else if (state != null) {
-                logger.cinfo { "Packet $instance has $desc when source previously did not.  ${instanceDesc()}" }
+                logger.cinfo { "Packet $instance source no longer has $desc.  ${instanceDesc()}" }
             }
             state = newState
         }

@@ -44,9 +44,9 @@ class Vp8Parser(
     // Stats
     private var numKeyframes: Int = 0
 
-    private val pictureIdState = StateChangeLogger("picture id", logger)
-    private val extendedPictureIdState = StateChangeLogger("extended picture ID", logger)
-    private val tidWithoutTl0PicIdxState = StateChangeLogger("TID without TL0PICIDX", logger)
+    private val pictureIdState = StateChangeLogger("missing picture id", logger)
+    private val extendedPictureIdState = StateChangeLogger("missing extended picture ID", logger)
+    private val tidWithoutTl0PicIdxState = StateChangeLogger("TID with missing TL0PICIDX", logger)
 
     override fun modify(packetInfo: PacketInfo): PacketInfo {
         val videoRtpPacket: VideoRtpPacket = packetInfo.packet as VideoRtpPacket
