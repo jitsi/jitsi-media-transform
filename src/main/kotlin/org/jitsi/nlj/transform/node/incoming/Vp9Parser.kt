@@ -25,9 +25,9 @@ import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
+import org.jitsi.nlj.util.StateChangeLogger
 import org.jitsi.rtp.extensions.toHex
 import org.jitsi.utils.logging2.cdebug
-import org.jitsi.utils.logging2.cinfo
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 
@@ -43,6 +43,9 @@ class Vp9Parser(
     // Stats
     private var numKeyframes: Int = 0
     private var sources: Array<MediaSourceDesc> = arrayOf()
+
+    private val pictureIdState = StateChangeLogger("missing picture id", logger)
+    private val extendedPictureIdState = StateChangeLogger("missing extended picture ID", logger)
 
     override fun observe(packetInfo: PacketInfo) {
         val vp9Packet = packetInfo.packet as Vp9Packet
@@ -66,10 +69,11 @@ class Vp9Parser(
             numKeyframes++
         }
 
-        if (!vp9Packet.hasPictureId) {
-            logger.cinfo { "Packet $vp9Packet does not have picture ID.  Packet data: ${vp9Packet.toHex(80)}" }
-        } else if (!vp9Packet.hasExtendedPictureId) {
-            logger.cinfo { "Packet $vp9Packet has 7-bit (short) picture ID.  Packet data: ${vp9Packet.toHex(80)}" }
+        pictureIdState.setState(vp9Packet.hasPictureId, vp9Packet) {
+            "Packet Data: ${vp9Packet.toHex(80)}"
+        }
+        extendedPictureIdState.setState(vp9Packet.hasExtendedPictureId, vp9Packet) {
+            "Packet Data: ${vp9Packet.toHex(80)}"
         }
     }
 
