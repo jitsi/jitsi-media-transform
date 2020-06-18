@@ -60,7 +60,7 @@ constructor(
             val oldLayerMap = field.associateBy { it.layerId }
             for (newLayer in newLayers) {
                 oldLayerMap[newLayer.layerId]?.let {
-                    newLayer.inheritStatistics(it)
+                    newLayer.inheritFrom(it)
                 }
             }
             field = newLayers

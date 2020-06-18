@@ -52,9 +52,14 @@ constructor(
      */
     val frameRate: Double,
     /**
-     * The [RtpLayerDesc] on which this layer depends.
+     * The [RtpLayerDesc]s on which this layer definitely depends.
      */
-    private val dependencyLayers: Array<RtpLayerDesc>?
+    private val dependencyLayers: Array<RtpLayerDesc>?,
+    /**
+     * The [RtpLayerDesc]s on which this layer possibly depends.
+     * (The intended use case is K-SVC mode.)
+     */
+    private val softDependencyLayers: Array<RtpLayerDesc>? = null
 ) {
     init {
         if (tid > 7) throw IllegalArgumentException("Invalid temporal ID $tid")
@@ -72,8 +77,14 @@ constructor(
         sid: Int = orig.sid,
         height: Int = orig.height,
         frameRate: Double = orig.frameRate,
-        dependencyLayers: Array<RtpLayerDesc>? = orig.dependencyLayers
-    ) : this(eid, tid, sid, height, frameRate, dependencyLayers)
+        dependencyLayers: Array<RtpLayerDesc>? = orig.dependencyLayers,
+        softDependencyLayers: Array<RtpLayerDesc>? = orig.softDependencyLayers
+    ) : this(eid, tid, sid, height, frameRate, dependencyLayers, softDependencyLayers)
+
+    /**
+     * Whether softDependencyLayers are to be used.
+     */
+    var useSoftDependencies = true
 
     /**
      * The [RateStatistics] instance used to calculate the receiving
@@ -103,10 +114,12 @@ constructor(
     }
 
     /**
-     * Inherit another layer description's rateStatistics object.
+     * Inherit another layer description's rateStatistics object
+     * and softDependency flag.
      */
-    internal fun inheritStatistics(other: RtpLayerDesc) {
+    internal fun inheritFrom(other: RtpLayerDesc) {
         rateStatistics = other.rateStatistics
+        useSoftDependencies = other.useSoftDependencies
     }
 
     /**
@@ -154,6 +167,11 @@ constructor(
 
         if (dependencyLayers != null) {
             for (dependency in dependencyLayers) {
+                dependency.getBitrateBps(nowMs, rates)
+            }
+        }
+        if (useSoftDependencies && softDependencyLayers != null) {
+            for (dependency in softDependencyLayers) {
                 dependency.getBitrateBps(nowMs, rates)
             }
         }

@@ -20,6 +20,7 @@ import org.jitsi.nlj.Event
 import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpEncodingDesc
+import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi.nlj.SetMediaSourcesEvent
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
@@ -68,6 +69,12 @@ class Vp9Parser(
             logger.cdebug { "Received a keyframe for ssrc ${vp9Packet.ssrc} ${vp9Packet.sequenceNumber}" }
             numKeyframes++
         }
+        if (vp9Packet.spatialLayerIndex > 0 && vp9Packet.isInterPicturePredicted) {
+            /* Check if this layer is using K-SVC. */
+            /* TODO: should we somehow track the keyframe layers separately in
+                the layer descriptions, to get the bitrates more accurate? */
+            findRtpLayerDesc(vp9Packet)?.useSoftDependencies = vp9Packet.usesInterLayerDependency
+        }
 
         pictureIdState.setState(vp9Packet.hasPictureId, vp9Packet) {
             "Packet Data: ${vp9Packet.toHex(80)}"
@@ -91,6 +98,15 @@ class Vp9Parser(
         for (source in sources) {
             source.findRtpEncodingDesc(packet.ssrc)?.let {
                 return Pair(source, it)
+            }
+        }
+        return null
+    }
+
+    private fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? {
+        for (source in sources) {
+            source.findRtpLayerDesc(packet)?.let {
+                return it
             }
         }
         return null
