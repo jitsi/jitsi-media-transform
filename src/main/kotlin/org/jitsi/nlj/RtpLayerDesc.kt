@@ -25,6 +25,7 @@ import org.jitsi.utils.stats.RateStatistics
  * @author George Politis
  */
 class RtpLayerDesc
+@JvmOverloads
 constructor(
     /**
      * The index of this instance's encoding in the source encoding array.
