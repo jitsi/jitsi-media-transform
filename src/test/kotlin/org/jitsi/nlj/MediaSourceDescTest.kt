@@ -37,7 +37,7 @@ class MediaSourceDescTest : ShouldSpec() {
             source.matches(0xdeadbeef) shouldBe true
         }
 
-        "Layer properties should be correct" {
+        "Encoding and layer properties should be correct" {
             for (i in source.rtpEncodings.indices) {
                 val e = source.rtpEncodings[i]
                 e.primarySSRC shouldBe ssrcs[i]
