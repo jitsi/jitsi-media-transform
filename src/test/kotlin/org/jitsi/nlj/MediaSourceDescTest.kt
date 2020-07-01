@@ -62,20 +62,28 @@ class MediaSourceDescTest : ShouldSpec() {
         "Layer bitrates should be correct" {
             val t = 0L // Doesn't actually matter for fake rate statistics
 
-            /* Rate statistics accumulate across dependencies */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 0)) shouldBe 0x1 /* Layer 0 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 1)) shouldBe 0x3 /* Layers 0 and 1 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 2)) shouldBe 0x3 /* Layers 0 and 1 - 2 is 0 */
+            /* Rate from layer 0 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 0)) shouldBe 1
+            /* Rates from layer 1 and its dependency, 0 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 1)) shouldBe 1 + 2
+            /* Layer 2's own rate is 0, so rates from its dependencies, 1 and 0 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 2)) shouldBe 1 + 2
 
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 0)) shouldBe 0x8 /* Layer 3 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 1)) shouldBe 0x18 /* Layers 3 and 4 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 2)) shouldBe 0x18 /* Layers 3 and 4 - 5 is 0 */
+            /* Rate from layer 3 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 0)) shouldBe 8
+            /* Rates from layer 4 and its dependency, 3 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 1)) shouldBe 8 + 16
+            /* Layer 5's own rate is 0, so rates from its dependencies, 4 and 3 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 2)) shouldBe 8 + 16
 
             /* If a layer returns a 0 rate, the function gets the next lower non-zero rate */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 0)) shouldBe 0x18 /* 6 is 0, so find next lowest (5 == 3+4) */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 1)) shouldBe 0x18 /* similarly */
-
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 2)) shouldBe 0x100 /* Layer 8 */
+            /* Layer 6's own rate is 0, and it has no dependencies, so get the rate from the next-lower
+               layer, 5 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 0)) shouldBe 8 + 16
+            /* Layer 7's own rate is also 0, so similarly get the rate from layer 5 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 1)) shouldBe 8 + 16
+            /* Layer 8's rate.  Its dependencies (7 and 6) are 0. */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 2)) shouldBe 256
         }
     }
 }
