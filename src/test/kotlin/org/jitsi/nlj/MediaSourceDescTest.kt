@@ -65,23 +65,23 @@ class MediaSourceDescTest : ShouldSpec() {
             /* Rate from layer 0 */
             source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 0)) shouldBe 1
             /* Rates from layer 1 and its dependency, 0 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 1)) shouldBe 1 + 2
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 1)) shouldBe 2 + 1
             /* Layer 2's own rate is 0, so rates from its dependencies, 1 and 0 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 2)) shouldBe 1 + 2
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 2)) shouldBe 2 + 1
 
             /* Rate from layer 3 */
             source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 0)) shouldBe 8
             /* Rates from layer 4 and its dependency, 3 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 1)) shouldBe 8 + 16
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 1)) shouldBe 16 + 8
             /* Layer 5's own rate is 0, so rates from its dependencies, 4 and 3 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 2)) shouldBe 8 + 16
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 2)) shouldBe 16 + 8
 
             /* If a layer returns a 0 rate, the function gets the next lower non-zero rate */
             /* Layer 6's own rate is 0, and it has no dependencies, so get the rate from the next-lower
                layer, 5 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 0)) shouldBe 8 + 16
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 0)) shouldBe 16 + 8
             /* Layer 7's own rate is also 0, so similarly get the rate from layer 5 */
-            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 1)) shouldBe 8 + 16
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 1)) shouldBe 16 + 8
             /* Layer 8's rate.  Its dependencies (7 and 6) are 0. */
             source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 2)) shouldBe 256
         }
