@@ -16,63 +16,67 @@
 
 package org.jitsi.nlj
 
-import io.kotlintest.IsolationMode
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import org.jitsi.utils.stats.RateStatistics
 
 class MediaSourceDescTest : ShouldSpec() {
-    override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
-
     init {
         val ssrcs = arrayOf(0xdeadbeef, 0xcafebabe, 0x01234567)
         val source = createSource(ssrcs,
             1, 3, "Fake owner")
 
-        source.owner shouldBe "Fake owner"
-        source.rtpEncodings.size shouldBe 3
+        "Source properties should be correct" {
+            source.owner shouldBe "Fake owner"
+            source.rtpEncodings.size shouldBe 3
 
-        source.rtpLayers.size shouldBe 9
-        source.hasRtpLayers() shouldBe true
-        source.numRtpLayers() shouldBe 9
+            source.rtpLayers.size shouldBe 9
+            source.hasRtpLayers() shouldBe true
+            source.numRtpLayers() shouldBe 9
 
-        source.matches(0xdeadbeef) shouldBe true
+            source.matches(0xdeadbeef) shouldBe true
+        }
 
-        for (i in source.rtpEncodings.indices) {
-            val e = source.rtpEncodings[i]
-            e.primarySSRC shouldBe ssrcs[i]
-            e.layers.size shouldBe 3
-            for (j in e.layers.indices) {
-                val l = e.layers[j]
-                l.eid shouldBe i
-                l.tid shouldBe j
-                l.sid shouldBe -1
+        "Layer properties should be correct" {
+            for (i in source.rtpEncodings.indices) {
+                val e = source.rtpEncodings[i]
+                e.primarySSRC shouldBe ssrcs[i]
+                e.layers.size shouldBe 3
+                for (j in e.layers.indices) {
+                    val l = e.layers[j]
+                    l.eid shouldBe i
+                    l.tid shouldBe j
+                    l.sid shouldBe -1
 
-                /* Set up rate statistics testing */
-                /* Set non-zero rates for (0,0), (0,1), (1,0), (1,1), and (2,2) */
-                if (!(i != source.rtpEncodings.size - 1) xor (j != e.layers.size - 1)) {
-                    /* Use a bitmask so it's unambiguous which layers are getting summed. */
-                    l.inheritStatistics(FakeRateStatistics(1L shl (i * source.rtpEncodings.size + j)))
+                    /* Set up rate statistics testing */
+                    /* Set non-zero rates for (0,0), (0,1), (1,0), (1,1), and (2,2) */
+                    if ((i < source.rtpEncodings.size - 1 && j < e.layers.size - 1) ||
+                        (i == source.rtpEncodings.size - 1 && j == e.layers.size - 1)) {
+                        /* Encode the layer ID into the rate, so it's unambiguous which layers are getting summed. */
+                        l.inheritStatistics(FakeRateStatistics(1L shl (i * source.rtpEncodings.size + j)))
+                    }
                 }
             }
         }
 
-        val t = System.currentTimeMillis() // Doesn't actually matter for fake rate statistics
+        "Layer bitrates should be correct" {
+            val t = 0L // Doesn't actually matter for fake rate statistics
 
-        /* Rate statistics accumulate across dependencies */
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 0)) shouldBe 0x1
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 1)) shouldBe 0x3
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 2)) shouldBe 0x3
+            /* Rate statistics accumulate across dependencies */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 0)) shouldBe 0x1 /* Layer 0 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 1)) shouldBe 0x3 /* Layers 0 and 1 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(0, 0, 2)) shouldBe 0x3 /* Layers 0 and 1 - 2 is 0 */
 
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 0)) shouldBe 0x8
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 1)) shouldBe 0x18
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 2)) shouldBe 0x18
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 0)) shouldBe 0x8 /* Layer 3 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 1)) shouldBe 0x18 /* Layers 3 and 4 */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(1, 0, 2)) shouldBe 0x18 /* Layers 3 and 4 - 5 is 0 */
 
-        /* If a layer returns a 0 rate, the function gets the next lower non-zero rate */
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 0)) shouldBe 0x18
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 1)) shouldBe 0x18
+            /* If a layer returns a 0 rate, the function gets the next lower non-zero rate */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 0)) shouldBe 0x18 /* 6 is 0, so find next lowest (5 == 3+4) */
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 1)) shouldBe 0x18 /* similarly */
 
-        source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 2)) shouldBe 0x100
+            source.getBitrateBps(t, RtpLayerDesc.getIndex(2, 0, 2)) shouldBe 0x100 /* Layer 8 */
+        }
     }
 }
 
