@@ -115,11 +115,14 @@ constructor(
     }
 
     /**
-     * Inherit another layer description's rateStatistics object
-     * and softDependency flag.
+     * Inherit a rateStatistics object
      */
+    internal fun inheritStatistics(statistics: RateStatistics) {
+        rateStatistics = statistics
+    }
+
     internal fun inheritFrom(other: RtpLayerDesc) {
-        rateStatistics = other.rateStatistics
+        inheritStatistics(other.rateStatistics)
         useSoftDependencies = other.useSoftDependencies
     }
 
@@ -211,7 +214,7 @@ constructor(
          *
          * TODO maybe make this configurable.
          */
-        private const val AVERAGE_BITRATE_WINDOW_MS = 5000
+        const val AVERAGE_BITRATE_WINDOW_MS = 5000
 
         /**
          * Calculate the "id" of a layer based on its encoding, spatial, and temporal ID.

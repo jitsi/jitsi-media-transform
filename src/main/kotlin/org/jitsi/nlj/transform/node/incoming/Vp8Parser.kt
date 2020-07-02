@@ -71,7 +71,9 @@ class Vp8Parser(
         extendedPictureIdState.setState(vp8Packet.hasExtendedPictureId, vp8Packet) {
             "Packet Data: ${vp8Packet.toHex(80)}"
         }
-        tidWithoutTl0PicIdxState.setState(vp8Packet.hasTL0PICIDX || !vp8Packet.hasTemporalLayerIndex, vp8Packet) {
+        tidWithoutTl0PicIdxState.setState(
+            vp8Packet.hasTL0PICIDX || !vp8Packet.hasTemporalLayerIndex, vp8Packet
+        ) {
             "Packet Data: ${vp8Packet.toHex(80)}"
         }
     }
