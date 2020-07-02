@@ -57,11 +57,14 @@ class Vp9Packet private constructor (
         TL0PICIDX = null
     )
 
-    override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.VP9PayloadDescriptor.isKeyFrame(this.buffer, payloadOffset, payloadLength)
+    override val isKeyframe: Boolean =
+        isKeyframe ?: DePacketizer.VP9PayloadDescriptor.isKeyFrame(this.buffer, payloadOffset, payloadLength)
 
-    override val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP9PayloadDescriptor.isStartOfFrame(buffer, payloadOffset, payloadLength)
+    override val isStartOfFrame: Boolean =
+        isStartOfFrame ?: DePacketizer.VP9PayloadDescriptor.isStartOfFrame(buffer, payloadOffset, payloadLength)
 
-    override val isEndOfFrame: Boolean = isEndOfFrame ?: DePacketizer.VP9PayloadDescriptor.isEndOfFrame(buffer, payloadOffset, payloadLength)
+    override val isEndOfFrame: Boolean =
+        isEndOfFrame ?: DePacketizer.VP9PayloadDescriptor.isEndOfFrame(buffer, payloadOffset, payloadLength)
 
     override val layerId: Int
         get() = if (hasLayerIndices) RtpLayerDesc.getIndex(0, spatialLayerIndex, temporalLayerIndex) else super.layerId
@@ -72,21 +75,29 @@ class Vp9Packet private constructor (
         /** This uses [get] rather than initialization because [isMarked] is a var. */
         get() = isMarked
 
-    val hasLayerIndices = DePacketizer.VP9PayloadDescriptor.hasLayerIndices(buffer, payloadOffset, payloadLength)
+    val hasLayerIndices =
+        DePacketizer.VP9PayloadDescriptor.hasLayerIndices(buffer, payloadOffset, payloadLength)
 
-    val hasPictureId = DePacketizer.VP9PayloadDescriptor.hasPictureId(buffer, payloadOffset, payloadLength)
+    val hasPictureId =
+        DePacketizer.VP9PayloadDescriptor.hasPictureId(buffer, payloadOffset, payloadLength)
 
-    val hasExtendedPictureId = DePacketizer.VP9PayloadDescriptor.hasExtendedPictureId(buffer, payloadOffset, payloadLength)
+    val hasExtendedPictureId =
+        DePacketizer.VP9PayloadDescriptor.hasExtendedPictureId(buffer, payloadOffset, payloadLength)
 
-    val hasTL0PICIDX = DePacketizer.VP9PayloadDescriptor.hasTL0PICIDX(buffer, payloadOffset, payloadLength)
+    val hasTL0PICIDX =
+        DePacketizer.VP9PayloadDescriptor.hasTL0PICIDX(buffer, payloadOffset, payloadLength)
 
-    val hasScalabilityStructure = DePacketizer.VP9PayloadDescriptor.hasScalabilityStructure(buffer, payloadOffset, payloadLength)
+    val hasScalabilityStructure =
+        DePacketizer.VP9PayloadDescriptor.hasScalabilityStructure(buffer, payloadOffset, payloadLength)
 
-    val isUpperLevelReference = DePacketizer.VP9PayloadDescriptor.isUpperLevelReference(buffer, payloadOffset, payloadLength)
+    val isUpperLevelReference =
+        DePacketizer.VP9PayloadDescriptor.isUpperLevelReference(buffer, payloadOffset, payloadLength)
 
-    val isInterPicturePredicted = DePacketizer.VP9PayloadDescriptor.isInterPicturePredicted(buffer, payloadOffset, payloadLength)
+    val isInterPicturePredicted =
+        DePacketizer.VP9PayloadDescriptor.isInterPicturePredicted(buffer, payloadOffset, payloadLength)
 
-    private var _TL0PICIDX = TL0PICIDX ?: DePacketizer.VP9PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
+    private var _TL0PICIDX =
+        TL0PICIDX ?: DePacketizer.VP9PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
 
     var TL0PICIDX: Int
         get() = _TL0PICIDX
@@ -98,7 +109,8 @@ class Vp9Packet private constructor (
             }
         }
 
-    private var _pictureId = pictureId ?: DePacketizer.VP9PayloadDescriptor.getPictureId(buffer, payloadOffset, payloadLength)
+    private var _pictureId =
+        pictureId ?: DePacketizer.VP9PayloadDescriptor.getPictureId(buffer, payloadOffset, payloadLength)
 
     var pictureId: Int
         get() = _pictureId
@@ -112,13 +124,17 @@ class Vp9Packet private constructor (
 
     /* TODO: avoid recomputing these on clone */
 
-    val temporalLayerIndex: Int = DePacketizer.VP9PayloadDescriptor.getTemporalLayerIndex(buffer, payloadOffset, payloadLength)
+    val temporalLayerIndex: Int =
+        DePacketizer.VP9PayloadDescriptor.getTemporalLayerIndex(buffer, payloadOffset, payloadLength)
 
-    val spatialLayerIndex: Int = DePacketizer.VP9PayloadDescriptor.getSpatialLayerIndex(buffer, payloadOffset, payloadLength)
+    val spatialLayerIndex: Int =
+        DePacketizer.VP9PayloadDescriptor.getSpatialLayerIndex(buffer, payloadOffset, payloadLength)
 
-    val isSwitchingUpPoint: Boolean = DePacketizer.VP9PayloadDescriptor.isSwitchingUpPoint(buffer, payloadOffset, payloadLength)
+    val isSwitchingUpPoint: Boolean =
+        DePacketizer.VP9PayloadDescriptor.isSwitchingUpPoint(buffer, payloadOffset, payloadLength)
 
-    val usesInterLayerDependency: Boolean = DePacketizer.VP9PayloadDescriptor.usesInterLayerDependency(buffer, payloadOffset, payloadLength)
+    val usesInterLayerDependency: Boolean =
+        DePacketizer.VP9PayloadDescriptor.usesInterLayerDependency(buffer, payloadOffset, payloadLength)
 
     fun getScalabilityStructure(
         eid: Int = 0,
@@ -195,7 +211,11 @@ class Vp9Packet private constructor (
                     tid = t,
                     sid = s,
                     height = if (hasResolution) { heights!![s] } else { RtpLayerDesc.NO_HEIGHT },
-                    frameRate = if (hasPictureGroup) { baseFrameRate * tlCounts[t] / groupSize } else { RtpLayerDesc.NO_FRAME_RATE },
+                    frameRate = if (hasPictureGroup) {
+                        baseFrameRate * tlCounts[t] / groupSize
+                    } else {
+                        RtpLayerDesc.NO_FRAME_RATE
+                    },
                     dependencyLayers = if (dependencies.isNotEmpty()) { dependencies.toArray(arrayOf()) } else { null }
                 )
                 layers.add(layerDesc)
