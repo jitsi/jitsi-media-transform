@@ -195,9 +195,14 @@ constructor(
 
     companion object {
         /**
-         * The quality that is used to represent that forwarding is suspended.
+         * The index value that is used to represent that forwarding is suspended.
          */
         const val SUSPENDED_INDEX = -1
+
+        /**
+         * The encoding ID value that is used to represent that forwarding is suspended.
+         */
+        const val SUSPENDED_ENCODING_ID = -1
 
         /**
          * A value used to designate the absence of height information.
@@ -217,7 +222,7 @@ constructor(
         const val AVERAGE_BITRATE_WINDOW_MS = 5000
 
         /**
-         * Calculate the "id" of a layer based on its encoding, spatial, and temporal ID.
+         * Calculate the "index" of a layer based on its encoding, spatial, and temporal ID.
          * This is a server-side id and should not be confused with any encoding id defined
          * in the client (such as the rid) or the encodingId.  This is used by the videobridge's
          * adaptive source projection for filtering.
@@ -231,12 +236,24 @@ constructor(
             return (e shl 6) or (s shl 3) or t
         }
 
+        /**
+         * Get an encoding ID from a layer index.  If the index is [SUSPENDED_INDEX],
+         * [SUSPENDED_ENCODING_ID] will be returned.
+         */
         @JvmStatic
         fun getEidFromIndex(index: Int) = index shr 6
 
+        /**
+         * Get an spatial ID from a layer index.  If the index is [SUSPENDED_INDEX],
+         * the value is unspecified.
+         */
         @JvmStatic
         fun getSidFromIndex(index: Int) = (index and 0x38) shr 3
 
+        /**
+         * Get an temporal ID from a layer index.  If the index is [SUSPENDED_INDEX],
+         * the value is unspecified.
+         */
         @JvmStatic
         fun getTidFromIndex(index: Int) = index and 0x7
     }
