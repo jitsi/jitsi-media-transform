@@ -135,9 +135,8 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val videoBitrateCalculator = VideoBitrateCalculator(parentLogger)
     private val audioBitrateCalculator = BitrateCalculator("Audio bitrate calculator")
 
-    override fun isReceivingAudio() = audioBitrateCalculator.packetRatePps >= 5
-    // Screen sharing static content can result in very low packet/bit rates, hence the low threshold.
-    override fun isReceivingVideo() = videoBitrateCalculator.packetRatePps >= 1
+    override fun isReceivingAudio() = audioBitrateCalculator.active
+    override fun isReceivingVideo() = videoBitrateCalculator.active
 
     companion object {
         val queueErrorCounter = CountingErrorHandler()
