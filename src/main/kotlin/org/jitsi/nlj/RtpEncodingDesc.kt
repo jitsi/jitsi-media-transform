@@ -96,7 +96,7 @@ constructor(
      */
     override fun toString(): String {
         return "primary_ssrc=$primarySSRC,secondary_ssrcs=$secondarySsrcs," +
-            "layers=${layers.joinToString(separator = "\n    ")}"
+            "layers=\n    ${layers.joinToString(separator = "\n    ")}"
     }
 
     /**

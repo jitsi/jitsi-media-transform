@@ -143,7 +143,7 @@ class MediaSourceDesc
     }
 
     override fun toString(): String = buildString {
-        append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n")
+        append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n  ")
         append(rtpEncodings.joinToString(separator = "\n  "))
     }
 

@@ -131,6 +131,10 @@ class Vp8Packet private constructor (
             return "type=Vp8Packet len=$vp8PayloadLength hashCode=$hashCode"
         }
 
+    override fun toString(): String {
+        return super.toString() + ", TID=$temporalLayerIndex"
+    }
+
     override fun clone(): Vp8Packet {
         return Vp8Packet(
             cloneBuffer(BYTES_TO_LEAVE_AT_START_OF_PACKET),
