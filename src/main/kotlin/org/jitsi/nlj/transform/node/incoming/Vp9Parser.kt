@@ -48,12 +48,17 @@ class Vp9Parser(
     private val pictureIdState = StateChangeLogger("missing picture id", logger)
     private val extendedPictureIdState = StateChangeLogger("missing extended picture ID", logger)
 
+    /** Encodings we've actually seen.  Used to clear out inferred-from-signaling encoding information. */
+    private val ssrcsSeen = HashSet<Long>()
+
     override fun observe(packetInfo: PacketInfo) {
         val vp9Packet = packetInfo.packet as Vp9Packet
 
+        ssrcsSeen.add(vp9Packet.ssrc)
+
         if (vp9Packet.hasScalabilityStructure) {
             // TODO: handle case where new SS is from a packet older than the
-            // latest SS we've seen.
+            //  latest SS we've seen.
             val srcAndEnc = findRtpEncodingDesc(vp9Packet)
             if (srcAndEnc != null) {
                 val (src, enc) = srcAndEnc
@@ -61,7 +66,16 @@ class Vp9Parser(
                 if (newEnc != null) {
                     src.setEncodingLayers(newEnc.layers, vp9Packet.ssrc)
                 }
+                for (otherEnc in src.rtpEncodings) {
+                    if (!ssrcsSeen.contains(otherEnc.primarySSRC)) {
+                        src.setEncodingLayers(emptyArray(), otherEnc.primarySSRC)
+                    }
+                }
             }
+
+            /* TODO: we need a way to restore the encoding desc's old layer set if it switches back to some other codec
+             *  (i.e. VP8)
+             */
         }
         /* VP9 marks keyframes in every packet of the keyframe - only count the start of the frame so the count is correct. */
         /* Alternately we could keep track of keyframes we've already seen, by timestamp, but that seems unnecessary. */
