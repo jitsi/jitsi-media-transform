@@ -199,9 +199,10 @@ class Vp9Packet private constructor (
         for (s in 0 until numSpatial) {
             for (t in 0 until numTemporal) {
                 val dependencies = ArrayList<RtpLayerDesc>()
+                val softDependencies = ArrayList<RtpLayerDesc>()
                 if (s > 0) {
-                    /* TODO: wrong for K-SVC */
-                    layers.find { it.sid == s - 1 && it.tid == t }?.let { dependencies.add(it) }
+                    /* Because of K-SVC, spatial layer dependencies are soft */
+                    layers.find { it.sid == s - 1 && it.tid == t }?.let { softDependencies.add(it) }
                 }
                 if (t > 0) {
                     layers.find { it.sid == s && it.tid == t - 1 }?.let { dependencies.add(it) }
@@ -216,7 +217,13 @@ class Vp9Packet private constructor (
                     } else {
                         RtpLayerDesc.NO_FRAME_RATE
                     },
-                    dependencyLayers = if (dependencies.isNotEmpty()) { dependencies.toArray(arrayOf()) } else { null }
+                    dependencyLayers = if (dependencies.isNotEmpty()) {
+                        dependencies.toArray(arrayOf())
+                    } else { null },
+                    softDependencyLayers = if (softDependencies.isNotEmpty()) {
+                        softDependencies.toArray(arrayOf())
+                    } else { null }
+
                 )
                 layers.add(layerDesc)
             }
