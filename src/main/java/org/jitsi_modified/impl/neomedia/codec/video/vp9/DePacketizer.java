@@ -15,9 +15,11 @@
  */
 package org.jitsi_modified.impl.neomedia.codec.video.vp9;
 
+import org.jitsi.rtp.extensions.*;
+
 /**
  * A depacketizer from VP9.
- * See {@link "https://tools.ietf.org/html/draft-ietf-payload-vp9-02"}
+ * See {@link "https://tools.ietf.org/html/draft-ietf-payload-vp9-10"}
  *
  * @author George Politis
  */
@@ -97,7 +99,7 @@ public class DePacketizer
 
     /**
      * A class that represents the VP9 Payload Descriptor structure defined
-     * in {@link "https://tools.ietf.org/html/draft-ietf-payload-vp9-02"}
+     * in {@link "https://tools.ietf.org/html/draft-ietf-payload-vp9-10"}
      */
     public static class VP9PayloadDescriptor
     {
@@ -139,6 +141,22 @@ public class DePacketizer
         }
 
         /**
+         * Sets the B bit (start of frame) in the first byte of the payload
+         * descriptor.
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param start the new value of the start of frame bit.
+         */
+        public static void setStartOfFrame(byte[] buf, int off, boolean start)
+        {
+            // Check if this is the start of a VP9 layer frame in the payload
+            // descriptor.
+
+            buf[off] = ByteKt.putBitWithMask(buf[off], B_BIT, start);
+        }
+
+        /**
          * Returns <tt>true</tt> if the E bit from the first byte of the payload
          * descriptor has value 0.  (Note this is end of frame, not end of picture!)
          *
@@ -158,6 +176,19 @@ public class DePacketizer
         }
 
         /**
+         * Sets the E bit (end of frame) in the first byte of the payload
+         * descriptor.
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param end the new value of the end of frame bit.
+         */
+        public static void setEndOfFrame(byte[] buf, int off, boolean end)
+        {
+            buf[off] = ByteKt.putBitWithMask(buf[off], E_BIT, end);
+        }
+
+        /**
          * Returns <tt>true</tt> if the packet is encoded in flexible mode
          *
          * @param buf the byte buffer that holds the VP9 payload.
@@ -173,7 +204,7 @@ public class DePacketizer
         }
 
         /**
-         * Returns <tt>true</tt> if the packet contains a scalabity structure
+         * Returns <tt>true</tt> if the packet contains a scalability structure
          *
          * @param buf the byte buffer that holds the VP9 payload.
          * @param off the offset in the byte buffer where the VP9 payload starts.
@@ -202,6 +233,20 @@ public class DePacketizer
         public static boolean isUpperLevelReference(byte[] buf, int off, int len)
         {
             return isValid(buf, off, len) && (buf[off] & Z_BIT) == 0;
+        }
+
+        /**
+         * Sets the Z bit (upper layer reference) in the first byte of the payload
+         * descriptor.
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param ref whether the frame might be an upper-layer reference.
+         *        (Note this is inverted from the sense of the Z bit in the payload header.)
+         */
+        public static void setUpperLevelReference(byte[] buf, int off, boolean ref)
+        {
+            buf[off] = ByteKt.putBitWithMask(buf[off], Z_BIT, !ref);
         }
 
         /**
@@ -301,6 +346,20 @@ public class DePacketizer
         {
             return isValid(buf, off, len) && (buf[off] & P_BIT) != 0;
         }
+
+        /**
+         * Sets the P bit (inter-picture predicted) in the first byte of the payload
+         * descriptor.
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param pred the new value of the inter-picture predicted bit.
+         */
+        public static void setInterPicturePredicted(byte[] buf, int off, boolean pred)
+        {
+            buf[off] = ByteKt.putBitWithMask(buf[off], P_BIT, pred);
+        }
+
 
         /**
          * Returns <tt>true</tt> if the packet is part of a keyframe.
@@ -520,10 +579,50 @@ public class DePacketizer
         }
 
         /**
+         * Sets the packet's layer indices, if there's room for it in the packet.
+         *
+         * @param buf the byte buffer that holds the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
+         * @param sid the spatial layer of the packet
+         * @param tid the temporal layer of the packet
+         * @param isSwitchingUpPoint whether the packet is a switching-up point
+         * @param usesInterLayerDependency whether the packet uses inter-layer dependency
+         *
+         * @return Whether the layer indices were successfully set
+         */
+        public static boolean setLayerIndices(byte[] buf, int off, int len,
+            int sid, int tid, boolean isSwitchingUpPoint, boolean usesInterLayerDependency)
+        {
+            int loff = getLayerIndexOffset(buf, off, len);
+            if (loff < 0)
+            {
+                return false;
+            }
+
+            if (sid < 0 || sid > 8)
+            {
+                throw new IllegalArgumentException("Invalid spatial ID " + sid);
+            }
+
+            if (tid < 0 || tid > 8)
+            {
+                throw new IllegalArgumentException("Invalid spatial ID " + sid);
+            }
+
+            buf[loff] = (byte)((tid << 5) |
+                (isSwitchingUpPoint ? U_BIT : 0) |
+                (sid << 1) |
+                (usesInterLayerDependency ? D_BIT : 0));
+
+            return true;
+        }
+
+        /**
          * The size in bytes of the Payload Descriptor at off
          * <tt>off</tt> in <tt>buf</tt>. The size is at least 1.
          *
-         * @param buf  buf
+         * @param buf buf
          * @param off off
          * @param len len
          * @return The size in bytes of the Payload Descriptor at off
