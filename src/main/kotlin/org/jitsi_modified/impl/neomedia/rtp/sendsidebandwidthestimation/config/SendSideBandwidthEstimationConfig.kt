@@ -44,10 +44,8 @@ class SendSideBandwidthEstimationConfig {
         fun defaultHighLossThreshold() = defaultHighLossThreshold
 
         private val defaultBitrateThresholdKbps: Int by config {
-            retrieve("jmt.bwe.send-side.bitrate-threshold".from(JitsiConfig.newConfig)
-                .asType<String>()
-                .andConvertBy { Bandwidth.fromString(it).kbps.toInt() }
-            )
+            "jmt.bwe.send-side.bitrate-threshold".from(JitsiConfig.newConfig)
+                .convertFrom<String> { Bandwidth.fromString(it).kbps.toInt() }
         }
         /**
          * The bitrate threshold when the loss probability experiment is *not* active.
@@ -59,8 +57,8 @@ class SendSideBandwidthEstimationConfig {
             "org.jitsi.impl.neomedia.rtp.sendsidebandwidthestimation.SendSideBandwidthEstimation"
 
         private val lossExperimentProbability: Double by config {
-            retrieve("$LEGACY_BASE_NAME.lossExperimentProbability".from(JitsiConfig.legacyConfig))
-            retrieve("jmt.bwe.send-side.loss-experiment.probability".from(JitsiConfig.newConfig))
+            "$LEGACY_BASE_NAME.lossExperimentProbability".from(JitsiConfig.legacyConfig)
+            "jmt.bwe.send-side.loss-experiment.probability".from(JitsiConfig.newConfig)
         }
 
         /**
@@ -70,8 +68,8 @@ class SendSideBandwidthEstimationConfig {
         fun lossExperimentProbability() = lossExperimentProbability
 
         private val experimentalLowLossThreshold: Double by config {
-            retrieve("$LEGACY_BASE_NAME.lowLossThreshold".from(JitsiConfig.legacyConfig))
-            retrieve("jmt.bwe.send-side.loss-experiment.low-loss-threshold".from(JitsiConfig.newConfig))
+            "$LEGACY_BASE_NAME.lowLossThreshold".from(JitsiConfig.legacyConfig)
+            "jmt.bwe.send-side.loss-experiment.low-loss-threshold".from(JitsiConfig.newConfig)
         }
 
         /**
@@ -82,8 +80,8 @@ class SendSideBandwidthEstimationConfig {
         fun experimentalLowLossThreshold() = experimentalLowLossThreshold
 
         private val experimentalHighLossThreshold: Double by config {
-            retrieve("$LEGACY_BASE_NAME.highLossThreshold".from(JitsiConfig.legacyConfig))
-            retrieve("jmt.bwe.send-side.loss-experiment.high-loss-threshold".from(JitsiConfig.newConfig))
+            "$LEGACY_BASE_NAME.highLossThreshold".from(JitsiConfig.legacyConfig)
+            "jmt.bwe.send-side.loss-experiment.high-loss-threshold".from(JitsiConfig.newConfig)
         }
 
         /**
@@ -93,11 +91,9 @@ class SendSideBandwidthEstimationConfig {
         fun experimentalHighLossThreshold() = experimentalHighLossThreshold
 
         private val experimentalBitrateThresholdKbps: Int by config {
-            retrieve("$LEGACY_BASE_NAME.bitrateThresholdKbps".from(JitsiConfig.legacyConfig))
-            retrieve("jmt.bwe.send-side.loss-experiment.bitrate-threshold".from(JitsiConfig.newConfig)
-                .asType<String>()
-                .andConvertBy { Bandwidth.fromString(it).kbps.toInt() }
-            )
+            "$LEGACY_BASE_NAME.bitrateThresholdKbps".from(JitsiConfig.legacyConfig)
+            "jmt.bwe.send-side.loss-experiment.bitrate-threshold".from(JitsiConfig.newConfig)
+                .convertFrom<String> { Bandwidth.fromString(it).kbps.toInt() }
         }
 
         /**
@@ -107,8 +103,8 @@ class SendSideBandwidthEstimationConfig {
         fun experimentalBitrateThresholdKbps() = experimentalBitrateThresholdKbps
 
         private val timeoutExperimentProbability: Double by config {
-            retrieve("$LEGACY_BASE_NAME.timeoutExperimentProbability".from(JitsiConfig.legacyConfig))
-            retrieve("jmt.bwe.send-side.timeout-experiment.probability".from(JitsiConfig.newConfig))
+            "$LEGACY_BASE_NAME.timeoutExperimentProbability".from(JitsiConfig.legacyConfig)
+            "jmt.bwe.send-side.timeout-experiment.probability".from(JitsiConfig.newConfig)
         }
 
         /**
