@@ -18,7 +18,6 @@ package org.jitsi.nlj
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.from
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.rtcp.CompoundRtcpParser
 import org.jitsi.nlj.rtcp.RembHandler
@@ -70,6 +69,8 @@ import org.jitsi.utils.queue.CountingErrorHandler
 
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.BufferPool
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 class RtpReceiverImpl @JvmOverloads constructor(
     val id: String,
@@ -84,12 +85,12 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * packet processing).  This [RtpReceiver] will execute a blocking queue read
      * on this executor.
      */
-    private val executor: ExecutorService,
+    private val executor: SafeExecutor,
     /**
      * A [ScheduledExecutorService] which can be used for less important
      * background tasks, or tasks that need to execute at some fixed delay/rate
      */
-    private val backgroundExecutor: ScheduledExecutorService,
+    private val backgroundExecutor: SafeScheduledExecutor,
     streamInformationStore: ReadOnlyStreamInformationStore,
     private val eventHandler: RtpReceiverEventHandler,
     parentLogger: Logger,

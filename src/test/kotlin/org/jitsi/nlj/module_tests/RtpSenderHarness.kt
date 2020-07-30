@@ -20,19 +20,20 @@ import java.util.concurrent.Executors
 import kotlin.system.measureTimeMillis
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpSender
-import org.jitsi.nlj.util.safeShutdown
 import org.jitsi.rtp.extensions.looksLikeRtp
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.test_utils.Pcaps
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 fun main(args: Array<String>) {
     val pcap = Pcaps.Outgoing.ONE_PARITICPANT_RTP_AND_RTCP_DECRYPTED
 
     val producer = PcapPacketProducer(pcap.filePath)
 
-    val senderExecutor = Executors.newSingleThreadExecutor()
-    val backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
+    val senderExecutor = SafeExecutor("sender-executor", Executors.newSingleThreadExecutor())
+    val backgroundExecutor = SafeScheduledExecutor("background-executor", Executors.newSingleThreadScheduledExecutor())
     val numSenders = 1
     val senders = mutableListOf<RtpSender>()
     repeat(numSenders) {

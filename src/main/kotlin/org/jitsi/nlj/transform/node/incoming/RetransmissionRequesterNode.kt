@@ -15,17 +15,17 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtcp.RetransmissionRequester
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 import org.jitsi.utils.logging2.Logger
 
 class RetransmissionRequesterNode(
     rtcpSender: (RtcpPacket) -> Unit,
-    scheduler: ScheduledExecutorService,
+    scheduler: SafeScheduledExecutor,
     parentLogger: Logger
 ) : ObserverNode("Retransmission requester") {
     private val retransmissionRequester = RetransmissionRequester(rtcpSender, scheduler, parentLogger)

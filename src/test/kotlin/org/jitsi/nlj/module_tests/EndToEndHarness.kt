@@ -21,8 +21,9 @@ import java.util.concurrent.Executors
 import org.jitsi.nlj.PacketHandler
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.util.BufferPool
-import org.jitsi.nlj.util.safeShutdown
 import org.jitsi.test_utils.Pcaps
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 /**
  * Read packets from a PCAP file and feed them through a receiver
@@ -54,8 +55,8 @@ fun main() {
 
     val producer = PcapPacketProducer(pcap.filePath)
 
-    val backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
-    val executor = Executors.newSingleThreadExecutor()
+    val backgroundExecutor = SafeScheduledExecutor("backgroundExecutor", Executors.newSingleThreadScheduledExecutor())
+    val executor = SafeExecutor("executor", Executors.newSingleThreadExecutor())
 
     val sender = SenderFactory.createSender(
         executor, backgroundExecutor, pcap.srtpData,

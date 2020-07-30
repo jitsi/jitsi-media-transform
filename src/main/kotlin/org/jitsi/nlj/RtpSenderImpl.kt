@@ -19,7 +19,6 @@ import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.from
 import java.time.Duration
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.rtcp.KeyframeRequester
 import org.jitsi.nlj.rtcp.NackHandler
@@ -56,6 +55,8 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
 import org.jitsi.nlj.util.BufferPool
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 class RtpSenderImpl(
     val id: String,
@@ -66,12 +67,12 @@ class RtpSenderImpl(
      * packet processing).  This [RtpSender] will execute a blocking queue read
      * on this executor.
      */
-    val executor: ExecutorService,
+    val executor: SafeExecutor,
     /**
      * A [ScheduledExecutorService] which can be used for less important
      * background tasks, or tasks that need to execute at some fixed delay/rate
      */
-    val backgroundExecutor: ScheduledExecutorService,
+    val backgroundExecutor: SafeScheduledExecutor,
     private val streamInformationStore: StreamInformationStore,
     parentLogger: Logger,
     diagnosticContext: DiagnosticContext = DiagnosticContext()

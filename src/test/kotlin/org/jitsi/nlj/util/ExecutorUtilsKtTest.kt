@@ -16,13 +16,8 @@
 
 package org.jitsi.nlj.util
 
-import io.kotlintest.IsolationMode
-import io.kotlintest.shouldThrow
-import io.kotlintest.specs.ShouldSpec
-import java.time.Duration
-import java.util.concurrent.Executors
-import java.util.concurrent.LinkedBlockingQueue
-
+// TODO: move to SafeExecutorTest in jitsi-utils
+/*
 internal class ExecutorUtilsKtTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
@@ -62,3 +57,4 @@ internal class ExecutorUtilsKtTest : ShouldSpec() {
         }
     }
 }
+*/

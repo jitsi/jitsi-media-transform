@@ -20,9 +20,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.SortedSet
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
@@ -33,11 +31,12 @@ import org.jitsi.rtp.util.RtpUtils
 import org.jitsi.rtp.util.isNextAfter
 import org.jitsi.rtp.util.isOlderThan
 import org.jitsi.rtp.util.numPacketsTo
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 import org.jitsi.utils.logging2.Logger
 
 class RetransmissionRequester(
     private val rtcpSender: (RtcpPacket) -> Unit,
-    private val scheduler: ScheduledExecutorService,
+    private val scheduler: SafeScheduledExecutor,
     parentLogger: Logger,
     private val clock: Clock = Clock.systemUTC()
 ) {
@@ -65,7 +64,7 @@ class RetransmissionRequester(
      */
     class StreamPacketRequester(
         val ssrc: Long,
-        private val scheduler: ScheduledExecutorService,
+        private val scheduler: SafeScheduledExecutor,
         private val clock: Clock,
         private val rtcpSender: (RtcpPacket) -> Unit,
         parentLogger: Logger,
@@ -155,11 +154,9 @@ class RetransmissionRequester(
                         // The work is now due either sooner or later than we previously thought, so
                         // re-schedule the task
                         currentTaskHandle?.cancel(false)
-                        currentTaskHandle = scheduler.schedule(
-                                ::doWork,
-                            Duration.between(clock.instant(), newWorkDueTs).toMillis(),
-                            TimeUnit.MILLISECONDS
-                        )
+                        currentTaskHandle = scheduler.unsafeSchedule(
+                            ::doWork,
+                            Duration.between(clock.instant(), newWorkDueTs))
                     }
                 }
             }

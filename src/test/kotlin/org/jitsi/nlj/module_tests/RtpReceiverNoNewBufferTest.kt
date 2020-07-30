@@ -21,8 +21,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import org.jitsi.nlj.PacketHandler
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.util.safeShutdown
 import org.jitsi.test_utils.Pcaps
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 /**
  * Verify that the same buffer we feed into the receive pipeline is the one we get
@@ -38,8 +39,8 @@ fun main() {
 
     val producer = PcapPacketProducer(pcap.filePath)
 
-    val backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
-    val executor = Executors.newSingleThreadExecutor()
+    val backgroundExecutor = SafeScheduledExecutor("background-executor", Executors.newSingleThreadScheduledExecutor())
+    val executor = SafeExecutor("executor", Executors.newSingleThreadExecutor())
 
     val receiver = ReceiverFactory.createReceiver(
         executor, backgroundExecutor, pcap.srtpData,
