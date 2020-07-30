@@ -22,8 +22,9 @@ import kotlin.system.measureTimeMillis
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpReceiver
 import org.jitsi.nlj.resources.logging.StdoutLogger
-import org.jitsi.nlj.util.safeShutdown
 import org.jitsi.test_utils.Pcaps
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 /**
  * Feed media data from a PCAP file through N receivers.  This harness
@@ -41,8 +42,8 @@ fun main(args: Array<String>) {
 
     val producer = PcapPacketProducer(pcap.filePath)
 
-    val backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
-    val executor = Executors.newSingleThreadExecutor()
+    val backgroundExecutor = SafeScheduledExecutor("background-executor", Executors.newSingleThreadScheduledExecutor())
+    val executor = SafeExecutor("executor", Executors.newSingleThreadExecutor())
     val numReceivers = 1
     val receivers = mutableListOf<RtpReceiver>()
     repeat(numReceivers) {

@@ -17,8 +17,9 @@
 package org.jitsi.nlj.util
 
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.queue.Executor
 import org.jitsi.utils.queue.PacketQueue
-import java.util.concurrent.ExecutorService
 
 /**
  * A [PacketInfo] queue. We do not want to use the copy functionality, which is why the related
@@ -26,10 +27,17 @@ import java.util.concurrent.ExecutorService
  */
 class PacketInfoQueue(
     id: String,
-    executor: ExecutorService,
+    executor: SafeExecutor,
     handler: (PacketInfo) -> Boolean,
     capacity: Int = 1024
-) : PacketQueue<PacketInfo>(capacity, false, null, id, handler, executor) {
+) : PacketQueue<PacketInfo>(
+    capacity,
+    false,
+    null,
+    id,
+    PacketHandler<PacketInfo> { p -> handler.invoke(p) },
+    Executor { t -> executor.unsafeSubmit(t) }
+) {
     override fun releasePacket(pkt: PacketInfo) {
         BufferPool.returnBuffer(pkt.packet.buffer)
     }

@@ -26,6 +26,7 @@ import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacket
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 class StreamPacketRequesterTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -38,7 +39,7 @@ class StreamPacketRequesterTest : ShouldSpec() {
     }
 
     private val streamPacketRequester = RetransmissionRequester.StreamPacketRequester(
-            123L, scheduler, scheduler.clock, ::rtcpSender, StdoutLogger()
+            123L, SafeScheduledExecutor("scheduler", scheduler), scheduler.clock, ::rtcpSender, StdoutLogger()
     )
 
     init {

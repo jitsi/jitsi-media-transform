@@ -16,16 +16,15 @@
 package org.jitsi.nlj.rtcp
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.transform.node.incoming.IncomingSsrcStats
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
 import org.jitsi.nlj.util.milliseconds
-import org.jitsi.nlj.util.schedule
 import org.jitsi.rtp.rtcp.CompoundRtcpPacket
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.RtcpReportBlock
 import org.jitsi.rtp.rtcp.RtcpRrPacketBuilder
 import org.jitsi.rtp.rtcp.RtcpSrPacket
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 
 /**
  * Information about a sender that is used in the generation of RTCP report blocks.  NOTE that this does NOT correspond
@@ -56,7 +55,7 @@ private data class SenderInfo(
  * with RRs.
  */
 class RtcpRrGenerator(
-    private val backgroundExecutor: ScheduledExecutorService,
+    private val backgroundExecutor: SafeScheduledExecutor,
     private val rtcpSender: (RtcpPacket) -> Unit = {},
     private val incomingStatisticsTracker: IncomingStatisticsTracker,
     private val additionalPacketSupplier: () -> List<RtcpPacket>
@@ -117,7 +116,7 @@ class RtcpRrGenerator(
                 1 -> rtcpSender(packets.first())
                 else -> rtcpSender(CompoundRtcpPacket(packets))
             }
-            backgroundExecutor.schedule(this::doWork, reportingInterval)
+            backgroundExecutor.unsafeSchedule(this::doWork, reportingInterval)
         }
     }
 

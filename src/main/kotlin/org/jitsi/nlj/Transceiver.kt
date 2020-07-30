@@ -34,14 +34,14 @@ import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.SsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.concurrent.SafeExecutor
+import org.jitsi.utils.concurrent.SafeScheduledExecutor
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.cinfo
 import org.jitsi.utils.logging2.createChildLogger
 import java.time.Clock
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledExecutorService
 
 // This is an API class, so its usages will largely be outside of this library
 @Suppress("unused")
@@ -59,13 +59,13 @@ import java.util.concurrent.ScheduledExecutorService
  */
 class Transceiver(
     private val id: String,
-    receiverExecutor: ExecutorService,
-    senderExecutor: ExecutorService,
+    receiverExecutor: SafeExecutor,
+    senderExecutor: SafeExecutor,
     /**
      * A [ScheduledExecutorService] which can be used for less important
      * background tasks, or tasks that need to execute at some fixed delay/rate
      */
-    backgroundExecutor: ScheduledExecutorService,
+    backgroundExecutor: SafeScheduledExecutor,
     diagnosticContext: DiagnosticContext,
     parentLogger: Logger,
     /**
