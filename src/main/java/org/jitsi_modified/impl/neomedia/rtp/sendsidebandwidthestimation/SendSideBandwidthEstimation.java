@@ -19,11 +19,10 @@ import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
 import org.jitsi.utils.logging2.*;
+import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.config.SendSideBandwidthEstimationConfig;
 
 import java.time.*;
 import java.util.*;
-
-import static org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.config.SendSideBandwidthEstimationConfig.*;
 
 /**
  * Implements the send-side bandwidth estimation described in
@@ -220,23 +219,23 @@ public class SendSideBandwidthEstimation
         logger = parentLogger.createChildLogger(getClass().getName());
         this.diagnosticContext = diagnosticContext;
 
-        double lossExperimentProbability = Config.lossExperimentProbability();
+        double lossExperimentProbability = SendSideBandwidthEstimationConfig.lossExperimentProbability();
 
         if (kRandom.nextFloat() < lossExperimentProbability)
         {
-            low_loss_threshold_ = Config.experimentalLowLossThreshold();
-            high_loss_threshold_ = Config.experimentalHighLossThreshold();
-            bitrate_threshold_bps_ = 1000 * Config.experimentalBitrateThresholdKbps();
+            low_loss_threshold_ = SendSideBandwidthEstimationConfig.experimentalLowLossThreshold();
+            high_loss_threshold_ = SendSideBandwidthEstimationConfig.experimentalHighLossThreshold();
+            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.experimentalBitrateThreshold().getBps();
         }
         else
         {
-            low_loss_threshold_ = Config.defaultLowLossThreshold();
-            high_loss_threshold_ = Config.defaultHighLossThreshold();
-            bitrate_threshold_bps_ = 1000 * Config.defaultBitrateThresholdKbps();
+            low_loss_threshold_ = SendSideBandwidthEstimationConfig.defaultLowLossThreshold();
+            high_loss_threshold_ = SendSideBandwidthEstimationConfig.defaultHighLossThreshold();
+            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.defaultBitrateThreshold().getBps();
         }
 
 
-        double timeoutExperimentProbability = Config.timeoutExperimentProbability();
+        double timeoutExperimentProbability = SendSideBandwidthEstimationConfig.timeoutExperimentProbability();
 
         in_timeout_experiment_
             = kRandom.nextFloat() < timeoutExperimentProbability;
@@ -244,7 +243,7 @@ public class SendSideBandwidthEstimation
         setBitrate(startBitrate);
     }
 
-    public void reset(long startBitrate)
+    public synchronized void reset(long startBitrate)
     {
         first_report_time_ms_ = -1;
         lost_packets_since_last_loss_update_Q8_ = 0;
@@ -566,7 +565,7 @@ public class SendSideBandwidthEstimation
         return statistics;
     }
 
-    public void onRttUpdate(Duration newRtt)
+    public synchronized void onRttUpdate(Duration newRtt)
     {
         this.rttMs = newRtt.toMillis();
     }

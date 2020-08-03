@@ -15,7 +15,9 @@
  */
 package org.jitsi.nlj
 
-import ToggleablePcapWriter
+import org.jitsi.config.JitsiConfig
+import org.jitsi.metaconfig.config
+import org.jitsi.metaconfig.from
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.rtcp.CompoundRtcpParser
@@ -36,6 +38,7 @@ import org.jitsi.nlj.transform.node.PacketStreamStatsNode
 import org.jitsi.nlj.transform.node.RtpParser
 import org.jitsi.nlj.transform.node.SrtcpDecryptNode
 import org.jitsi.nlj.transform.node.SrtpDecryptNode
+import org.jitsi.nlj.transform.node.ToggleablePcapWriter
 import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
 import org.jitsi.nlj.transform.node.incoming.BitrateCalculator
 import org.jitsi.nlj.transform.node.incoming.DuplicateTermination
@@ -65,7 +68,6 @@ import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
-import org.jitsi.nlj.RtpReceiverConfig.Config
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
 import org.jitsi.nlj.transform.node.incoming.LayerLookup
@@ -80,7 +82,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
      * participant it's receiving data from (NACK packets, for example)
      */
     private val rtcpSender: (RtcpPacket) -> Unit = {},
-    private val rtcpEventNotifier: RtcpEventNotifier,
+    rtcpEventNotifier: RtcpEventNotifier,
     /**
      * The executor this class will use for its primary work (i.e. critical path
      * packet processing).  This [RtpReceiver] will execute a blocking queue read
@@ -100,11 +102,12 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val logger = createChildLogger(parentLogger)
     private var running: Boolean = true
     private val inputTreeRoot: Node
+    private val queueSize: Int by config("jmt.transceiver.recv.queue-size".from(JitsiConfig.newConfig))
     private val incomingPacketQueue = PacketInfoQueue(
             "rtp-receiver-incoming-packet-queue",
             executor,
             this::handleIncomingPacket,
-            Config.queueSize()
+            queueSize
         )
     private val srtpDecryptWrapper = SrtpDecryptNode()
     private val srtcpDecryptWrapper = SrtcpDecryptNode()
@@ -224,7 +227,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                 path = pipeline {
                                     node(RtxHandler(streamInformationStore, logger))
                                     node(DuplicateTermination())
-                                    node(RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger))
+                                    node(retransmissionRequester)
                                     node(paddingOnlyDiscarder)
                                     node(VideoParser(streamInformationStore, logger))
                                     demux("Payload Type") {
