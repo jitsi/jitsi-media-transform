@@ -179,7 +179,7 @@ class SrtpDecryptTransformer(
     parentLogger: Logger
 ) : SrtpTransformer(contextFactory, parentLogger) {
     var earlyDiscardedPacketsSinceLastSuccess = 0
-    private val disableBypass = maxConsecutivePacketsDiscardedEarly <= 0
+    private val alwaysProcess = maxConsecutivePacketsDiscardedEarly <= 0
 
     override fun transform(packetInfo: PacketInfo, context: SrtpCryptoContext): SrtpErrorStatus {
         // We want to avoid authenticating and decrypting packets that we are going to discarded (e.g. silence). We
@@ -187,7 +187,7 @@ class SrtpDecryptTransformer(
         // Here we bypass the SRTP stack for packets marked to be discarded, but make sure that we haven't dropped too
         // many consecutive packets.
         if (packetInfo.shouldDiscard) {
-            return if (disableBypass ||
+            return if (alwaysProcess ||
                 earlyDiscardedPacketsSinceLastSuccess++ > maxConsecutivePacketsDiscardedEarly) {
                 doTransform(packetInfo, context)
             } else {
