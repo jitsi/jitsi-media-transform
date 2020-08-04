@@ -229,9 +229,18 @@ class Vp9Packet private constructor (
             }
         }
 
-        /* TODO */
-
         return RtpEncodingDesc(ssrc, layers.toArray(arrayOf()))
+    }
+
+    val scalabilityStructureNumSpatial: Int
+        get() {
+        val off = DePacketizer.VP9PayloadDescriptor.getScalabilityStructureOffset(buffer, payloadOffset, payloadLength)
+        if (off == -1) {
+            return -1
+        }
+        val ssHeader = buffer[off].toInt()
+
+        return ((ssHeader and 0xE0) shr 5) + 1
     }
 
     /**
