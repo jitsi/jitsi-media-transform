@@ -20,9 +20,9 @@ import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.`in`
 import org.jitsi.nlj.util.atRate
-import org.jitsi.nlj.util.div
 import org.jitsi.nlj.util.howMuchCanISendAtRate
 import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.utils.div
 import java.time.Duration
 
 class RtpPacketGenerator internal constructor(

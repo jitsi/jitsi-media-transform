@@ -15,13 +15,13 @@ import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
 import org.jitsi.nlj.test_utils.FakeClock
 import org.jitsi.nlj.util.StreamInformationStoreImpl
-import org.jitsi.nlj.util.ms
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.ReceivedPacketReport
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.UnreceivedPacketReport
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
+import org.jitsi.utils.ms
 import java.util.Random
 
 class TccGeneratorNodeTest : ShouldSpec() {
@@ -54,7 +54,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                     tccGenerator.processPacket(PacketInfo(createPacket(tccSeqNum)).apply {
                         receivedTime = clock.millis()
                     })
-                    elapse(10.ms())
+                    elapse(10.ms)
                 }
             }
             "no TCC packets should be sent" {
@@ -67,7 +67,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                     tccGenerator.processPacket(PacketInfo(createPacket(tccSeqNum)).apply {
                         receivedTime = clock.millis()
                     })
-                    elapse(10.ms())
+                    elapse(10.ms)
                 }
             }
             "one TCC packet" {
@@ -87,17 +87,17 @@ class TccGeneratorNodeTest : ShouldSpec() {
                 tccGenerator.processPacket(PacketInfo(createPacket(1)).apply {
                     receivedTime = clock.millis()
                 })
-                elapse(10.ms())
+                elapse(10.ms)
                 tccGenerator.processPacket(PacketInfo(createPacket(2)).apply {
                     receivedTime = clock.millis()
                 })
-                elapse(10.ms())
+                elapse(10.ms)
                 tccGenerator.processPacket(PacketInfo(createPacket(3).apply {
                     isMarked = true
                 }).apply {
                     receivedTime = clock.millis()
                 })
-                elapse(100.ms())
+                elapse(100.ms)
                 tccGenerator.processPacket(PacketInfo(createPacket(4)).apply {
                     receivedTime = clock.millis()
                 })
@@ -114,7 +114,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                 tccGenerator.processPacket(PacketInfo(createPacket(random.nextInt(0xffff))).apply {
                     receivedTime = clock.millis()
                 })
-                clock.elapse(10.ms())
+                clock.elapse(10.ms)
 
                 tccPackets.lastOrNull()?.let {
                     it.length shouldBeLessThan 1500
@@ -131,7 +131,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                 tccGenerator.processPacket(PacketInfo(createPacket(i % 0xffff)).apply {
                     receivedTime = clock.millis()
                 })
-                clock.elapse(10.ms())
+                clock.elapse(10.ms)
 
                 tccPackets.lastOrNull()?.let {
                     it.length shouldBeLessThan 1500
@@ -148,7 +148,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                     receivedTime = clock.millis()
                 }
                 tccGenerator.processPacket(pi)
-                clock.elapse(10.ms())
+                clock.elapse(10.ms)
 
                 tccPackets.size shouldBeLessThanOrEqual prevSize + 1
                 prevSize = tccPackets.size
@@ -166,7 +166,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                     receivedTime = clock.millis()
                 }
                 tccGenerator.processPacket(pi)
-                clock.elapse(20.ms())
+                clock.elapse(20.ms)
 
                 tccPackets.size shouldBeLessThanOrEqual prevSize + 1
                 prevSize = tccPackets.size
@@ -183,9 +183,9 @@ class TccGeneratorNodeTest : ShouldSpec() {
                     tccGenerator.processPacket(PacketInfo(createPacket(tccSeqNum)).apply {
                         receivedTime = clock.millis()
                     })
-                    elapse(10.ms())
+                    elapse(10.ms)
                 }
-                elapse(100.ms())
+                elapse(100.ms)
                 tccGenerator.processPacket(PacketInfo(createPacket(20)).apply {
                     receivedTime = clock.millis()
                 })
@@ -210,9 +210,9 @@ class TccGeneratorNodeTest : ShouldSpec() {
                     tccGenerator.processPacket(PacketInfo(createPacket(tccSeqNum)).apply {
                         receivedTime = clock.millis()
                     })
-                    elapse(10.ms())
+                    elapse(10.ms)
                 }
-                elapse(10.ms())
+                elapse(10.ms)
                 tccGenerator.processPacket(PacketInfo(createPacket(10)).apply {
                     receivedTime = clock.millis()
                 })
@@ -221,7 +221,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
                     receivedTime = clock.millis() - 10
                 })
 
-                elapse(100.ms())
+                elapse(100.ms)
                 tccGenerator.processPacket(PacketInfo(createPacket(20)).apply {
                     receivedTime = clock.millis()
                 })

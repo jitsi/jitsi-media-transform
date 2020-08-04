@@ -19,6 +19,7 @@ package org.jitsi.nlj.util
 import io.kotlintest.seconds
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
+import org.jitsi.utils.ms
 import java.time.Duration
 
 class RateUtilsKtTest : ShouldSpec() {
@@ -35,7 +36,7 @@ class RateUtilsKtTest : ShouldSpec() {
                 size shouldBe 1.megabytes
             }
             should("work correctly for fractional durations") {
-                val size = howMuchCanISendAtRate(1.mbps).`in`(800.milliseconds())
+                val size = howMuchCanISendAtRate(1.mbps).`in`(800.ms)
                 size shouldBe 100.kilobytes
             }
         }
