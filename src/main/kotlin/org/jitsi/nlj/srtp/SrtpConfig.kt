@@ -1,5 +1,5 @@
 /*
- * Copyright @ 2018 - present 8x8, Inc.
+ * Copyright @ 2019 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.jitsi.nlj.srtp
 
-package org.jitsi.nlj.rtp
+import org.jitsi.config.JitsiConfig
+import org.jitsi.metaconfig.config
 
-import io.kotest.matchers.shouldBe
-import io.kotest.core.spec.style.ShouldSpec
-
-class RtpExtensionTypeTest : ShouldSpec() {
-
-    init {
-        context("Creating an extension from a valid URI") {
-            should("work correctly") {
-                RtpExtensionType.createFromUri(RtpExtensionType.TRANSPORT_CC.uri) shouldBe
-                    RtpExtensionType.TRANSPORT_CC
-            }
+class SrtpConfig {
+    companion object {
+        val maxConsecutivePacketsDiscardedEarly: Int by config {
+            "jmt.srtp.max-consecutive-packets-discarded-early".from(JitsiConfig.newConfig)
         }
     }
 }
