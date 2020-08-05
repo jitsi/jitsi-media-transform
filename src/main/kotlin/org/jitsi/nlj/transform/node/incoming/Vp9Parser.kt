@@ -47,6 +47,7 @@ class Vp9Parser(
 
     private val pictureIdState = StateChangeLogger("missing picture id", logger)
     private val extendedPictureIdState = StateChangeLogger("missing extended picture ID", logger)
+    private var numSpatialLayers = -1
 
     /** Encodings we've actually seen.  Used to clear out inferred-from-signaling encoding information. */
     private val ssrcsSeen = HashSet<Long>()
@@ -59,6 +60,13 @@ class Vp9Parser(
         if (vp9Packet.hasScalabilityStructure) {
             // TODO: handle case where new SS is from a packet older than the
             //  latest SS we've seen.
+            val packetSpatialLayers = vp9Packet.scalabilityStructureNumSpatial
+            if (packetSpatialLayers != -1) {
+                if (numSpatialLayers != -1 && numSpatialLayers != vp9Packet.scalabilityStructureNumSpatial) {
+                    packetInfo.layeringChanged = true
+                }
+                numSpatialLayers = packetSpatialLayers
+            }
             val srcAndEnc = findRtpEncodingDesc(vp9Packet)
             if (srcAndEnc != null) {
                 val (src, enc) = srcAndEnc
