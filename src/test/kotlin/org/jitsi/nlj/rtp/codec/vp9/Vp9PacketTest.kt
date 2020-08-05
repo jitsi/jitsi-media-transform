@@ -1,8 +1,8 @@
 package org.jitsi.nlj.rtp.codec.vp9
 
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNotBe
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.core.spec.style.ShouldSpec
 import org.jitsi.nlj.RtpEncodingDesc
 import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi_modified.impl.neomedia.codec.video.vp9.DePacketizer
@@ -648,7 +648,7 @@ class Vp9PacketTest : ShouldSpec() {
      */
 
     init {
-        "VP9 packets" {
+        context("VP9 packets") {
             should("be parsed correctly") {
                 for (t in testPackets) {
                     val p = Vp9Packet(t.data, 0, t.data.size)
