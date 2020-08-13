@@ -1,5 +1,6 @@
 package org.jitsi.nlj.test_utils
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Delayed
@@ -139,6 +140,7 @@ internal class JobsTimeline : ArrayList<Job>() {
  * A simple implementation of [ScheduledFuture<Unit>] which allows passing a handler
  * to be invoked on cancellation.
  */
+@SuppressFBWarnings("EQ_COMPARETO_USE_OBJECT_EQUALS")
 internal class EmptyFuture(
     private val cancelHandler: () -> Unit
 ) : ScheduledFuture<Unit> {
