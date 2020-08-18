@@ -29,27 +29,14 @@ class PacketCache(
     /**
      * A function which dictates which packets to cache.
      */
-    val packetPredicate: (RtpPacket) -> Boolean = { it is VideoRtpPacket }
-) : NodeStatsProducer {
+    val packetPredicate: (RtpPacket) -> Boolean = { it is VideoRtpPacket },
     /**
      * The max number of packets to cache per SSRC.
      */
-    private val size: Int
+    val size: Int = 500
+) : NodeStatsProducer {
     private val packetCaches: MutableMap<Long, RtpPacketCache> = ConcurrentHashMap()
     private var stopped = false
-
-    companion object {
-        val SIZE_PACKETS: String = "${PacketCache::class.java}.SIZE_PACKETS"
-        private val defaultConfiguration = Configuration()
-
-        init {
-            defaultConfiguration[SIZE_PACKETS] = 500
-        }
-    }
-
-    init {
-        size = defaultConfiguration.getInt(SIZE_PACKETS)
-    }
 
     private fun getCache(ssrc: Long): RtpPacketCache {
         return packetCaches.computeIfAbsent(ssrc) { RtpPacketCache(size) }
@@ -58,8 +45,7 @@ class PacketCache(
     /**
      * Stores a copy of the given packet in the cache.
      */
-    fun insert(packet: RtpPacket) =
-        !stopped && packetPredicate(packet) && getCache(packet.ssrc).insert(packet)
+    fun insert(packet: RtpPacket) = !stopped && packetPredicate(packet) && getCache(packet.ssrc).insert(packet)
 
     /**
      * Gets a copy of the packet in the cache with the given SSRC and sequence number, if the cache contains it.
@@ -81,7 +67,7 @@ class PacketCache(
 
     fun stop() {
         stopped = true
-        packetCaches.forEach { _, cache -> cache.flush() }
+        packetCaches.forEach { (_, cache) -> cache.flush() }
     }
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("PacketCache").apply {
