@@ -68,6 +68,7 @@ class TlsServerImpl(
     // TODO: leave all these...choose which one to respond with
     // based on the client usesrtp extension
     private val srtpProtectionProfiles = intArrayOf(
+        SRTPProtectionProfile.SRTP_AEAD_AES_128_GCM,
         SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80
 //        SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32
     )

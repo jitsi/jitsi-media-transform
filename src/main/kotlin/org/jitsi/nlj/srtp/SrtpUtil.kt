@@ -73,6 +73,28 @@ class SrtpUtil {
                         rtpAuthTagLength = 80 / 8
                     )
                 }
+                SRTPProtectionProfile.SRTP_AEAD_AES_128_GCM -> {
+                    SrtpProfileInformation(
+                        cipherKeyLength = 128 / 8,
+                        cipherSaltLength = 96 / 8,
+                        cipherName = SrtpPolicy.AESGCM_ENCRYPTION,
+                        authFunctionName = SrtpPolicy.NULL_AUTHENTICATION,
+                        authKeyLength = 0,
+                        rtcpAuthTagLength = 128 / 8,
+                        rtpAuthTagLength = 128 / 8
+                    )
+                }
+                SRTPProtectionProfile.SRTP_AEAD_AES_256_GCM -> {
+                    SrtpProfileInformation(
+                        cipherKeyLength = 256 / 8,
+                        cipherSaltLength = 96 / 8,
+                        cipherName = SrtpPolicy.AESGCM_ENCRYPTION,
+                        authFunctionName = SrtpPolicy.NULL_AUTHENTICATION,
+                        authKeyLength = 0,
+                        rtcpAuthTagLength = 128 / 8,
+                        rtpAuthTagLength = 128 / 8
+                    )
+                }
                 else -> throw IllegalArgumentException("Unsupported SRTP protection profile: $srtpProtectionProfile")
             }
         }

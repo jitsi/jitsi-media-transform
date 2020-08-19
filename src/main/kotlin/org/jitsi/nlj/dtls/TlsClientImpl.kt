@@ -70,7 +70,10 @@ class TlsClientImpl(
     lateinit var srtpKeyingMaterial: ByteArray
 
     private val srtpProtectionProfiles = intArrayOf(
-        SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
+        SRTPProtectionProfile.SRTP_AEAD_AES_128_GCM,
+        // TODO: need to figure out how to get Chrome to use GCM while
+        //  still supporting backward compatibility
+        // SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
         SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32
     )
 
