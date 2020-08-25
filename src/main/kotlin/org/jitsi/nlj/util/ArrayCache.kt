@@ -150,6 +150,33 @@ open class ArrayCache<T>(
     }
 
     /**
+     * Checks whether the cache contains an item with a given index.
+     */
+    fun containsIndex(index: Int): Boolean {
+        return if (synchronize) {
+            synchronized(syncRoot) {
+                doContains(index)
+            }
+        } else {
+            doContains(index)
+        }
+    }
+
+    private fun doContains(index: Int): Boolean {
+        if (head == -1) {
+            return false
+        }
+
+        val diff = index - cache[head].index
+        if (diff > 0) {
+            return false
+        }
+
+        val position = (head + diff) floorMod size
+        return (cache[position].index == index)
+    }
+
+    /**
      * Updates the [timeAdded] value of an item with a particular index, if it is in the cache.
      */
     protected fun updateTimeAdded(index: Int, timeAdded: Long) =

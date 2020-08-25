@@ -98,6 +98,13 @@ class RtpPacketCache(size: Int) : ArrayCache<RtpPacket>(size, RtpPacket::clone) 
         return super.getContainer(index)
     }
 
+    fun contains(sequenceNumber: Int): Boolean {
+        // Note that we use [interpret] because we don't want the ROC to get out of sync because of funny requests
+        // (NACKs)
+        val index = rfc3711IndexTracker.interpret(sequenceNumber)
+        return super.containsIndex(index)
+    }
+
     fun insert(rtpPacket: RtpPacket): Boolean {
         val index = rfc3711IndexTracker.update(rtpPacket.sequenceNumber)
         return super.insertItem(rtpPacket, index)
