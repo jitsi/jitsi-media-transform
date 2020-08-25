@@ -73,6 +73,7 @@ enum class PayloadTypeEncoding {
     VP8,
     VP9,
     H264,
+    RED,
     RTX,
     OPUS;
 
@@ -141,6 +142,19 @@ class OpusPayloadType(
     pt: Byte,
     parameters: PayloadTypeParams = ConcurrentHashMap()
 ) : AudioPayloadType(pt, PayloadTypeEncoding.OPUS, parameters = parameters)
+
+class AudioRedPayloadType(
+    pt: Byte,
+    clockRate: Int = 48000,
+    parameters: PayloadTypeParams = ConcurrentHashMap()
+) : AudioPayloadType(pt, PayloadTypeEncoding.RED, clockRate, parameters)
+
+class VideoRedPayloadType(
+    pt: Byte,
+    clockRate: Int = 90000,
+    parameters: PayloadTypeParams = ConcurrentHashMap(),
+    rtcpFeedbackSet: RtcpFeedbackSet = CopyOnWriteArraySet()
+) : VideoPayloadType(pt, PayloadTypeEncoding.RED, clockRate, parameters, rtcpFeedbackSet)
 
 class OtherAudioPayloadType(
     pt: Byte,
