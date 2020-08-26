@@ -35,12 +35,8 @@ class AudioRedHandler(
     streamInformationStore: ReadOnlyStreamInformationStore
 ) : MultipleOutputTransformerNode("RedHandler") {
 
-    val policy = Config.config.policy
-    val lossThreshold = Config.config.lossThreshold
-    val distance = Config.config.distance
-    val vadOnly = Config.config.vadOnly
-
     val stats = Stats()
+    val config = Config()
 
     var audioLevelExtId: Int? = null
     var redPayloadType: Int? = null
@@ -75,10 +71,10 @@ class AudioRedHandler(
     override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
         addString("red_payload_type", redPayloadType?.toString() ?: "null")
         addString("audio_level_ext_id", audioLevelExtId?.toString() ?: "null")
-        addString("policy", policy.toString())
-        addString("distance", distance.toString())
-        addBoolean("vad_only", vadOnly)
-        addString("loss_threshold", lossThreshold.toString())
+        addString("policy", config.policy.toString())
+        addString("distance", config.distance.toString())
+        addBoolean("vad_only", config.vadOnly)
+        addString("loss_threshold", config.lossThreshold.toString())
 
         addNumber("red_packets_decapsulated", stats.redPacketsDecapsulated)
         addNumber("red_packets_forwarded", stats.redPacketsForwarded)
@@ -103,7 +99,7 @@ class AudioRedHandler(
             val redPayloadType = redPayloadType
             val encapsulate = when (redPayloadType) {
                 null -> false
-                else -> when (policy) {
+                else -> when (config.policy) {
                     RedPolicy.NOOP, RedPolicy.STRIP -> false
                     RedPolicy.PROTECT_ALL -> true
                     // RedPolicy.PROTECT_DOMINANT -> =isDominant
@@ -116,7 +112,7 @@ class AudioRedHandler(
 
             if (encapsulate) {
                 val redundancy = mutableListOf<RtpPacket>()
-                if (distance == RedDistance.TWO) {
+                if (config.distance == RedDistance.TWO) {
                     if (redundancy.maybeAddPacket(applySequenceNumberDelta(audioRtpPacket.sequenceNumber, -2))) {
                         stats.redundancyPacketAdded()
                     }
@@ -139,14 +135,14 @@ class AudioRedHandler(
         }
 
         private fun MutableList<RtpPacket>.maybeAddPacket(seq: Int): Boolean {
-            if (currentLoss() < lossThreshold) {
+            if (currentLoss() < config.lossThreshold) {
                 return false
             }
 
             sentAudioCache.get(seq)?.item?.let {
                 // In vad-only mode, we only add redundancy for packets that have an audio level extension with the VAD
                 // bit set.
-                if (!vadOnly || getVad(it)) {
+                if (!config.vadOnly || getVad(it)) {
                     add(it)
                     return true
                 }
@@ -167,7 +163,7 @@ class AudioRedHandler(
             // Whether we need to strip the RED encapsulation
             val strip = when (redPayloadType) {
                 null -> true
-                else -> when (policy) {
+                else -> when (config.policy) {
                     RedPolicy.STRIP -> true
                     // RedPolicy.PROTECT_DOMINANT -> !isDominant
                     RedPolicy.NOOP, RedPolicy.PROTECT_ALL -> false
@@ -253,15 +249,11 @@ data class Stats(
     fun redundancyPacketAdded() = redundancyPacketsAdded++
 }
 
-private class Config {
+class Config {
     val policy: RedPolicy by config { "jmt.audio.red.policy".from(JitsiConfig.newConfig) }
     // TODO: make configurable when measuring loss is implemented
     // val lossThreshold: Double by config { "jmt.audio.red.loss-threshold".from(JitsiConfig.newConfig) }
     val lossThreshold: Double = 0.0
     val distance: RedDistance by config { "jmt.audio.red.distance".from(JitsiConfig.newConfig) }
     val vadOnly: Boolean by config { "jmt.audio.red.vad-only".from(JitsiConfig.newConfig) }
-
-    companion object {
-        val config = Config()
-    }
 }

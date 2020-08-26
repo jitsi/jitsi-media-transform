@@ -52,7 +52,7 @@ class AudioRedHandlerTest : ShouldSpec() {
         context("Policy STRIP") {
             withNewConfig("jmt.audio.red.policy=STRIP") {
                 val redHandler = AudioRedHandler(streamInformationStore)
-                redHandler.policy shouldBe RedPolicy.STRIP
+                redHandler.config.policy shouldBe RedPolicy.STRIP
 
                 context("Target supports RED") {
                     streamInformationStore.addRtpPayloadType(AudioRedPayloadType(112))
@@ -96,7 +96,7 @@ class AudioRedHandlerTest : ShouldSpec() {
                 jmt.audio.red.vad-only=false
             """.trimIndent()) {
                 val redHandler = AudioRedHandler(streamInformationStore)
-                redHandler.policy shouldBe RedPolicy.PROTECT_ALL
+                redHandler.config.policy shouldBe RedPolicy.PROTECT_ALL
 
                 context("Target supports RED") {
                     streamInformationStore.addRtpPayloadType(AudioRedPayloadType(112))
