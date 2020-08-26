@@ -43,9 +43,6 @@ class AudioRedHandler(
 
     private val ssrcRedHandlers: MutableMap<Long, SsrcRedHandler> = HashMap()
 
-    // TODO: Hook up to the current packet loss.
-    private fun currentLoss(): Double = 0.0
-
     init {
         streamInformationStore.onRtpPayloadTypesChanged { payloadTypes ->
             redPayloadType = payloadTypes.values.find { it is AudioRedPayloadType }?.pt?.toInt()
@@ -75,7 +72,6 @@ class AudioRedHandler(
         addString("policy", config.policy.toString())
         addString("distance", config.distance.toString())
         addBoolean("vad_only", config.vadOnly)
-        addString("loss_threshold", config.lossThreshold.toString())
 
         addNumber("red_packets_decapsulated", stats.redPacketsDecapsulated)
         addNumber("red_packets_forwarded", stats.redPacketsForwarded)
@@ -136,9 +132,6 @@ class AudioRedHandler(
         }
 
         private fun MutableList<RtpPacket>.maybeAddPacket(seq: Int): Boolean {
-            if (currentLoss() < config.lossThreshold) {
-                return false
-            }
 
             sentAudioCache.get(seq)?.item?.let {
                 // In vad-only mode, we only add redundancy for packets that have an audio level extension with the VAD
@@ -253,9 +246,6 @@ data class Stats(
 
 class Config {
     val policy: RedPolicy by config { "jmt.audio.red.policy".from(JitsiConfig.newConfig) }
-    // TODO: make configurable when measuring loss is implemented
-    // val lossThreshold: Double by config { "jmt.audio.red.loss-threshold".from(JitsiConfig.newConfig) }
-    val lossThreshold: Double = 0.0
     val distance: RedDistance by config { "jmt.audio.red.distance".from(JitsiConfig.newConfig) }
     val vadOnly: Boolean by config { "jmt.audio.red.vad-only".from(JitsiConfig.newConfig) }
 }
