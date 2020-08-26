@@ -118,19 +118,19 @@ open class ArrayCache<T>(
      * The item is wrapped in a [Container] to allow access to the time it was added to the cache, and we provide a
      * copy.
      */
-    fun getContainer(index: Int): Container? {
+    fun getContainer(index: Int, shouldCloneItem: Boolean = true): Container? {
         val result = when {
             synchronize -> synchronized(syncRoot) {
-                doGet(index)
+                doGet(index, shouldCloneItem)
             }
-            else -> doGet(index)
+            else -> doGet(index, shouldCloneItem)
         }
 
         result?.let { _numHits.incrementAndGet() } ?: _numMisses.incrementAndGet()
         return result
     }
 
-    private fun doGet(index: Int): Container? {
+    private fun doGet(index: Int, shouldCloneItem: Boolean): Container? {
         if (index < 0) {
             return null
         }
@@ -147,7 +147,7 @@ open class ArrayCache<T>(
 
         val position = (head + diff) floorMod size
         if (cache[position].index == index) {
-            return cache[position].clone()
+            return cache[position].clone(shouldCloneItem)
         }
         return null
     }
@@ -271,8 +271,8 @@ open class ArrayCache<T>(
         var index: Int = -1,
         var timeAdded: Long = -1
     ) {
-        fun clone(): Container {
-            return Container(item?.let { cloneItem(it) }, index, timeAdded)
+        fun clone(shouldCloneItem: Boolean): Container {
+            return Container(item?.let { if (shouldCloneItem) cloneItem(it) else it }, index, timeAdded)
         }
     }
 }

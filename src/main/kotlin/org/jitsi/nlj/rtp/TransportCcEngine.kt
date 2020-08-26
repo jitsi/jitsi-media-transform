@@ -261,7 +261,7 @@ class TransportCcEngine(
             // Note that we use [interpret] because we don't want the ROC to get out of sync because of funny requests
             // (TCCs)
             val index = rfc3711IndexTracker.interpret(sequenceNumber)
-            return super.getContainer(index)?.item
+            return super.getContainer(index, true)?.item
         }
 
         fun insert(seq: Int, packetDetail: PacketDetail): Boolean {

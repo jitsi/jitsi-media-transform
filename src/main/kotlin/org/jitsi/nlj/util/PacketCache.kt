@@ -95,15 +95,26 @@ class RtpPacketCache(
     }
 
     /**
-     * Gets a packet with a given RTP sequence number from the cache.
+     * Gets a packet with a given RTP sequence number from the cache (clones the packet).
      */
     fun get(sequenceNumber: Int): Container? {
+        return doGet(sequenceNumber, true)
+    }
+
+    fun doGet(sequenceNumber: Int, shouldCloneItem: Boolean): Container? {
         // Note that we use [interpret] because we don't want the ROC to get out of sync because of funny requests
         // (NACKs)
         val index = rfc3711IndexTracker.interpret(sequenceNumber)
         // The RFC3711 tracker may produce negative numbers (example, if it is initialized with 0,
         // then 65535 is interpreted). These are invalid indexes.
-        return if (index < 0) null else super.getContainer(index)
+        return if (index < 0) null else super.getContainer(index, shouldCloneItem)
+    }
+
+    /**
+     * Gets a packet with a given RTP sequence number from the cache (does not clone the packet).
+     */
+    fun peek(sequenceNumber: Int): Container? {
+        return doGet(sequenceNumber, false)
     }
 
     fun contains(sequenceNumber: Int): Boolean {
