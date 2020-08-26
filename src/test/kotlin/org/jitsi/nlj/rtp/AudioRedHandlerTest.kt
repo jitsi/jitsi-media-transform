@@ -249,11 +249,11 @@ class AudioRedHandlerTest : ShouldSpec() {
         packet4WasAvailable: Boolean
     ) {
         size shouldBe 6
+        map { it.sequenceNumber }.toList() shouldBe listOf(0, 1, 2, 3, /* 4 is lost */ 5, 6)
         forEach {
             it.payloadType shouldBe 112
             it.shouldBeTypeOf<RedAudioRtpPacket>()
             it as RedAudioRtpPacket
-            map { it.sequenceNumber }.toList() shouldBe listOf(0, 1, 2, 3, /* 4 is lost */ 5, 6)
 
             val parsedRedundancy = it.removeRedAndGetRedundancyPackets()
             when (it.sequenceNumber) {
@@ -278,9 +278,8 @@ class AudioRedHandlerTest : ShouldSpec() {
                         parsedRedundancy[1].sequenceNumber shouldBe 4
                         parsedRedundancy[1].getPacketId() shouldBe 4
                     } else {
-                        parsedRedundancy.size shouldBe 1
-                        // This is packet 3, but since it's the only redundancy block in packet 5 we parsed the seq as 4
-                        parsedRedundancy[0].getPacketId() shouldBe 3
+                        // When 4 was unavailable the encoder should have produced no redundancy.
+                        parsedRedundancy.size shouldBe 0
                     }
                 }
                 6 -> {

@@ -109,13 +109,38 @@ class AudioRedHandler(
 
             if (encapsulate) {
                 val redundancy = mutableListOf<RtpPacket>()
-                if (config.distance == RedDistance.TWO) {
-                    if (redundancy.maybeAddPacket(applySequenceNumberDelta(audioRtpPacket.sequenceNumber, -2))) {
-                        stats.redundancyPacketAdded()
+                val seq = audioRtpPacket.sequenceNumber
+
+                when (config.distance) {
+                    RedDistance.ONE -> {
+                        val secondary = getPacketToProtect(applySequenceNumberDelta(seq, -1), config.vadOnly)
+                        secondary?.let {
+                            redundancy.add(it)
+                            stats.redundancyPacketAdded()
+                        }
                     }
-                }
-                if (redundancy.maybeAddPacket(applySequenceNumberDelta(audioRtpPacket.sequenceNumber, -1))) {
-                    stats.redundancyPacketAdded()
+                    RedDistance.TWO -> {
+                        val secondary = getPacketToProtect(applySequenceNumberDelta(seq, -1), false)
+                        if (secondary != null) {
+                            // With distance 2 we only add the tertiary packet when there is a secondary available
+                            // (regardless of secondary's VAD). This guarantees that the sequence numbers of the
+                            // redundancy packets always directly proceed the primary packet, i.e. that we don't encode
+                            // a packet with primary seq=N and a single redundancy with seq=N-2. This is be important
+                            // when the receiver of the RED stream is another jitsi-videobridge instance (via Octo),
+                            // which makes that assumption about the stream it receives.
+                            val tertiary = getPacketToProtect(applySequenceNumberDelta(seq, -2), config.vadOnly)
+                            if (tertiary != null) {
+                                redundancy.add(tertiary)
+                                stats.redundancyPacketAdded()
+                                redundancy.add(secondary)
+                                stats.redundancyPacketAdded()
+                            } else if (!config.vadOnly || getVad(secondary)) {
+                                // If there's no tertiary encode the secondary alone, but this time check its VAD.
+                                redundancy.add(secondary)
+                                stats.redundancyPacketAdded()
+                            }
+                        }
+                    }
                 }
 
                 val redPacket = RedAudioRtpPacket.builder.build(redPayloadType!!, audioRtpPacket, redundancy)
@@ -131,17 +156,15 @@ class AudioRedHandler(
             return packetInfo
         }
 
-        private fun MutableList<RtpPacket>.maybeAddPacket(seq: Int): Boolean {
-
+        private fun getPacketToProtect(seq: Int, vadOnly: Boolean): RtpPacket? {
             sentAudioCache.get(seq)?.item?.let {
                 // In vad-only mode, we only add redundancy for packets that have an audio level extension with the VAD
                 // bit set.
-                if (!config.vadOnly || getVad(it)) {
-                    add(it)
-                    return true
+                if (!vadOnly || getVad(it)) {
+                    return it
                 }
             }
-            return false
+            return null
         }
 
         private fun getVad(packet: RtpPacket): Boolean = audioLevelExtId?.let { extId ->
