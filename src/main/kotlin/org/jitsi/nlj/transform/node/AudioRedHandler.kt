@@ -85,7 +85,7 @@ class AudioRedHandler(
      * Handler for a specific stream (SSRC)
      */
     private inner class SsrcRedHandler {
-        val sentAudioCache = RtpPacketCache(20)
+        val sentAudioCache = RtpPacketCache(20, false)
 
         /**
          * Process an incoming audio packet. It is either forwarded as it is, or encapsulated in RED with previous

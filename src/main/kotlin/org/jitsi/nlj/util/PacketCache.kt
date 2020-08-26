@@ -80,7 +80,13 @@ class PacketCache(
 /**
  * Implements a cache for RTP packets.
  */
-class RtpPacketCache(size: Int) : ArrayCache<RtpPacket>(size, RtpPacket::clone) {
+class RtpPacketCache(
+    size: Int,
+    synchronize: Boolean = true
+) : ArrayCache<RtpPacket>(
+    size = size,
+    cloneItem = RtpPacket::clone,
+    synchronize = synchronize) {
 
     private val rfc3711IndexTracker = Rfc3711IndexTracker()
 
