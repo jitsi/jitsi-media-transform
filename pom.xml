@@ -94,6 +94,11 @@
 
         <!-- test -->
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>jicoco-test-kotlin</artifactId>
+            <version>${jicoco.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.pkts</groupId>
             <artifactId>pkts-core</artifactId>
             <version>3.0.3</version>
@@ -124,9 +129,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.nhaarman.mockitokotlin2</groupId>
-            <artifactId>mockito-kotlin</artifactId>
-            <version>2.1.0</version>
+            <groupId>io.kotest</groupId>
+            <artifactId>kotest-runner-console-jvm</artifactId>
+            <version>${kotest.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -134,6 +139,11 @@
             <artifactId>jicoco-test-kotlin</artifactId>
             <version>${jicoco.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.mockk</groupId>
+            <artifactId>mockk</artifactId>
+            <version>1.10.0</version>
         </dependency>
     </dependencies>
 

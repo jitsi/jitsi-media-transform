@@ -15,21 +15,21 @@
  */
 package org.jitsi.nlj.rtp
 
-import com.nhaarman.mockitokotlin2.mock
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import io.mockk.mockk
 import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
-import org.jitsi.nlj.test_utils.FakeClock
 import org.jitsi.nlj.util.bytes
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.tcc.RtcpFbTccPacketBuilder
+import org.jitsi.test.time.FakeClock
 import java.util.logging.Level
 
 class TransportCcEngineTest : FunSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val bandwidthEstimator: BandwidthEstimator = mock()
+    private val bandwidthEstimator: BandwidthEstimator = mockk(relaxed = true)
     private val clock: FakeClock = FakeClock()
     private val logger = StdoutLogger(_level = Level.INFO)
 

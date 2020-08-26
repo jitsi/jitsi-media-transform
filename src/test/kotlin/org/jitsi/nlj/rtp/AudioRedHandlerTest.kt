@@ -29,7 +29,6 @@ import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.RedPolicy
 import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.rtp.rtp.RtpPacket
-import org.jitsi.utils.logging2.createLogger
 
 /**
  * Tests the handling and generation of RED packets with two simple streams. One is a stream of Opus packets with
@@ -52,7 +51,7 @@ class AudioRedHandlerTest : ShouldSpec() {
     init {
         context("Policy STRIP") {
             withNewConfig("jmt.audio.red.policy=STRIP") {
-                val redHandler = AudioRedHandler(createLogger(), streamInformationStore)
+                val redHandler = AudioRedHandler(streamInformationStore)
                 redHandler.policy shouldBe RedPolicy.STRIP
 
                 context("Target supports RED") {
@@ -96,7 +95,7 @@ class AudioRedHandlerTest : ShouldSpec() {
                 # TODO: add tests for the VAD-only case too.
                 jmt.audio.red.vad-only=false
             """.trimIndent()) {
-                val redHandler = AudioRedHandler(createLogger(), streamInformationStore)
+                val redHandler = AudioRedHandler(streamInformationStore)
                 redHandler.policy shouldBe RedPolicy.PROTECT_ALL
 
                 context("Target supports RED") {
