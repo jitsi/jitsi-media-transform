@@ -131,6 +131,9 @@ open class ArrayCache<T>(
     }
 
     private fun doGet(index: Int): Container? {
+        if (index < 0) {
+            return null
+        }
         if (head == -1) {
             // Not initialized (empty), or newer than head.
             return null

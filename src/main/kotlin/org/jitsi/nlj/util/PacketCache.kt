@@ -95,7 +95,9 @@ class RtpPacketCache(size: Int) : ArrayCache<RtpPacket>(size, RtpPacket::clone) 
         // Note that we use [interpret] because we don't want the ROC to get out of sync because of funny requests
         // (NACKs)
         val index = rfc3711IndexTracker.interpret(sequenceNumber)
-        return super.getContainer(index)
+        // The RFC3711 tracker may produce negative numbers (example, if it is initialized with 0,
+        // then 65535 is interpreted). These are invalid indexes.
+        return if (index < 0) null else super.getContainer(index)
     }
 
     fun contains(sequenceNumber: Int): Boolean {
