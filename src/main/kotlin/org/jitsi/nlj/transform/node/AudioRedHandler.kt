@@ -113,15 +113,13 @@ class AudioRedHandler(
 
                 when (config.distance) {
                     RedDistance.ONE -> {
-                        val secondary = getPacketToProtect(applySequenceNumberDelta(seq, -1), config.vadOnly)
-                        secondary?.let {
-                            redundancy.add(it)
+                        getPacketToProtect(applySequenceNumberDelta(seq, -1), config.vadOnly)?.also { secondary ->
+                            redundancy.add(secondary)
                             stats.redundancyPacketAdded()
                         }
                     }
                     RedDistance.TWO -> {
-                        val secondary = getPacketToProtect(applySequenceNumberDelta(seq, -1), false)
-                        if (secondary != null) {
+                        getPacketToProtect(applySequenceNumberDelta(seq, -1), false)?.also { secondary ->
                             // With distance 2 we only add the tertiary packet when there is a secondary available
                             // (regardless of secondary's VAD). This guarantees that the sequence numbers of the
                             // redundancy packets always directly proceed the primary packet, i.e. that we don't encode
@@ -134,7 +132,7 @@ class AudioRedHandler(
                                 stats.redundancyPacketAdded()
                                 redundancy.add(secondary)
                                 stats.redundancyPacketAdded()
-                            } else if (!config.vadOnly || getVad(secondary)) {
+                            } else if (!config.vadOnly || secondary.hasVad()) {
                                 // If there's no tertiary encode the secondary alone, but this time check its VAD.
                                 redundancy.add(secondary)
                                 stats.redundancyPacketAdded()
@@ -162,15 +160,15 @@ class AudioRedHandler(
             sentAudioCache.peek(seq)?.item?.let {
                 // In vad-only mode, we only add redundancy for packets that have an audio level extension with the VAD
                 // bit set.
-                if (!vadOnly || getVad(it)) {
+                if (!vadOnly || it.hasVad()) {
                     return it
                 }
             }
             return null
         }
 
-        private fun getVad(packet: RtpPacket): Boolean = audioLevelExtId?.let { extId ->
-                packet.getHeaderExtension(extId)?.let { AudioLevelHeaderExtension.getVad(it) } ?: false
+        private fun RtpPacket.hasVad(): Boolean = audioLevelExtId?.let { extId ->
+                getHeaderExtension(extId)?.let { AudioLevelHeaderExtension.getVad(it) } ?: false
             } ?: false
 
         /**
