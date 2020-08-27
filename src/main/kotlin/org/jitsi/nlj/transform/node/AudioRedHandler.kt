@@ -212,12 +212,13 @@ class AudioRedHandler(
 
                 stats.redPacketDecapsulated()
                 packetInfo.packet = redPacket.toOtherType(::AudioRtpPacket)
-                sentAudioCache.insert(packetInfo.packetAs())
 
-                // If this packet was re-ordered, we may have already recovered it from a subsequent RED packet. In
-                // this case here we'll forward a second packet with the same sequence number, but it will be discarded
-                // in the SRTP stack.
-                add(packetInfo)
+                // It's possible we already forwarded the primary packet if we recovered it from a previously received
+                // packet.
+                if (!sentAudioCache.contains(seq)) {
+                    sentAudioCache.insert(packetInfo.packetAs())
+                    add(packetInfo)
+                }
             } else {
                 stats.redPacketForwarded()
                 listOf(packetInfo)
