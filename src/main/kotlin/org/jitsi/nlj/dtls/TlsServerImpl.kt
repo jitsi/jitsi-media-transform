@@ -88,7 +88,7 @@ class TlsServerImpl(
             if (TlsSRTPUtils.getUseSRTPExtension(it) == null) {
                 TlsSRTPUtils.addUseSRTPExtension(
                     it,
-                    UseSRTPData(srtpProtectionProfiles, TlsUtils.EMPTY_BYTES)
+                    UseSRTPData(intArrayOf(chosenSrtpProtectionProfile), TlsUtils.EMPTY_BYTES)
                 )
             }
         }
