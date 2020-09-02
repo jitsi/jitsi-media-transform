@@ -270,10 +270,10 @@ class Vp9Packet private constructor (
         get() {
             val rtpPayloadLength = payloadLength
             val rtpPayloadOffset = payloadOffset
-            val VP9pdSize = DePacketizer.VP9PayloadDescriptor.getSize(buffer, rtpPayloadOffset, rtpPayloadLength)
-            val VP9PayloadLength = rtpPayloadLength - VP9pdSize
-            val hashCode = buffer.hashCodeOfSegment(rtpPayloadOffset + VP9pdSize, rtpPayloadOffset + rtpPayloadLength)
-            return "type=VP9Packet len=$VP9PayloadLength hashCode=$hashCode"
+            val vp9pdSize = DePacketizer.VP9PayloadDescriptor.getSize(buffer, rtpPayloadOffset, rtpPayloadLength)
+            val vp9PayloadLength = rtpPayloadLength - vp9pdSize
+            val hashCode = buffer.hashCodeOfSegment(rtpPayloadOffset + vp9pdSize, rtpPayloadOffset + rtpPayloadLength)
+            return "type=VP9Packet len=$vp9PayloadLength hashCode=$hashCode"
         }
 
     override fun toString(): String {
