@@ -253,14 +253,15 @@ class Vp9Packet private constructor (
 
     val scalabilityStructureNumSpatial: Int
         get() {
-        val off = DePacketizer.VP9PayloadDescriptor.getScalabilityStructureOffset(buffer, payloadOffset, payloadLength)
-        if (off == -1) {
-            return -1
-        }
-        val ssHeader = buffer[off].toInt()
+            val off =
+                DePacketizer.VP9PayloadDescriptor.getScalabilityStructureOffset(buffer, payloadOffset, payloadLength)
+            if (off == -1) {
+                return -1
+            }
+            val ssHeader = buffer[off].toInt()
 
-        return ((ssHeader and 0xE0) shr 5) + 1
-    }
+            return ((ssHeader and 0xE0) shr 5) + 1
+        }
 
     /**
      * For [Vp9Packet] the payload excludes the VP9 Payload Descriptor.
