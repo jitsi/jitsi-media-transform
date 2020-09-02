@@ -62,7 +62,7 @@ class Vp9Parser(
             //  latest SS we've seen.
             val packetSpatialLayers = vp9Packet.scalabilityStructureNumSpatial
             if (packetSpatialLayers != -1) {
-                if (numSpatialLayers != -1 && numSpatialLayers != vp9Packet.scalabilityStructureNumSpatial) {
+                if (numSpatialLayers != -1 && numSpatialLayers != packetSpatialLayers) {
                     packetInfo.layeringChanged = true
                 }
                 numSpatialLayers = packetSpatialLayers

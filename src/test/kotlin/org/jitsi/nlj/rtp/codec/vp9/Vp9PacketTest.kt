@@ -1,5 +1,6 @@
 package org.jitsi.nlj.rtp.codec.vp9
 
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.core.spec.style.ShouldSpec
@@ -10,6 +11,7 @@ import javax.xml.bind.DatatypeConverter
 
 class Vp9PacketTest : ShouldSpec() {
     private data class SampleVp9Packet(
+        val description: String,
         val data: ByteArray,
         val isStartOfFrame: Boolean,
         val isEndOfFrame: Boolean,
@@ -28,6 +30,7 @@ class Vp9PacketTest : ShouldSpec() {
         val scalabilityStructure: RtpEncodingDesc? = null
     ) {
         constructor(
+            description: String,
             hexData: String,
             isStartOfFrame: Boolean,
             isEndOfFrame: Boolean,
@@ -44,7 +47,8 @@ class Vp9PacketTest : ShouldSpec() {
             tL0PICIDX: Int?,
             descriptorSize: Int,
             scalabilityStructure: RtpEncodingDesc? = null
-        ) : this(data = DatatypeConverter.parseHexBinary(hexData),
+        ) : this(description = description,
+            data = DatatypeConverter.parseHexBinary(hexData),
             isStartOfFrame = isStartOfFrame,
             isEndOfFrame = isEndOfFrame,
             isEndOfPicture = isEndOfPicture,
@@ -66,7 +70,7 @@ class Vp9PacketTest : ShouldSpec() {
     /* Packets captured from Chrome VP9 call */
     private val testPackets = arrayOf(
         /* Live video - Chrome 81 */
-        SampleVp9Packet(
+        SampleVp9Packet("Chrome: Start of keyframe (with SS) in K-SVC stream",
             // RTP
         "906536b69f3077686098017b" +
                 // RTP header extension
@@ -140,7 +144,7 @@ class Vp9PacketTest : ShouldSpec() {
                     RtpLayerDesc(0, 2, 2, 720, 30.0 /* TODO: dependencies */)
                     ))
         ),
-        SampleVp9Packet(
+        SampleVp9Packet("Middle of keyframe (SID = 0)",
             "906536b79f3077686098017b" +
                 "bede0002" + "3202168751210800" +
                 // I=1,P=0,L=1,F=0,B=0,E=0,V=0,Z=0
@@ -167,7 +171,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("End of keyframe (SID = 0)",
             "906536bb9f3077686098017b" +
                 "bede0002" + "32021ba651210c00" +
                 // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=0
@@ -194,7 +198,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("Beginning of SID=1 in keyframe picture",
             "906536bc9f3077686098017b" +
                 "bede0002" + "32021ba651210d00" +
                 // I=1,P=0,L=1,F=0,B=1,E=0,V=0,Z=0
@@ -221,7 +225,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("Middle of SID=1 in keyframe picture",
             "906536c09f3077686098017b" +
                 "bede0002" + "320221cb51211100" +
                 // I=1,P=0,L=1,F=0,B=0,E=0,V=0,Z=0
@@ -248,7 +252,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("End of SID=1 in keyframe picture",
             "906536c39f3077686098017b" +
                 "bede0002" + "320227f051211400" +
                 // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=0
@@ -275,7 +279,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("Beginning of SID=2 in keyframe picture",
             "906536c49f3077686098017b" +
                 "bede0002" + "320227f051211500" +
                 // I=1,P=0,L=1,F=0,B=1,E=0,V=0,Z=1
@@ -302,7 +306,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("End of SID=2 in keyframe picture -- end of picture",
             "90e536dd9f3077686098017b" +
                 "bede0002" + "32025a1d51212e00" +
                 // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=1
@@ -329,7 +333,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("Complete SID=0,TID=1 K-SVC frame",
             "906536de9f3081f46098017b" +
                 "bede0002" + "32025a1d51212f00" +
                 // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
@@ -356,7 +360,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("Complete SID=1,TID=1 K-SVC frame",
             "906536df9f3081f46098017b" +
                 "bede0002" + "32025a1d51213000" +
                 // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
@@ -383,7 +387,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
             descriptorSize = 5),
-        SampleVp9Packet(
+        SampleVp9Packet("Complete SID=2,TID=1 K-SVC frame",
             "90e536e09f3081f46098017b" +
                 "bede0002" + "32025a1d51213100" +
                 // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
@@ -412,7 +416,7 @@ class Vp9PacketTest : ShouldSpec() {
             descriptorSize = 5),
 
         /* Window capture - Chrome 81 */
-        SampleVp9Packet(
+        SampleVp9Packet("Beginning of window capture keyframe - contains SS, 1 layer",
             "90656dc9440dac37184b0cc4" +
                 "bede0002" + "326bcdd351000100" +
                 // I=1,P=0,L=0,F=0,B=1,E=0,V=1,Z=1
@@ -452,7 +456,7 @@ class Vp9PacketTest : ShouldSpec() {
                     RtpLayerDesc(0, 0, 0, 1158, 30.0)
             ))
         ),
-        SampleVp9Packet(
+        SampleVp9Packet("Middle of window capture keyframe",
             "90656dca440dac37184b0cc4" +
                 "bede0002" + "326bd1ec51000200" +
                 // I=1,P=0,L=0,F=0,B=0,E=0,V=0,Z=1
@@ -475,7 +479,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = null,
             descriptorSize = 3),
-        SampleVp9Packet(
+        SampleVp9Packet("End of window capture keyframe",
             "90e56de4440dac37184b0cc4" +
                 "bede0002" + "326cf8d551001c00" +
                 // I=1,P=0,L=0,F=0,B=0,E=1,V=0,Z=1
@@ -498,7 +502,7 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = null,
             descriptorSize = 3),
-        SampleVp9Packet(
+        SampleVp9Packet("Complete window capture non-keyframe",
             "90656e01440eb32f184b0cc4" +
                 "bede0002" + "326e77cf51003900" +
                 // I=1,P=1,L=0,F=0,B=1,E=1,V=0,Z=1
@@ -523,7 +527,7 @@ class Vp9PacketTest : ShouldSpec() {
             descriptorSize = 3),
 
         /* Live video - Firefox 75 */
-        SampleVp9Packet(
+        SampleVp9Packet("Beginning of Firefox 75 keyframe - no scalability",
             "9065385f33e8e7666538459e" +
                 "bede0001" + "32a4e45a" +
                 // I=1,P=0,L=0,F=0,B=1,E=0,V=1,Z=0
@@ -565,7 +569,7 @@ class Vp9PacketTest : ShouldSpec() {
         ),
 
         /* Live video - Firefox 77 Nightly */
-        SampleVp9Packet(
+        SampleVp9Packet("Beginning of Firefox 77 keyframe - only temporal scalability",
             "90656563e256bc64a4d04528" +
                 "bede0001" + "329c676d" +
                 // I=1,P=0,L=1,F=0,B=1,E=0,V=1,Z=0
@@ -630,7 +634,7 @@ class Vp9PacketTest : ShouldSpec() {
     /*
         Template:
         ,
-        SampleVp9Packet(
+        SampleVp9Packet("Description",
             "",
             isStartOfFrame = true,
             isEndOfFrame = false,
@@ -651,56 +655,67 @@ class Vp9PacketTest : ShouldSpec() {
         context("VP9 packets") {
             should("be parsed correctly") {
                 for (t in testPackets) {
-                    val p = Vp9Packet(t.data, 0, t.data.size)
-                    p.isStartOfFrame shouldBe t.isStartOfFrame
-                    p.isEndOfFrame shouldBe t.isEndOfFrame
-                    p.isEndOfPicture shouldBe t.isEndOfPicture
-                    p.isKeyframe shouldBe t.isKeyframe
-                    p.isInterPicturePredicted shouldBe t.isInterPicturePredicted
-                    if (t.pictureId != null) {
-                        p.hasPictureId shouldBe true
-                        p.pictureId shouldBe t.pictureId
-                    } else { p.hasPictureId shouldBe false }
-                    p.hasExtendedPictureId shouldBe t.hasExtendedPictureId
-                    p.isUpperLevelReference shouldBe t.isUpperLevelReference
-                    if (t.tid != null) {
-                        p.hasLayerIndices shouldBe true
-                        p.temporalLayerIndex shouldBe t.tid
-                    } else { p.hasLayerIndices shouldBe false }
-                    if (t.sid != null) {
-                        p.hasLayerIndices shouldBe true
-                        p.spatialLayerIndex shouldBe t.sid
-                    } else { p.hasLayerIndices shouldBe false }
-                    if (t.tL0PICIDX != null) {
-                        p.hasTL0PICIDX shouldBe true
-                        p.TL0PICIDX shouldBe t.tL0PICIDX
-                    } else { p.hasTL0PICIDX shouldBe false }
-                    p.isSwitchingUpPoint shouldBe t.isSwitchingUpPoint
-                    p.usesInterLayerDependency shouldBe t.usesInterLayerDependency
-                    if (t.scalabilityStructure != null) {
-                        val tss = t.scalabilityStructure
-                        p.hasScalabilityStructure shouldBe true
-                        val ss = p.getScalabilityStructure()
-                        ss shouldNotBe null
-                        ss!!.primarySSRC shouldBe tss.primarySSRC
-                        ss.layers.size shouldBe tss.layers.size
-                        for ((index, layer) in ss.layers.withIndex()) {
-                            val tLayer = tss.layers[index]
-                            layer.layerId shouldBe tLayer.layerId
-                            layer.index shouldBe tLayer.index
-                            layer.sid shouldBe tLayer.sid
-                            layer.tid shouldBe tLayer.tid
-                            layer.height shouldBe tLayer.height
-                            layer.frameRate shouldBe tLayer.frameRate
-                            /* TODO: dependency layers */
+                    withClue(t.description) {
+                        val p = Vp9Packet(t.data, 0, t.data.size)
+                        p.isStartOfFrame shouldBe t.isStartOfFrame
+                        p.isEndOfFrame shouldBe t.isEndOfFrame
+                        p.isEndOfPicture shouldBe t.isEndOfPicture
+                        p.isKeyframe shouldBe t.isKeyframe
+                        p.isInterPicturePredicted shouldBe t.isInterPicturePredicted
+                        if (t.pictureId != null) {
+                            p.hasPictureId shouldBe true
+                            p.pictureId shouldBe t.pictureId
+                        } else {
+                            p.hasPictureId shouldBe false
                         }
-                    } else {
-                        p.hasScalabilityStructure shouldBe false
-                        p.getScalabilityStructure() shouldBe null
-                    }
+                        p.hasExtendedPictureId shouldBe t.hasExtendedPictureId
+                        p.isUpperLevelReference shouldBe t.isUpperLevelReference
+                        if (t.tid != null) {
+                            p.hasLayerIndices shouldBe true
+                            p.temporalLayerIndex shouldBe t.tid
+                        } else {
+                            p.hasLayerIndices shouldBe false
+                        }
+                        if (t.sid != null) {
+                            p.hasLayerIndices shouldBe true
+                            p.spatialLayerIndex shouldBe t.sid
+                        } else {
+                            p.hasLayerIndices shouldBe false
+                        }
+                        if (t.tL0PICIDX != null) {
+                            p.hasTL0PICIDX shouldBe true
+                            p.TL0PICIDX shouldBe t.tL0PICIDX
+                        } else {
+                            p.hasTL0PICIDX shouldBe false
+                        }
+                        p.isSwitchingUpPoint shouldBe t.isSwitchingUpPoint
+                        p.usesInterLayerDependency shouldBe t.usesInterLayerDependency
+                        if (t.scalabilityStructure != null) {
+                            val tss = t.scalabilityStructure
+                            p.hasScalabilityStructure shouldBe true
+                            val ss = p.getScalabilityStructure()
+                            ss shouldNotBe null
+                            ss!!.primarySSRC shouldBe tss.primarySSRC
+                            ss.layers.size shouldBe tss.layers.size
+                            for ((index, layer) in ss.layers.withIndex()) {
+                                val tLayer = tss.layers[index]
+                                layer.layerId shouldBe tLayer.layerId
+                                layer.index shouldBe tLayer.index
+                                layer.sid shouldBe tLayer.sid
+                                layer.tid shouldBe tLayer.tid
+                                layer.height shouldBe tLayer.height
+                                layer.frameRate shouldBe tLayer.frameRate
+                                /* TODO: dependency layers */
+                            }
+                        } else {
+                            p.hasScalabilityStructure shouldBe false
+                            p.getScalabilityStructure() shouldBe null
+                        }
 
-                    val descSz = DePacketizer.VP9PayloadDescriptor.getSize(p.buffer, p.payloadOffset, p.payloadLength)
-                    descSz shouldBe t.descriptorSize
+                        val descSz =
+                            DePacketizer.VP9PayloadDescriptor.getSize(p.buffer, p.payloadOffset, p.payloadLength)
+                        descSz shouldBe t.descriptorSize
+                    }
                 }
             }
         }
