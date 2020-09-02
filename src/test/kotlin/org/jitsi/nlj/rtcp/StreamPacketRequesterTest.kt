@@ -16,21 +16,21 @@
 
 package org.jitsi.nlj.rtcp
 
-import com.nhaarman.mockitokotlin2.spy
 import io.kotest.core.spec.IsolationMode
 import io.kotest.matchers.shouldBe
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
+import io.mockk.spyk
 import org.jitsi.nlj.resources.logging.StdoutLogger
-import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
+import org.jitsi.test.concurrent.FakeScheduledExecutorService
 import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.transport_layer_fb.RtcpFbNackPacket
 
 class StreamPacketRequesterTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val scheduler: FakeScheduledExecutorService = spy()
+    private val scheduler: FakeScheduledExecutorService = spyk()
 
     private val nackPacketsSent = mutableListOf<RtcpPacket>()
     private fun rtcpSender(rtcpPacket: RtcpPacket) {

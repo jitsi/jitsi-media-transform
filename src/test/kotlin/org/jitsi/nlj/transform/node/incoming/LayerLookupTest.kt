@@ -16,11 +16,11 @@
 
 package org.jitsi.nlj.transform.node.incoming
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import io.kotest.assertions.fail
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
+import io.mockk.every
+import io.mockk.mockk
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.resources.node.onOutput
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
@@ -52,9 +52,9 @@ class LayerLookupTest : ShouldSpec() {
     )
 
     private val vp8Packet = Vp8Packet(vp8PacketBuf, 0, vp8PacketBuf.size)
-    private val packetInfo = mock<PacketInfo> {
-        on { packetAs<RtpPacket>() } doReturn vp8Packet
-        on { packet } doReturn vp8Packet
+    private val packetInfo = mockk<PacketInfo>(relaxed = true) {
+        every { packetAs<RtpPacket>() } returns vp8Packet
+        every { packet } returns vp8Packet
     }
 
     init {
