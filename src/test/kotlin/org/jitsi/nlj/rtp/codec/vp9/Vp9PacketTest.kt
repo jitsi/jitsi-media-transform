@@ -129,15 +129,15 @@ class Vp9PacketTest : ShouldSpec() {
             descriptorSize = 27,
             scalabilityStructure = RtpEncodingDesc(0x6098017bL,
                 arrayOf(
-                    RtpLayerDesc(0, 0, 0, 180, 7.5, null),
-                    RtpLayerDesc(0, 1, 0, 180, 15.0, null /* TODO */),
-                    RtpLayerDesc(0, 2, 0, 180, 30.0, null /* TODO */),
-                    RtpLayerDesc(0, 0, 1, 360, 7.5, null /* TODO */),
-                    RtpLayerDesc(0, 1, 1, 360, 15.0, null /* TODO */),
-                    RtpLayerDesc(0, 2, 1, 360, 30.0, null /* TODO */),
-                    RtpLayerDesc(0, 0, 2, 720, 7.5, null /* TODO */),
-                    RtpLayerDesc(0, 1, 2, 720, 15.0, null /* TODO */),
-                    RtpLayerDesc(0, 2, 2, 720, 30.0, null /* TODO */)
+                    RtpLayerDesc(0, 0, 0, 180, 7.5),
+                    RtpLayerDesc(0, 1, 0, 180, 15.0 /* TODO: dependencies */),
+                    RtpLayerDesc(0, 2, 0, 180, 30.0 /* TODO: dependencies */),
+                    RtpLayerDesc(0, 0, 1, 360, 7.5 /* TODO: dependencies */),
+                    RtpLayerDesc(0, 1, 1, 360, 15.0 /* TODO: dependencies */),
+                    RtpLayerDesc(0, 2, 1, 360, 30.0 /* TODO: dependencies */),
+                    RtpLayerDesc(0, 0, 2, 720, 7.5 /* TODO: dependencies */),
+                    RtpLayerDesc(0, 1, 2, 720, 15.0 /* TODO: dependencies */),
+                    RtpLayerDesc(0, 2, 2, 720, 30.0 /* TODO: dependencies */)
                     ))
         ),
         SampleVp9Packet(
@@ -449,7 +449,7 @@ class Vp9PacketTest : ShouldSpec() {
             descriptorSize = 11,
             scalabilityStructure = RtpEncodingDesc(0x184b0cc4L,
                 arrayOf(
-                    RtpLayerDesc(0, 0, 0, 1158, 30.0, null)
+                    RtpLayerDesc(0, 0, 0, 1158, 30.0)
             ))
         ),
         SampleVp9Packet(
@@ -560,7 +560,7 @@ class Vp9PacketTest : ShouldSpec() {
             descriptorSize = 11,
             scalabilityStructure = RtpEncodingDesc(0x6538459eL,
                 arrayOf(
-                    RtpLayerDesc(0, 0, 0, 720, 30.0, null)
+                    RtpLayerDesc(0, 0, 0, 720, 30.0)
             ))
         ),
 
@@ -620,9 +620,9 @@ class Vp9PacketTest : ShouldSpec() {
             descriptorSize = 20,
             scalabilityStructure = RtpEncodingDesc(0xa4d04528L,
                 arrayOf(
-                    RtpLayerDesc(0, 0, 0, 720, 7.5, null),
-                    RtpLayerDesc(0, 1, 0, 720, 15.0, null),
-                    RtpLayerDesc(0, 2, 0, 720, 30.0, null)
+                    RtpLayerDesc(0, 0, 0, 720, 7.5),
+                    RtpLayerDesc(0, 1, 0, 720, 15.0),
+                    RtpLayerDesc(0, 2, 0, 720, 30.0)
                 ))
         )
         )

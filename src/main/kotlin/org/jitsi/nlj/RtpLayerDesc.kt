@@ -55,12 +55,12 @@ constructor(
     /**
      * The [RtpLayerDesc]s on which this layer definitely depends.
      */
-    private val dependencyLayers: Array<RtpLayerDesc>?,
+    private val dependencyLayers: Array<RtpLayerDesc> = emptyArray(),
     /**
      * The [RtpLayerDesc]s on which this layer possibly depends.
      * (The intended use case is K-SVC mode.)
      */
-    private val softDependencyLayers: Array<RtpLayerDesc>? = null
+    private val softDependencyLayers: Array<RtpLayerDesc> = emptyArray()
 ) {
     init {
         if (tid > 7) throw IllegalArgumentException("Invalid temporal ID $tid")
@@ -78,8 +78,8 @@ constructor(
         sid: Int = orig.sid,
         height: Int = orig.height,
         frameRate: Double = orig.frameRate,
-        dependencyLayers: Array<RtpLayerDesc>? = orig.dependencyLayers,
-        softDependencyLayers: Array<RtpLayerDesc>? = orig.softDependencyLayers
+        dependencyLayers: Array<RtpLayerDesc> = orig.dependencyLayers,
+        softDependencyLayers: Array<RtpLayerDesc> = orig.softDependencyLayers
     ) : this(eid, tid, sid, height, frameRate, dependencyLayers, softDependencyLayers)
 
     /**
@@ -169,12 +169,11 @@ constructor(
         }
         rates[index] = rateStatistics.getRate(nowMs)
 
-        if (dependencyLayers != null) {
-            for (dependency in dependencyLayers) {
-                dependency.getBitrateBps(nowMs, rates)
-            }
+        for (dependency in dependencyLayers) {
+            dependency.getBitrateBps(nowMs, rates)
         }
-        if (useSoftDependencies && softDependencyLayers != null) {
+
+        if (useSoftDependencies) {
             for (dependency in softDependencyLayers) {
                 dependency.getBitrateBps(nowMs, rates)
             }

@@ -239,13 +239,8 @@ class Vp9Packet private constructor (
                     } else {
                         RtpLayerDesc.NO_FRAME_RATE
                     },
-                    dependencyLayers = if (dependencies.isNotEmpty()) {
-                        dependencies.toArray(arrayOf())
-                    } else { null },
-                    softDependencyLayers = if (softDependencies.isNotEmpty()) {
-                        softDependencies.toArray(arrayOf())
-                    } else { null }
-
+                    dependencyLayers = dependencies.toArray(arrayOf<RtpLayerDesc>()),
+                    softDependencyLayers = softDependencies.toArray(arrayOf<RtpLayerDesc>())
                 )
                 layers.add(layerDesc)
             }
