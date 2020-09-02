@@ -85,7 +85,7 @@ class AudioRedHandler(
      * Handler for a specific stream (SSRC)
      */
     private inner class SsrcRedHandler {
-        val sentAudioCache = RtpPacketCache(20, false)
+        val sentAudioCache = RtpPacketCache(20, synchronize = false)
 
         /**
          * Process an incoming audio packet. It is either forwarded as it is, or encapsulated in RED with previous
@@ -107,7 +107,8 @@ class AudioRedHandler(
 
             sentAudioCache.insert(packetInfo.packetAs())
 
-            if (encapsulate) {
+            // This is equivalent to just `encapsulate`, but the compiler does not recognize it.
+            if (encapsulate && redPayloadType != null) {
                 val redundancy = mutableListOf<RtpPacket>()
                 val seq = audioRtpPacket.sequenceNumber
 
@@ -141,7 +142,7 @@ class AudioRedHandler(
                     }
                 }
 
-                val redPacket = RedAudioRtpPacket.builder.build(redPayloadType!!, audioRtpPacket, redundancy)
+                val redPacket = RedAudioRtpPacket.builder.build(redPayloadType, audioRtpPacket, redundancy)
                 packetInfo.packet = redPacket
 
                 redundancy.forEach { BufferPool.returnBuffer(it.buffer) }

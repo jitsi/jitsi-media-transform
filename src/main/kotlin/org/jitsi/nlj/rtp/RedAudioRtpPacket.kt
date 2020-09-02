@@ -29,13 +29,13 @@ class RedAudioRtpPacket(
 
     fun removeRed() {
         if (removed) throw IllegalStateException("RED encapsulation already removed.")
-        parser.parse(this, false)
+        parser.decapsulate(this, parseRedundancy = false)
         removed = true
     }
 
     fun removeRedAndGetRedundancyPackets(): List<AudioRtpPacket> =
         if (removed) throw IllegalStateException("RED encapsulation already removed.")
-        else parser.parse(this, true).also { removed = true }
+        else parser.decapsulate(this, parseRedundancy = true).also { removed = true }
 
     override fun clone(): RedAudioRtpPacket =
         RedAudioRtpPacket(
