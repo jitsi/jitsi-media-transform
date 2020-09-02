@@ -314,7 +314,7 @@ public class DePacketizer
          * @param buf the byte buffer that contains the VP9 payload.
          * @param off the offset in the byte buffer where the VP9 payload
          *            starts.
-         * @param len the length of the VP8 payload in the byte buffer.
+         * @param len the length of the VP9 payload in the byte buffer.
          * @return true if the operation succeeded, false otherwise.
          */
         public static boolean setExtendedPictureId(
@@ -456,7 +456,7 @@ public class DePacketizer
         /**
          * Gets the TL0PICIDX from the payload descriptor.
          *
-         * @param buf the byte buffer that holds the VP8 payload descriptor.
+         * @param buf the byte buffer that holds the VP9 payload descriptor.
          * @param off the offset in the byte buffer where the payload descriptor
          *            starts.
          * @param len the length of the payload descriptor in the byte buffer.
@@ -475,8 +475,8 @@ public class DePacketizer
          * Sets the TL0PICIDX field for the VP9 payload specified in the
          * buffer that is passed as an argument.
          *
-         * @param buf the byte buffer that contains the VP8 payload.
-         * @param off the offset in the byte buffer where the VP8 payload
+         * @param buf the byte buffer that contains the VP9 payload.
+         * @param off the offset in the byte buffer where the VP9 payload
          *            starts.
          * @param len the length of the VP9 payload in the byte buffer.
          * @return true if the operation succeeded, false otherwise.

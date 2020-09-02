@@ -33,7 +33,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 
 /**
- * Some [Vp9Packet] fields are not able to be determined by looking at a single VP8 packet (for example the scalability
+ * Some [Vp9Packet] fields are not able to be determined by looking at a single VP9 packet (for example the scalability
  * structure is only carried in keyframes).  This class updates the layer descriptions with information
  * from frames, and also diagnoses packet format variants that the Jitsi videobridge won't be able to route.
  */
