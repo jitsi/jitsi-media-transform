@@ -53,7 +53,7 @@ class Vp9Parser(
     private val ssrcsSeen = HashSet<Long>()
 
     override fun observe(packetInfo: PacketInfo) {
-        val vp9Packet = packetInfo.packet as Vp9Packet
+        val vp9Packet = packetInfo.packetAs<Vp9Packet>()
 
         ssrcsSeen.add(vp9Packet.ssrc)
 

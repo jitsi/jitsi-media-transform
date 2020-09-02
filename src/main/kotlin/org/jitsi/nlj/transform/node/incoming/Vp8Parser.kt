@@ -50,7 +50,7 @@ class Vp8Parser(
     private val tidWithoutTl0PicIdxState = StateChangeLogger("TID with missing TL0PICIDX", logger)
 
     override fun observe(packetInfo: PacketInfo) {
-        val vp8Packet = packetInfo.packet as Vp8Packet
+        val vp8Packet = packetInfo.packetAs<Vp8Packet>()
         if (vp8Packet.height > -1) {
             // TODO: handle case where new height is from a packet older than the
             // latest height we've seen.
