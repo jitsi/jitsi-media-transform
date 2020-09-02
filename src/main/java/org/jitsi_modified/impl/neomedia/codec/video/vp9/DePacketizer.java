@@ -25,6 +25,42 @@ import org.jitsi.rtp.extensions.*;
  */
 public class DePacketizer
 {
+    /*
+     * VP9 Payload header, flexible mode (F=1):
+     *           0 1 2 3 4 5 6 7
+     *          +-+-+-+-+-+-+-+-+
+     *          |I|P|L|F|B|E|V|Z| (REQUIRED)
+     *          +-+-+-+-+-+-+-+-+
+     *     I:   |M| PICTURE ID  | (REQUIRED)
+     *          +-+-+-+-+-+-+-+-+
+     *     M:   | EXTENDED PID  | (RECOMMENDED)
+     *          +-+-+-+-+-+-+-+-+
+     *     L:   | TID |U| SID |D| (CONDITIONALLY RECOMMENDED)
+     *          +-+-+-+-+-+-+-+-+                             -\
+     *     P,F: | P_DIFF      |N| (CONDITIONALLY REQUIRED)    - up to 3 times
+     *          +-+-+-+-+-+-+-+-+                             -/
+     *     V:   | SS            |
+     *          | ..            |
+     *          +-+-+-+-+-+-+-+-+
+     *
+     * Non-flexible mode (F=0):
+     *           0 1 2 3 4 5 6 7
+     *          +-+-+-+-+-+-+-+-+
+     *          |I|P|L|F|B|E|V|Z| (REQUIRED)
+     *          +-+-+-+-+-+-+-+-+
+     *     I:   |M| PICTURE ID  | (RECOMMENDED)
+     *          +-+-+-+-+-+-+-+-+
+     *     M:   | EXTENDED PID  | (RECOMMENDED)
+     *          +-+-+-+-+-+-+-+-+
+     *     L:   | TID |U| SID |D| (CONDITIONALLY RECOMMENDED)
+     *          +-+-+-+-+-+-+-+-+
+     *          |   TL0PICIDX   | (CONDITIONALLY REQUIRED)
+     *          +-+-+-+-+-+-+-+-+
+     *     V:   | SS            |
+     *          | ..            |
+     *          +-+-+-+-+-+-+-+-+
+     */
+
     /**
      * I bit from the first byte of the Payload Descriptor:
      * Picture ID present.

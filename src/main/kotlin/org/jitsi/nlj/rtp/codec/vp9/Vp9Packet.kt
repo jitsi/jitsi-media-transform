@@ -140,6 +140,28 @@ class Vp9Packet private constructor (
         eid: Int = 0,
         baseFrameRate: Double = 30.0
     ): RtpEncodingDesc? {
+        /*
+         * VP9 Scalability structure:
+         *
+         *      +-+-+-+-+-+-+-+-+
+         * V:   | N_S |Y|G|-|-|-|
+         *      +-+-+-+-+-+-+-+-+              -\
+         * Y:   |     WIDTH     | (OPTIONAL)    .
+         *      +               +               .
+         *      |               | (OPTIONAL)    .
+         *      +-+-+-+-+-+-+-+-+               . - N_S + 1 times
+         *      |     HEIGHT    | (OPTIONAL)    .
+         *      +               +               .
+         *      |               | (OPTIONAL)    .
+         *      +-+-+-+-+-+-+-+-+              -/
+         * G:   |      N_G      | (OPTIONAL)
+         *      +-+-+-+-+-+-+-+-+                            -\
+         * N_G: | TID |U| R |-|-| (OPTIONAL)                 .
+         *      +-+-+-+-+-+-+-+-+              -\            . - N_G times
+         *      |    P_DIFF     | (OPTIONAL)    . - R times  .
+         *      +-+-+-+-+-+-+-+-+              -/            -/
+         */
+
         var off = DePacketizer.VP9PayloadDescriptor.getScalabilityStructureOffset(buffer, payloadOffset, payloadLength)
         if (off == -1) {
             return null
