@@ -102,11 +102,11 @@ class Vp9Packet private constructor (
     var TL0PICIDX: Int
         get() = _TL0PICIDX
         set(newValue) {
-            _TL0PICIDX = newValue
             if (newValue != -1 && !DePacketizer.VP9PayloadDescriptor.setTL0PICIDX(
                     buffer, payloadOffset, payloadLength, newValue)) {
                 logger.cwarn { "Failed to set the TL0PICIDX of a VP9 packet." }
             }
+            _TL0PICIDX = newValue
         }
 
     private var _pictureId =
@@ -115,11 +115,11 @@ class Vp9Packet private constructor (
     var pictureId: Int
         get() = _pictureId
         set(newValue) {
-            _pictureId = newValue
             if (!DePacketizer.VP9PayloadDescriptor.setExtendedPictureId(
                     buffer, payloadOffset, payloadLength, newValue)) {
                 logger.cwarn { "Failed to set the picture id of a VP9 packet." }
             }
+            _pictureId = newValue
         }
 
     /* TODO: avoid recomputing these on clone */
