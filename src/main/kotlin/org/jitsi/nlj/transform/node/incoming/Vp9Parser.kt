@@ -93,8 +93,10 @@ class Vp9Parser(
         }
         if (vp9Packet.spatialLayerIndex > 0 && vp9Packet.isInterPicturePredicted) {
             /* Check if this layer is using K-SVC. */
-            /* TODO: should we somehow track the keyframe layers separately in
-                the layer descriptions, to get the bitrates more accurate? */
+            /* Note: In K-SVC mode, this entirely ignores the bitrate of lower-layer keyframes
+             * when calculating layers' bitrates.  These values are small enough this is probably
+             * fine, but revisit this if it turns out to be a problem.
+             */
             findRtpLayerDesc(vp9Packet)?.useSoftDependencies = vp9Packet.usesInterLayerDependency
         }
 
