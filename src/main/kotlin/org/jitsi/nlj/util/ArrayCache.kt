@@ -118,6 +118,7 @@ open class ArrayCache<T>(
      * The item is wrapped in a [Container] to allow access to the time it was added to the cache, and we provide a
      * copy.
      */
+    @JvmOverloads
     fun getContainer(index: Int, shouldCloneItem: Boolean = true): Container? {
         val result = when {
             synchronize -> synchronized(syncRoot) {
