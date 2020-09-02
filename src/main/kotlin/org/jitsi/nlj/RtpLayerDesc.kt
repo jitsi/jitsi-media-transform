@@ -169,14 +169,10 @@ constructor(
         }
         rates[index] = rateStatistics.getRate(nowMs)
 
-        for (dependency in dependencyLayers) {
-            dependency.getBitrateBps(nowMs, rates)
-        }
+        dependencyLayers.forEach { it.getBitrateBps(nowMs, rates) }
 
         if (useSoftDependencies) {
-            for (dependency in softDependencyLayers) {
-                dependency.getBitrateBps(nowMs, rates)
-            }
+            softDependencyLayers.forEach { it.getBitrateBps(nowMs, rates) }
         }
     }
 
