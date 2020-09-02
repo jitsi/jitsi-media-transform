@@ -174,15 +174,17 @@ class Vp9Packet private constructor (
 
         off++
 
-        val heights = if (hasResolution) Array(numSpatial) { 0 } else null
-        if (hasResolution) {
-            for (i in 0 until numSpatial) {
+        val heights = if (hasResolution) {
+            Array(numSpatial) {
                 off += 2 // We only record height, not width
 
-                heights!![i] = ((buffer[off].toInt() and 0xff) shl 8) or
+                val height = ((buffer[off].toInt() and 0xff) shl 8) or
                     (buffer[off + 1].toInt() and 0xff)
                 off += 2
+                height
             }
+        } else {
+            Array(numSpatial) { RtpLayerDesc.NO_HEIGHT }
         }
 
         val tlCounts = Array(MAX_NUM_TLAYERS) { 0 }
@@ -233,7 +235,7 @@ class Vp9Packet private constructor (
                     eid = eid,
                     tid = t,
                     sid = s,
-                    height = if (hasResolution) { heights!![s] } else { RtpLayerDesc.NO_HEIGHT },
+                    height = heights[s],
                     frameRate = if (hasPictureGroup) {
                         baseFrameRate * tlCounts[t] / groupSize
                     } else {
