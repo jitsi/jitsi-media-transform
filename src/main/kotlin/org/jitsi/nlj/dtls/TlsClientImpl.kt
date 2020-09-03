@@ -117,7 +117,7 @@ class TlsClientImpl(
         val useSRTPData = TlsSRTPUtils.getUseSRTPExtension(serverExtensions)
         val protectionProfiles = useSRTPData.protectionProfiles
         chosenSrtpProtectionProfile =
-            DtlsUtils.chooseSrtpProtectionProfile(SrtpConfig.protectionProfiles, protectionProfiles)
+            DtlsUtils.chooseSrtpProtectionProfile(SrtpConfig.protectionProfiles, protectionProfiles.asIterable())
     }
 
     override fun getCipherSuites(): IntArray {

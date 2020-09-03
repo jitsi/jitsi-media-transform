@@ -82,7 +82,7 @@ class DtlsUtils {
          * A helper which finds an SRTP protection profile present in both
          * [ours] and [theirs].  Throws [DtlsException] if no common profile is found.
          */
-        fun chooseSrtpProtectionProfile(ours: List<Int>, theirs: IntArray): Int {
+        fun chooseSrtpProtectionProfile(ours: Iterable<Int>, theirs: Iterable<Int>): Int {
             return try {
                 ours.first(theirs::contains)
             } catch (e: NoSuchElementException) {
