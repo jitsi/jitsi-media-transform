@@ -58,7 +58,7 @@ abstract class PayloadType(
     /**
      * The rtcp feedback messages associated with the payload type (e.g. nack, nack pli, transport-cc, goog-remb, ccm fir, etc).
      */
-    rtcpFeedbackSet: RtcpFeedbackSet
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
 ) {
     val rtcpFeedbackSet = CopyOnWriteArraySet(rtcpFeedbackSet)
 
@@ -154,7 +154,7 @@ class VideoRedPayloadType(
     pt: Byte,
     clockRate: Int = 90000,
     parameters: PayloadTypeParams = ConcurrentHashMap(),
-    rtcpFeedbackSet: RtcpFeedbackSet = CopyOnWriteArraySet()
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
 ) : VideoPayloadType(pt, PayloadTypeEncoding.RED, clockRate, parameters, rtcpFeedbackSet)
 
 class OtherAudioPayloadType(
