@@ -185,14 +185,19 @@ class DtlsStack(
     private fun processIncomingProtocolData() {
         var bytesReceived: Int
         do {
-            synchronized(this) {
+            val bufCopy2: ByteArray? = synchronized(dtlsAppDataBuf) {
                 bytesReceived = dtlsTransport?.receive(dtlsAppDataBuf, 0, 1500, 1) ?: -1
-            }
-            if (bytesReceived > 0) {
-                // Copy again to copy out of dtlsAppDataBuf, which we re-use.
-                val bufCopy2 = BufferPool.getBuffer(bytesReceived).apply {
-                    System.arraycopy(dtlsAppDataBuf, 0, this, 0, bytesReceived)
+
+                if (bytesReceived > 0) {
+                    // Copy again to copy out of dtlsAppDataBuf, which we re-use.
+                    BufferPool.getBuffer(bytesReceived).apply {
+                        System.arraycopy(dtlsAppDataBuf, 0, this, 0, bytesReceived)
+                    }
+                } else {
+                    null
                 }
+            }
+            if (bufCopy2 != null) {
                 incomingDataHandler?.dataReceived(bufCopy2, 0, bytesReceived)
             }
         } while (bytesReceived > 0)
