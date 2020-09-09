@@ -154,6 +154,7 @@ class DtlsStack(
             // incomingProtocolData, but, since dtlsTransport won't be set
             // yet, we won't 'receive' it yet.  Check for any incoming packets
             // here, to handle this case.
+            logger.info("Check for incoming packets")
             processIncomingProtocolData()
         }
     }
