@@ -166,7 +166,7 @@ constructor(
          *
          * TODO maybe make this configurable.
          */
-        const val AVERAGE_BITRATE_WINDOW_MS = 5000
+        const val AVERAGE_BITRATE_WINDOW_MS = 1000
 
         /**
          * Calculate the "id" of a layer based on its encoding, spatial, and temporal ID.
