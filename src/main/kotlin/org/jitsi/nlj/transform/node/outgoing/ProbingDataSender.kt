@@ -62,8 +62,8 @@ class ProbingDataSender(
     private var localVideoSsrc: Long? = null
 
     // Stats
-    private var numProbingBytesSentRtx: Int = 0
-    private var numProbingBytesSentDummyData: Int = 0
+    private var numProbingBytesSentRtx: Long = 0
+    private var numProbingBytesSentDummyData: Long = 0
 
     init {
         streamInformationStore.onRtpPayloadTypesChanged { currentRtpPayloadTypes ->
