@@ -84,17 +84,20 @@ class ProbingDataSender(
         }
     }
 
-    fun sendProbing(mediaSsrc: Long, numBytes: Int): Int {
+    fun sendProbing(mediaSsrcs: Collection<Long>, numBytes: Int): Int {
         var totalBytesSent = 0
 
         if (rtxSupported) {
-            val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes)
-            numProbingBytesSentRtx += rtxBytesSent
-            totalBytesSent += rtxBytesSent
-            if (timeSeriesLogger.isTraceEnabled()) {
-                timeSeriesLogger.trace(diagnosticContext
+            for (mediaSsrc in mediaSsrcs) {
+                val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes)
+                numProbingBytesSentRtx += rtxBytesSent
+                totalBytesSent += rtxBytesSent
+                if (timeSeriesLogger.isTraceEnabled()) {
+                    timeSeriesLogger.trace(diagnosticContext
                         .makeTimeSeriesPoint("rtx_probing_bytes")
+                        .addField("ssrc", mediaSsrc)
                         .addField("bytes", rtxBytesSent))
+                }
             }
         }
         if (totalBytesSent < numBytes) {
