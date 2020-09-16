@@ -89,7 +89,10 @@ class ProbingDataSender(
 
         if (rtxSupported) {
             for (mediaSsrc in mediaSsrcs) {
-                val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes)
+                if (totalBytesSent >= numBytes) {
+                    break
+                }
+                val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes - totalBytesSent)
                 numProbingBytesSentRtx += rtxBytesSent
                 totalBytesSent += rtxBytesSent
                 if (timeSeriesLogger.isTraceEnabled()) {
