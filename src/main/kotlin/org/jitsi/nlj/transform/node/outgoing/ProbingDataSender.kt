@@ -137,12 +137,16 @@ class ProbingDataSender(
         var bytesSent = 0
         val pt = videoPayloadTypes.firstOrNull() ?: return bytesSent
         val senderSsrc = localVideoSsrc ?: return bytesSent
-        // TODO(brian): shouldn't this take into account numBytes? what if it's less than
-        // the size of one dummy packet?
-        val packetLength = RtpHeader.FIXED_HEADER_SIZE_BYTES + 0xFF
-        val numPackets = (numBytes / packetLength) + 1 /* account for the mod */
-        for (i in 0 until numPackets) {
-            val paddingPacket = PaddingVideoPacket.create(packetLength)
+
+        while (bytesSent < numBytes) {
+            val remainingBytes = numBytes - bytesSent
+            if (remainingBytes < RtpHeader.FIXED_HEADER_SIZE_BYTES) {
+                break
+            }
+            val paddingSize = (remainingBytes - RtpHeader.FIXED_HEADER_SIZE_BYTES).coerceAtMost(0xFF)
+            val packetLength = RtpHeader.FIXED_HEADER_SIZE_BYTES + paddingSize
+
+            val paddingPacket = PaddingVideoPacket.create(packetLength.toInt())
             paddingPacket.payloadType = pt.pt.toPositiveInt()
             paddingPacket.ssrc = senderSsrc
             paddingPacket.timestamp = currDummyTimestamp
