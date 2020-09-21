@@ -122,13 +122,13 @@ constructor(
      * @return the cumulative bitrate (in bps) of this [RtpLayerDesc]
      * and its dependencies.
      */
-    fun getBitrateBps(nowMs: Long): Bandwidth {
+    fun getBitrate(nowMs: Long): Bandwidth {
         var bitrate = bitrateTracker.getRate(nowMs)
 
         /* TODO: does the wrong thing if we have multiple dependencies */
         if (dependencyLayers != null) {
             for (dependency in dependencyLayers) {
-                bitrate += dependency.getBitrateBps(nowMs)
+                bitrate += dependency.getBitrate(nowMs)
             }
         }
 
@@ -142,7 +142,7 @@ constructor(
         addNumber("frameRate", frameRate)
         addNumber("height", height)
         addNumber("index", index)
-        addNumber("bitrate_bps", getBitrateBps(System.currentTimeMillis()).bps)
+        addNumber("bitrate_bps", getBitrate(System.currentTimeMillis()).bps)
         addNumber("tid", tid)
         addNumber("sid", sid)
     }

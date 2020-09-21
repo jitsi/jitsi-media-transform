@@ -99,9 +99,9 @@ class MediaSourceDesc
      * @return the last "stable" bitrate (bps) of the encoding with a non-zero rate
      * at or below the specified index.
      */
-    fun getBitrateBps(nowMs: Long, idx: Int): Bandwidth {
+    fun getBitrate(nowMs: Long, idx: Int): Bandwidth {
         for (entry in layersByIndex.headMap(idx, true).descendingMap()) {
-            val bitrate = entry.value.getBitrateBps(nowMs)
+            val bitrate = entry.value.getBitrate(nowMs)
             if (bitrate.bps > 0) {
                 return bitrate
             }
