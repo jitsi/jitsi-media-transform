@@ -237,7 +237,7 @@ public class RemoteBitrateEstimatorAbsSendTime
             incomingBitrateInitialized = false;
         }
 
-        incomingBitrate.update(new DataSize(8L * payloadSize), arrivalTimeMs);
+        incomingBitrate.update(DataSizeKt.getBytes(payloadSize), arrivalTimeMs);
 
         if (firstPacketTimeMs == -1)
         {
