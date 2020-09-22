@@ -28,6 +28,7 @@ import kotlin.random.Random
 class PacketLossNode(val config: PacketLossConfig) : FilterNode("PacketLossNode($config)") {
     private val random = Random(System.currentTimeMillis())
     private var inBurst = false
+    private var packetsSeen = 0
     private var currentBurstPacketsDropped = 0
 
     override fun accept(packetInfo: PacketInfo) = acceptBurst() && random.nextDouble() >= config.uniformRate
@@ -35,7 +36,8 @@ class PacketLossNode(val config: PacketLossConfig) : FilterNode("PacketLossNode(
     private fun acceptBurst(): Boolean {
         if (!config.burstEnabled) return true
 
-        if (stats.numInputPackets % config.burstInterval == 0L) {
+        packetsSeen++
+        if (packetsSeen % config.burstInterval == 0) {
             inBurst = true
         }
 
