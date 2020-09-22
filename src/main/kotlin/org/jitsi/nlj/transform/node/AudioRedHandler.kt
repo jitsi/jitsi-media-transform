@@ -35,7 +35,7 @@ class AudioRedHandler(
     streamInformationStore: ReadOnlyStreamInformationStore
 ) : MultipleOutputTransformerNode("RedHandler") {
 
-    val stats = Stats()
+    private val redStats = Stats()
     val config = Config()
 
     var audioLevelExtId: Int? = null
@@ -73,12 +73,12 @@ class AudioRedHandler(
         addString("distance", config.distance.toString())
         addBoolean("vad_only", config.vadOnly)
 
-        addNumber("red_packets_decapsulated", stats.redPacketsDecapsulated)
-        addNumber("red_packets_forwarded", stats.redPacketsForwarded)
-        addNumber("audio_packets_encapsulated", stats.audioPacketsEncapsulated)
-        addNumber("audio_packets_forwarded", stats.audioPacketsForwarded)
-        addNumber("lost_packets_recovered", stats.lostPacketsRecovered)
-        addNumber("redundancy_packets_added", stats.redundancyPacketsAdded)
+        addNumber("red_packets_decapsulated", redStats.redPacketsDecapsulated)
+        addNumber("red_packets_forwarded", redStats.redPacketsForwarded)
+        addNumber("audio_packets_encapsulated", redStats.audioPacketsEncapsulated)
+        addNumber("audio_packets_forwarded", redStats.audioPacketsForwarded)
+        addNumber("lost_packets_recovered", redStats.lostPacketsRecovered)
+        addNumber("redundancy_packets_added", redStats.redundancyPacketsAdded)
     }
 
     /**
@@ -116,7 +116,7 @@ class AudioRedHandler(
                     RedDistance.ONE -> {
                         getPacketToProtect(applySequenceNumberDelta(seq, -1), config.vadOnly)?.also { secondary ->
                             redundancy.add(secondary)
-                            stats.redundancyPacketAdded()
+                            redStats.redundancyPacketAdded()
                         }
                     }
                     RedDistance.TWO -> {
@@ -130,13 +130,13 @@ class AudioRedHandler(
                             val tertiary = getPacketToProtect(applySequenceNumberDelta(seq, -2), config.vadOnly)
                             if (tertiary != null) {
                                 redundancy.add(tertiary)
-                                stats.redundancyPacketAdded()
+                                redStats.redundancyPacketAdded()
                                 redundancy.add(secondary)
-                                stats.redundancyPacketAdded()
+                                redStats.redundancyPacketAdded()
                             } else if (!config.vadOnly || secondary.hasVad()) {
                                 // If there's no tertiary encode the secondary alone, but this time check its VAD.
                                 redundancy.add(secondary)
-                                stats.redundancyPacketAdded()
+                                redStats.redundancyPacketAdded()
                             }
                         }
                     }
@@ -148,9 +148,9 @@ class AudioRedHandler(
                 redundancy.forEach { BufferPool.returnBuffer(it.buffer) }
                 BufferPool.returnBuffer(audioRtpPacket.buffer)
 
-                stats.audioPacketEncapsulated()
+                redStats.audioPacketEncapsulated()
             } else {
-                stats.audioPacketForwarded()
+                redStats.audioPacketForwarded()
             }
             return packetInfo
         }
@@ -203,7 +203,7 @@ class AudioRedHandler(
                         if ((it.sequenceNumber == prev && prevMissing) ||
                             (it.sequenceNumber == prev2 && prev2Missing)) {
                             add(PacketInfo(it))
-                            stats.lostPacketRecovered()
+                            redStats.lostPacketRecovered()
                         }
                         sentAudioCache.insert(it)
                     }
@@ -211,7 +211,7 @@ class AudioRedHandler(
                     redPacket.removeRed()
                 }
 
-                stats.redPacketDecapsulated()
+                redStats.redPacketDecapsulated()
                 packetInfo.packet = redPacket.toOtherType(::AudioRtpPacket)
 
                 // It's possible we already forwarded the primary packet if we recovered it from a previously received
@@ -221,7 +221,7 @@ class AudioRedHandler(
                     add(packetInfo)
                 }
             } else {
-                stats.redPacketForwarded()
+                redStats.redPacketForwarded()
                 listOf(packetInfo)
             }
         }

@@ -178,7 +178,7 @@ sealed class StatsKeepingNode(name: String) : Node(name) {
     /**
      * Keeps stats for this [Node]
      */
-    private val stats = NodeStats()
+    protected val stats = NodeStats()
 
     /**
      * Avoid stopping more than once.
