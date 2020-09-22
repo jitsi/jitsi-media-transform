@@ -143,16 +143,16 @@ class RtpReceiverImpl @JvmOverloads constructor(
     override fun isReceivingAudio() = audioBitrateCalculator.active
     override fun isReceivingVideo() = videoBitrateCalculator.active
 
-    /**
-     * Configuration for the packet loss to introduce in the receive pipeline (for debugging/testing purposes).
-     */
-    private val packetLossConfig = PacketLossConfig("jmt.debug.packet-loss.incoming")
-
     companion object {
         val queueErrorCounter = CountingErrorHandler()
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP receiver incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP receiver incoming queue"
+
+        /**
+         * Configuration for the packet loss to introduce in the receive pipeline (for debugging/testing purposes).
+         */
+        private val packetLossConfig = PacketLossConfig("jmt.debug.packet-loss.incoming")
     }
 
     /**

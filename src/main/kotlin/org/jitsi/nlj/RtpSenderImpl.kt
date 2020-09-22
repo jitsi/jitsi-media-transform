@@ -113,11 +113,6 @@ class RtpSenderImpl(
 
     private val nackHandler: NackHandler
 
-    /**
-     * Configuration for the packet loss to introduce in the send pipeline (for debugging/testing purposes).
-     */
-    private val packetLossConfig = PacketLossConfig("jmt.debug.packet-loss.outgoing")
-
     private val outputPipelineTerminationNode = object : ConsumerNode("Output pipeline termination node") {
         override fun consume(packetInfo: PacketInfo) {
             // While there's no handler set we're effectively dropping packets, so their buffers
@@ -295,5 +290,10 @@ class RtpSenderImpl(
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
+
+        /**
+         * Configuration for the packet loss to introduce in the send pipeline (for debugging/testing purposes).
+         */
+        private val packetLossConfig = PacketLossConfig("jmt.debug.packet-loss.outgoing")
     }
 }
