@@ -54,8 +54,8 @@ class EndpointConnectionStats(
     }
     data class Snapshot(
         val rtt: Double,
-        val receiveLoss: LossStatsSnapshot,
-        val sendLoss: LossStatsSnapshot
+        val incomingLossStats: LossStatsSnapshot,
+        val outgoingLossStats: LossStatsSnapshot
     )
 
     data class LossStatsSnapshot(
@@ -77,8 +77,8 @@ class EndpointConnectionStats(
      */
     private var rtt: Double = 0.0
 
-    private val receiveLossTracker = LossTracker()
-    private val sendLossTracker = LossTracker()
+    private val incomingLossTracker = LossTracker()
+    private val outgoingLossTracker = LossTracker()
 
     fun addListener(listener: EndpointConnectionStatsListener) {
         endpointConnectionStatsListeners.add(listener)
@@ -88,13 +88,13 @@ class EndpointConnectionStats(
         return synchronized(lock) {
             Snapshot(
                 rtt = rtt,
-                receiveLoss = LossStatsSnapshot(
-                    packetsLost = receiveLossTracker.lostPackets.getAccumulatedCount(),
-                    packetsReceived = receiveLossTracker.receivedPackets.getAccumulatedCount()
+                incomingLossStats = LossStatsSnapshot(
+                    packetsLost = incomingLossTracker.lostPackets.getAccumulatedCount(),
+                    packetsReceived = incomingLossTracker.receivedPackets.getAccumulatedCount()
                 ),
-                sendLoss = LossStatsSnapshot(
-                    packetsLost = sendLossTracker.lostPackets.getAccumulatedCount(),
-                    packetsReceived = sendLossTracker.receivedPackets.getAccumulatedCount()
+                outgoingLossStats = LossStatsSnapshot(
+                    packetsLost = outgoingLossTracker.lostPackets.getAccumulatedCount(),
+                    packetsReceived = outgoingLossTracker.receivedPackets.getAccumulatedCount()
                 )
             )
         }
@@ -113,7 +113,7 @@ class EndpointConnectionStats(
                 packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedInstant, reportBlock) }
             }
             // Received TCC feedback reports loss on packets we *sent*
-            is RtcpFbTccPacket -> processTcc(packet, sendLossTracker)
+            is RtcpFbTccPacket -> processTcc(packet, outgoingLossTracker)
         }
     }
 
@@ -126,7 +126,7 @@ class EndpointConnectionStats(
                 srSentTimes[entry] = clock.instant()
             }
             // Sent TCC feedback reports loss on packets we *received*
-            is RtcpFbTccPacket -> processTcc(packet, receiveLossTracker)
+            is RtcpFbTccPacket -> processTcc(packet, incomingLossTracker)
         }
     }
 
