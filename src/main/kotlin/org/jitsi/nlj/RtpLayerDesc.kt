@@ -16,7 +16,11 @@
 package org.jitsi.nlj
 
 import org.jitsi.nlj.stats.NodeStatsBlock
-import org.jitsi.utils.stats.RateStatistics
+import org.jitsi.nlj.util.Bandwidth
+import org.jitsi.nlj.util.BitrateTracker
+import org.jitsi.nlj.util.DataSize
+import org.jitsi.nlj.util.sum
+import org.jitsi.utils.secs
 
 /**
  * Keeps track of its subjective quality index,
@@ -88,10 +92,9 @@ constructor(
     var useSoftDependencies = true
 
     /**
-     * The [RateStatistics] instance used to calculate the receiving
-     * bitrate of this RTP layer.
+     * The [BitrateTracker] instance used to calculate the receiving bitrate of this RTP layer.
      */
-    private var rateStatistics = RateStatistics(AVERAGE_BITRATE_WINDOW_MS)
+    private var bitrateTracker = BitrateTracker(AVERAGE_BITRATE_WINDOW)
 
     /**
      * @return the "id" of this layer within this encoding. This is a server-side id and should
@@ -115,25 +118,28 @@ constructor(
     }
 
     /**
-     * Inherit a rateStatistics object
+     * Inherit a [BitrateTracker] object
      */
-    internal fun inheritStatistics(statistics: RateStatistics) {
-        rateStatistics = statistics
+    internal fun inheritStatistics(tracker: BitrateTracker) {
+        bitrateTracker = tracker
     }
 
+    /**
+     * Inherit another layer description's [BitrateTracker] object.
+     */
     internal fun inheritFrom(other: RtpLayerDesc) {
-        inheritStatistics(other.rateStatistics)
+        inheritStatistics(other.bitrateTracker)
         useSoftDependencies = other.useSoftDependencies
     }
 
     /**
      *
-     * @param packetSizeBytes
+     * @param packetSize
      * @param nowMs
      */
-    fun updateBitrate(packetSizeBytes: Int, nowMs: Long) {
+    fun updateBitrate(packetSize: DataSize, nowMs: Long) {
         // Update rate stats (this should run after padding termination).
-        rateStatistics.update(packetSizeBytes, nowMs)
+        bitrateTracker.update(packetSize, nowMs)
     }
 
     /**
@@ -144,12 +150,10 @@ constructor(
      * @return the cumulative bitrate (in bps) of this [RtpLayerDesc]
      * and its dependencies.
      */
-    fun getBitrateBps(nowMs: Long): Long {
-        var bitrate = rateStatistics.getRate(nowMs)
+    fun getBitrate(nowMs: Long): Bandwidth {
+        val rates = HashMap<Int, Bandwidth>()
 
-        val rates = HashMap<Int, Long>()
-
-        getBitrateBps(nowMs, rates)
+        getBitrate(nowMs, rates)
 
         return rates.values.sum()
     }
@@ -163,16 +167,16 @@ constructor(
      *
      * @param nowMs
      */
-    private fun getBitrateBps(nowMs: Long, rates: MutableMap<Int, Long>) {
+    private fun getBitrate(nowMs: Long, rates: MutableMap<Int, Bandwidth>) {
         if (rates.containsKey(index)) {
             return
         }
-        rates[index] = rateStatistics.getRate(nowMs)
+        rates[index] = bitrateTracker.getRate(nowMs)
 
-        dependencyLayers.forEach { it.getBitrateBps(nowMs, rates) }
+        dependencyLayers.forEach { it.getBitrate(nowMs, rates) }
 
         if (useSoftDependencies) {
-            softDependencyLayers.forEach { it.getBitrateBps(nowMs, rates) }
+            softDependencyLayers.forEach { it.getBitrate(nowMs, rates) }
         }
     }
 
@@ -183,7 +187,7 @@ constructor(
         addNumber("frameRate", frameRate)
         addNumber("height", height)
         addNumber("index", index)
-        addNumber("bitrate_bps", getBitrateBps(System.currentTimeMillis()))
+        addNumber("bitrate_bps", getBitrate(System.currentTimeMillis()).bps)
         addNumber("tid", tid)
         addNumber("sid", sid)
     }
@@ -214,7 +218,7 @@ constructor(
          *
          * TODO maybe make this configurable.
          */
-        const val AVERAGE_BITRATE_WINDOW_MS = 5000
+        val AVERAGE_BITRATE_WINDOW = 5.secs
 
         /**
          * Calculate the "index" of a layer based on its encoding, spatial, and temporal ID.

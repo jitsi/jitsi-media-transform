@@ -1,5 +1,5 @@
 /*
- * Copyright @ 2018 - Present, 8x8 Inc
+ * Copyright @ 2020 - Present, 8x8 Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.nlj.util
+package org.jitsi.nlj.transform.node
+
+import org.jitsi.nlj.PacketInfo
+import kotlin.random.Random
 
 /**
- * Model a set of key value pairs for configuration
+ * A [Node] which drops packets randomly with a certain probability and a uniform distribution.
  */
-class Configuration : HashMap<String, Any>() {
-    fun getInt(key: String): Int = this[key] as Int
+class PacketLossNode(val p: Double) : FilterNode("PacketLossNode(p=$p)") {
+    private val random = Random(System.currentTimeMillis())
 
-    fun getInt(key: String, default: Int): Int = this.getOrDefault(key, default) as Int
+    override fun accept(packetInfo: PacketInfo) = random.nextDouble() >= p
 
-    /**
-     * Merge the key, values in [config] with the ones currently contained
-     * in the current map.  Duplicate values in [config] will *override*
-     * ones currently set
-     */
-    fun merge(config: Configuration?) {
-        config?.let { putAll(it) }
-    }
+    override fun trace(f: () -> Unit) { }
 }

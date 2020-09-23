@@ -26,14 +26,18 @@ import org.jitsi.nlj.rtcp.NackHandler
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtcp.RtcpSrUpdater
 import org.jitsi.nlj.rtp.TransportCcEngine
+import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
+import org.jitsi.nlj.rtp.bandwidthestimation.GoogleCcEstimator
 import org.jitsi.nlj.srtp.SrtpTransformers
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeEventVisitor
 import org.jitsi.nlj.transform.NodeStatsVisitor
 import org.jitsi.nlj.transform.NodeTeardownVisitor
+import org.jitsi.nlj.transform.node.AudioRedHandler
 import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketCacher
+import org.jitsi.nlj.transform.node.PacketLossNode
 import org.jitsi.nlj.transform.node.PacketStreamStatsNode
 import org.jitsi.nlj.transform.node.SrtcpEncryptNode
 import org.jitsi.nlj.transform.node.SrtpEncryptNode
@@ -59,7 +63,6 @@ import org.jitsi.nlj.util.BufferPool
 
 class RtpSenderImpl(
     val id: String,
-    val transportCcEngine: TransportCcEngine? = null,
     private val rtcpEventNotifier: RtcpEventNotifier,
     /**
      * The executor this class will use for its primary work (i.e. critical path
@@ -96,6 +99,8 @@ class RtpSenderImpl(
     // a generic handler here and then the bridge can put it into its PacketQueue and have
     // its handler (likely in another thread) grab the packet and send it out
     private var outgoingPacketHandler: PacketHandler? = null
+    override val bandwidthEstimator: BandwidthEstimator = GoogleCcEstimator(diagnosticContext, logger)
+    private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger)
 
     private val srtpEncryptWrapper = SrtpEncryptNode()
     private val srtcpEncryptWrapper = SrtcpEncryptNode()
@@ -109,6 +114,13 @@ class RtpSenderImpl(
     private val probingDataSender: ProbingDataSender
 
     private val nackHandler: NackHandler
+
+    /**
+     * The packet loss to introduce in the send pipeline (for debugging/testing purposes).
+     */
+    private val lossFractionToIntroduce: Double by config {
+        "jmt.debug.packet-loss.send".from(JitsiConfig.newConfig)
+    }
 
     private val outputPipelineTerminationNode = object : ConsumerNode("Output pipeline termination node") {
         override fun consume(packetInfo: PacketInfo) {
@@ -125,9 +137,14 @@ class RtpSenderImpl(
     init {
         logger.cdebug { "Sender $id using executor ${executor.hashCode()}" }
 
+        if (lossFractionToIntroduce > 0) {
+            logger.warn("Will simulate ${lossFractionToIntroduce * 100}% packet loss.")
+        }
+
         incomingPacketQueue.setErrorHandler(queueErrorCounter)
 
         outgoingRtpRoot = pipeline {
+            node(AudioRedHandler(streamInformationStore))
             node(outgoingPacketCache)
             node(absSendTime)
             node(statsTracker)
@@ -135,6 +152,7 @@ class RtpSenderImpl(
             node(toggleablePcapWriter.newObserverNode())
             node(srtpEncryptWrapper)
             node(packetStreamStats.createNewNode())
+            node(PacketLossNode(lossFractionToIntroduce), condition = { lossFractionToIntroduce > 0 })
             node(outputPipelineTerminationNode)
         }
 
@@ -146,6 +164,7 @@ class RtpSenderImpl(
 
         nackHandler = NackHandler(outgoingPacketCache.getPacketCache(), outgoingRtxRoot, logger)
         rtcpEventNotifier.addRtcpEventListener(nackHandler)
+        rtcpEventNotifier.addRtcpEventListener(transportCcEngine)
 
         // TODO: are we setting outgoing rtcp sequence numbers correctly? just add a simple node here to rewrite them
         outgoingRtcpRoot = pipeline {
@@ -167,6 +186,7 @@ class RtpSenderImpl(
             node(toggleablePcapWriter.newObserverNode())
             node(srtcpEncryptWrapper)
             node(packetStreamStats.createNewNode())
+            node(PacketLossNode(lossFractionToIntroduce), condition = { lossFractionToIntroduce > 0 })
             node(outputPipelineTerminationNode)
         }
 
@@ -199,7 +219,8 @@ class RtpSenderImpl(
         }
     }
 
-    override fun sendProbing(mediaSsrc: Long, numBytes: Int): Int = probingDataSender.sendProbing(mediaSsrc, numBytes)
+    override fun sendProbing(mediaSsrcs: Collection<Long>, numBytes: Int): Int =
+        probingDataSender.sendProbing(mediaSsrcs, numBytes)
 
     override fun onOutgoingPacket(handler: PacketHandler) {
         outgoingPacketHandler = handler
@@ -261,6 +282,8 @@ class RtpSenderImpl(
         addString("running", running.toString())
         addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
         addString("localAudioSsrc", localAudioSsrc?.toString() ?: "null")
+        addJson("transportCcEngine", transportCcEngine.getStatistics().toJson())
+        addJson("Bandwidth Estimation", bandwidthEstimator.getStats().toJson())
     }
 
     override fun stop() {
