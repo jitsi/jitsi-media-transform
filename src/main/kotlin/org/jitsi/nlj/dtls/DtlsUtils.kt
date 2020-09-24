@@ -69,18 +69,26 @@ class DtlsUtils {
             val certificate = org.bouncycastle.tls.Certificate(
                 arrayOf(BcTlsCertificate(BC_TLS_CRYPTO, x509certificate))
             )
-            return CertificateInfo(keyPair, certificate, localFingerprintHashFunction, localFingerprint, System.currentTimeMillis())
+            return CertificateInfo(
+                keyPair,
+                certificate,
+                localFingerprintHashFunction,
+                localFingerprint,
+                System.currentTimeMillis()
+            )
         }
 
         /**
          * A helper which finds an SRTP protection profile present in both
          * [ours] and [theirs].  Throws [DtlsException] if no common profile is found.
          */
-        fun chooseSrtpProtectionProfile(ours: IntArray, theirs: IntArray): Int {
+        fun chooseSrtpProtectionProfile(ours: Iterable<Int>, theirs: Iterable<Int>): Int {
             return try {
-                theirs.first(ours::contains)
+                ours.first(theirs::contains)
             } catch (e: NoSuchElementException) {
-                throw DtlsException("No common SRTP protection profile found.  Ours: $ours Theirs: $theirs")
+                throw DtlsException(
+                    "No common SRTP protection profile found.  Ours: ${ours.joinToString()} " +
+                        "Theirs: ${theirs.joinToString()}")
             }
         }
 
@@ -98,7 +106,14 @@ class DtlsUtils {
             val expiryDate = Date(now + Duration.ofDays(7).toMillis())
             val serialNumber = BigInteger.valueOf(now)
 
-            val certBuilder = JcaX509v3CertificateBuilder(subject, serialNumber, startDate, expiryDate, subject, keyPair.public)
+            val certBuilder = JcaX509v3CertificateBuilder(
+                subject,
+                serialNumber,
+                startDate,
+                expiryDate,
+                subject,
+                keyPair.public
+            )
             val signer = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
 
             return certBuilder.build(signer).toASN1Structure()
@@ -323,7 +338,8 @@ inline fun Logger.notifyAlertRaised(alertLevel: Short, alertDescription: Short, 
                 }
                 toString()
             }
-            cinfo { "Alert raised: level=$alertLevel, description=$alertDescription, message=$message cause=$cause $stack" }
+            cinfo { "Alert raised: level=$alertLevel, description=$alertDescription, message=$message " +
+                "cause=$cause $stack" }
         }
     }
 }
@@ -333,6 +349,7 @@ inline fun Logger.notifyAlertReceived(alertLevel: Short, alertDescription: Short
     when (alertDescription) {
         AlertDescription.close_notify -> cinfo { "close_notify received, connection closing" }
         else -> cerror {
-            "Alert received: level=$alertLevel, description=$alertDescription (${AlertDescription.getName(alertDescription)})" }
+            "Alert received: level=$alertLevel, description=$alertDescription " +
+                "(${AlertDescription.getName(alertDescription)})" }
     }
 }

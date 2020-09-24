@@ -15,7 +15,9 @@
  */
 package org.jitsi.nlj
 
-import ToggleablePcapWriter
+import org.jitsi.config.JitsiConfig
+import org.jitsi.metaconfig.config
+import org.jitsi.metaconfig.from
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -24,17 +26,23 @@ import org.jitsi.nlj.rtcp.NackHandler
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtcp.RtcpSrUpdater
 import org.jitsi.nlj.rtp.TransportCcEngine
+import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
+import org.jitsi.nlj.rtp.bandwidthestimation.GoogleCcEstimator
 import org.jitsi.nlj.srtp.SrtpTransformers
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.NodeEventVisitor
 import org.jitsi.nlj.transform.NodeStatsVisitor
 import org.jitsi.nlj.transform.NodeTeardownVisitor
+import org.jitsi.nlj.transform.node.AudioRedHandler
 import org.jitsi.nlj.transform.node.ConsumerNode
 import org.jitsi.nlj.transform.node.Node
 import org.jitsi.nlj.transform.node.PacketCacher
+import org.jitsi.nlj.transform.node.PacketLossConfig
+import org.jitsi.nlj.transform.node.PacketLossNode
 import org.jitsi.nlj.transform.node.PacketStreamStatsNode
 import org.jitsi.nlj.transform.node.SrtcpEncryptNode
 import org.jitsi.nlj.transform.node.SrtpEncryptNode
+import org.jitsi.nlj.transform.node.ToggleablePcapWriter
 import org.jitsi.nlj.transform.node.outgoing.AbsSendTime
 import org.jitsi.nlj.transform.node.outgoing.OutgoingStatisticsTracker
 import org.jitsi.nlj.transform.node.outgoing.ProbingDataSender
@@ -52,9 +60,10 @@ import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
+import org.jitsi.nlj.util.BufferPool
+
 class RtpSenderImpl(
     val id: String,
-    val transportCcEngine: TransportCcEngine? = null,
     private val rtcpEventNotifier: RtcpEventNotifier,
     /**
      * The executor this class will use for its primary work (i.e. critical path
@@ -75,7 +84,13 @@ class RtpSenderImpl(
     private val outgoingRtpRoot: Node
     private val outgoingRtxRoot: Node
     private val outgoingRtcpRoot: Node
-    private val incomingPacketQueue = PacketInfoQueue("rtp-sender-incoming-packet-queue", executor, this::handlePacket)
+    private val queueSize: Int by config("jmt.transceiver.send.queue-size".from(JitsiConfig.newConfig))
+    private val incomingPacketQueue = PacketInfoQueue(
+        "rtp-sender-incoming-packet-queue",
+        executor,
+        this::handlePacket,
+        queueSize
+    )
     var running = true
     private var localVideoSsrc: Long? = null
     private var localAudioSsrc: Long? = null
@@ -85,6 +100,8 @@ class RtpSenderImpl(
     // a generic handler here and then the bridge can put it into its PacketQueue and have
     // its handler (likely in another thread) grab the packet and send it out
     private var outgoingPacketHandler: PacketHandler? = null
+    override val bandwidthEstimator: BandwidthEstimator = GoogleCcEstimator(diagnosticContext, logger)
+    private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger)
 
     private val srtpEncryptWrapper = SrtpEncryptNode()
     private val srtcpEncryptWrapper = SrtcpEncryptNode()
@@ -114,9 +131,14 @@ class RtpSenderImpl(
     init {
         logger.cdebug { "Sender $id using executor ${executor.hashCode()}" }
 
+        if (packetLossConfig.enabled) {
+            logger.warn("Will simulate packet loss: $packetLossConfig")
+        }
+
         incomingPacketQueue.setErrorHandler(queueErrorCounter)
 
         outgoingRtpRoot = pipeline {
+            node(AudioRedHandler(streamInformationStore))
             node(outgoingPacketCache)
             node(absSendTime)
             node(statsTracker)
@@ -124,6 +146,7 @@ class RtpSenderImpl(
             node(toggleablePcapWriter.newObserverNode())
             node(srtpEncryptWrapper)
             node(packetStreamStats.createNewNode())
+            node(PacketLossNode(packetLossConfig), condition = { packetLossConfig.enabled })
             node(outputPipelineTerminationNode)
         }
 
@@ -135,6 +158,7 @@ class RtpSenderImpl(
 
         nackHandler = NackHandler(outgoingPacketCache.getPacketCache(), outgoingRtxRoot, logger)
         rtcpEventNotifier.addRtcpEventListener(nackHandler)
+        rtcpEventNotifier.addRtcpEventListener(transportCcEngine)
 
         // TODO: are we setting outgoing rtcp sequence numbers correctly? just add a simple node here to rewrite them
         outgoingRtcpRoot = pipeline {
@@ -156,6 +180,7 @@ class RtpSenderImpl(
             node(toggleablePcapWriter.newObserverNode())
             node(srtcpEncryptWrapper)
             node(packetStreamStats.createNewNode())
+            node(PacketLossNode(packetLossConfig), condition = { packetLossConfig.enabled })
             node(outputPipelineTerminationNode)
         }
 
@@ -176,15 +201,20 @@ class RtpSenderImpl(
      * Insert packets into the incoming packet queue
      */
     override fun doProcessPacket(packetInfo: PacketInfo) {
-        val packet = packetInfo.packet
-        if (packet is RtcpPacket) {
-            rtcpEventNotifier.notifyRtcpSent(packet)
+        if (running) {
+            val packet = packetInfo.packet
+            if (packet is RtcpPacket) {
+                rtcpEventNotifier.notifyRtcpSent(packet)
+            }
+            packetInfo.addEvent(PACKET_QUEUE_ENTRY_EVENT)
+            incomingPacketQueue.add(packetInfo)
+        } else {
+            BufferPool.returnBuffer(packetInfo.packet.buffer)
         }
-        packetInfo.addEvent(PACKET_QUEUE_ENTRY_EVENT)
-        incomingPacketQueue.add(packetInfo)
     }
 
-    override fun sendProbing(mediaSsrc: Long, numBytes: Int): Int = probingDataSender.sendProbing(mediaSsrc, numBytes)
+    override fun sendProbing(mediaSsrcs: Collection<Long>, numBytes: Int): Int =
+        probingDataSender.sendProbing(mediaSsrcs, numBytes)
 
     override fun onOutgoingPacket(handler: PacketHandler) {
         outgoingPacketHandler = handler
@@ -204,7 +234,7 @@ class RtpSenderImpl(
      * through the sender pipeline
      */
     private fun handlePacket(packetInfo: PacketInfo): Boolean {
-        if (running) {
+        return if (running) {
             packetInfo.addEvent(PACKET_QUEUE_EXIT_EVENT)
 
             val root = when (packetInfo.packet) {
@@ -212,9 +242,11 @@ class RtpSenderImpl(
                 else -> outgoingRtpRoot
             }
             root.processPacket(packetInfo)
-            return true
+            true
+        } else {
+            BufferPool.returnBuffer(packetInfo.packet.buffer)
+            false
         }
-        return false
     }
 
     override fun getStreamStats() = statsTracker.getSnapshot()
@@ -244,15 +276,18 @@ class RtpSenderImpl(
         addString("running", running.toString())
         addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
         addString("localAudioSsrc", localAudioSsrc?.toString() ?: "null")
+        addJson("transportCcEngine", transportCcEngine.getStatistics().toJson())
+        addJson("Bandwidth Estimation", bandwidthEstimator.getStats().toJson())
     }
 
     override fun stop() {
         running = false
-        incomingPacketQueue.close()
     }
 
     override fun tearDown() {
+        logger.info("Tearing down")
         NodeTeardownVisitor().reverseVisit(outputPipelineTerminationNode)
+        incomingPacketQueue.close()
         toggleablePcapWriter.disable()
     }
 
@@ -261,5 +296,10 @@ class RtpSenderImpl(
 
         private const val PACKET_QUEUE_ENTRY_EVENT = "Entered RTP sender incoming queue"
         private const val PACKET_QUEUE_EXIT_EVENT = "Exited RTP sender incoming queue"
+
+        /**
+         * Configuration for the packet loss to introduce in the send pipeline (for debugging/testing purposes).
+         */
+        private val packetLossConfig = PacketLossConfig("jmt.debug.packet-loss.outgoing")
     }
 }

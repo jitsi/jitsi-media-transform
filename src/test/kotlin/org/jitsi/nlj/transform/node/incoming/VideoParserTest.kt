@@ -16,11 +16,11 @@
 
 package org.jitsi.nlj.transform.node.incoming
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import io.kotlintest.IsolationMode
-import io.kotlintest.fail
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.assertions.fail
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
+import io.mockk.every
+import io.mockk.mockk
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.format.Vp8PayloadType
@@ -41,7 +41,8 @@ class VideoParserTest : ShouldSpec() {
 
     private val streamInformationStore = object : ReadOnlyStreamInformationStore {
         override val rtpExtensions: List<RtpExtension> = mutableListOf()
-        override val rtpPayloadTypes: Map<Byte, PayloadType> = mutableMapOf(100.toByte() to Vp8PayloadType(100.toByte()))
+        override val rtpPayloadTypes: Map<Byte, PayloadType> =
+            mutableMapOf(100.toByte() to Vp8PayloadType(100.toByte()))
         override var supportsFir: Boolean = true
         override var supportsPli: Boolean = true
         override var supportsRemb: Boolean = true
@@ -86,14 +87,14 @@ class VideoParserTest : ShouldSpec() {
     )
 
     private val vp8Packet = Vp8Packet(vp8PacketBuf, 0, vp8PacketBuf.size)
-    private val packetInfo = mock<PacketInfo> {
-        on { packetAs<RtpPacket>() } doReturn vp8Packet
-        on { packet } doReturn vp8Packet
+    private val packetInfo = mockk<PacketInfo>(relaxed = true) {
+        every { packetAs<RtpPacket>() } returns vp8Packet
+        every { packet } returns vp8Packet
     }
 
     init {
-        "When parsing a VP8 packet" {
-            "with no encoding signaled" {
+        context("When parsing a VP8 packet") {
+            context("with no encoding signaled") {
                 parser.onOutput { pi ->
                     fail("Should not forward the packet")
                 }

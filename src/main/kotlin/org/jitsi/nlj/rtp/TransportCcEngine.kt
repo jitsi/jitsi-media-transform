@@ -138,12 +138,16 @@ class TransportCcEngine(
                                 numPacketsReportedAfterLost.getAndIncrement()
                             }
 
-                            val arrivalTimeInLocalClock = currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
+                            val arrivalTimeInLocalClock =
+                                currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
-                            /* TODO: BandwidthEstimator should have an API for "previously reported lost packet has arrived"
-                             * for the reportedLost case. */
+                            /* TODO: BandwidthEstimator should have an API for "previously reported lost packet
+                             *  has arrived" for the reportedLost case.
+                             */
                             bandwidthEstimator.processPacketArrival(
-                                now, packetDetail.packetSendTime, arrivalTimeInLocalClock, tccSeqNum, packetDetail.packetLength)
+                                now, packetDetail.packetSendTime, arrivalTimeInLocalClock,
+                                tccSeqNum, packetDetail.packetLength
+                            )
                             packetDetail.state = PacketDetailState.reportedReceived
                         }
 
@@ -153,6 +157,8 @@ class TransportCcEngine(
                 }
             }
         }
+        bandwidthEstimator.feedbackComplete(now)
+
         if (missingPacketDetailSeqNums.isNotEmpty()) {
             logger.warn("TCC packet contained received sequence numbers: " +
                 "${tccPacket.iterator().asSequence()
@@ -257,7 +263,7 @@ class TransportCcEngine(
             // Note that we use [interpret] because we don't want the ROC to get out of sync because of funny requests
             // (TCCs)
             val index = rfc3711IndexTracker.interpret(sequenceNumber)
-            return super.getContainer(index)?.item
+            return super.getContainer(index, shouldCloneItem = true)?.item
         }
 
         fun insert(seq: Int, packetDetail: PacketDetail): Boolean {

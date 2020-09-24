@@ -16,10 +16,10 @@
 
 package org.jitsi.nlj.rtp
 
-import io.kotlintest.IsolationMode
-import io.kotlintest.should
-import io.kotlintest.shouldBe
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.matchers.shouldBe
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.should
 import java.nio.ByteBuffer
 import org.jitsi.nlj.test_utils.matchers.haveSameContentAs
 import org.jitsi.rtp.rtp.RtpPacket
@@ -50,19 +50,20 @@ class RtxPacketTest : ShouldSpec() {
     val rtpPacket = RtpPacket(header + payload)
 
     init {
-        "Getting the original sequence number" {
+        context("Getting the original sequence number") {
             should("work correctly") {
                 RtxPacket.getOriginalSequenceNumber(rtxPacket) shouldBe 57005
             }
         }
-        "Removing the original sequence number" {
+        context("Removing the original sequence number") {
             should("work correctly") {
                 RtxPacket.removeOriginalSequenceNumber(rtxPacket)
-                val newPayload = ByteBuffer.wrap(rtxPacket.buffer, rtxPacket.payloadOffset, rtxPacket.payloadLength).slice()
+                val newPayload =
+                    ByteBuffer.wrap(rtxPacket.buffer, rtxPacket.payloadOffset, rtxPacket.payloadLength).slice()
                 newPayload should haveSameContentAs(ByteBuffer.wrap(payload))
             }
         }
-        "Adding an original sequence number" {
+        context("Adding an original sequence number") {
             RtxPacket.addOriginalSequenceNumber(rtpPacket)
             should("work correctly") {
                 RtxPacket.getOriginalSequenceNumber(rtpPacket) shouldBe 5807

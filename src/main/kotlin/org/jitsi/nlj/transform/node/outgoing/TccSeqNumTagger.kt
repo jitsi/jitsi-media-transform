@@ -18,15 +18,17 @@ package org.jitsi.nlj.transform.node.outgoing
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.rtp.RtpExtensionType.TRANSPORT_CC
 import org.jitsi.nlj.rtp.TransportCcEngine
+import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ModifierNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.bytes
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.TccHeaderExtension
+import java.lang.ref.WeakReference
 
 class TccSeqNumTagger(
-    private val transportCcEngine: TransportCcEngine? = null,
+    transportCcEngine: TransportCcEngine? = null,
     streamInformationStore: ReadOnlyStreamInformationStore
 ) : ModifierNode("TCC sequence number tagger") {
     private var currTccSeqNum: Int = 1
@@ -38,15 +40,33 @@ class TccSeqNumTagger(
         }
     }
 
+    private val weakTcc = WeakReference(transportCcEngine)
+
     override fun modify(packetInfo: PacketInfo): PacketInfo {
         tccExtensionId?.let { tccExtId ->
-            val rtpPacket = packetInfo.packetAs<RtpPacket>()
-            val ext = rtpPacket.getHeaderExtension(tccExtId)
-                ?: rtpPacket.addHeaderExtension(tccExtId, TccHeaderExtension.DATA_SIZE_BYTES)
+            when (val rtpPacket = packetInfo.packetAs<RtpPacket>()) {
+                is VideoRtpPacket -> {
+                    val ext = rtpPacket.getHeaderExtension(tccExtId)
+                        ?: rtpPacket.addHeaderExtension(tccExtId, TccHeaderExtension.DATA_SIZE_BYTES)
 
-            TccHeaderExtension.setSequenceNumber(ext, currTccSeqNum)
-            transportCcEngine?.mediaPacketSent(currTccSeqNum, rtpPacket.length.bytes)
-            currTccSeqNum++
+                    TccHeaderExtension.setSequenceNumber(ext, currTccSeqNum)
+
+                    val curSeq = currTccSeqNum
+                    val len = rtpPacket.length.bytes
+                    packetInfo.onSent { weakTcc.get()?.mediaPacketSent(curSeq, len) }
+
+                    currTccSeqNum++
+                }
+                else -> {
+                    rtpPacket.getHeaderExtension(tccExtId)?.let {
+                        // This is a hack: we don't want to do TCC for audio (since some browsers
+                        // don't support it) but we don't want to strip the existing extension
+                        // either (as its costly), so we merely change its ID to something we
+                        // know (based on Jicofo's offer) is unused.
+                        it.id = 14
+                    }
+                }
+            }
         }
 
         return packetInfo

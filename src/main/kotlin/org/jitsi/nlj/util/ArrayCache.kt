@@ -16,6 +16,7 @@
 
 package org.jitsi.nlj.util
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import java.lang.Integer.max
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicInteger
@@ -27,6 +28,7 @@ import org.jitsi.nlj.transform.NodeStatsProducer
  *
  * @author Boris Grozev
  */
+@SuppressFBWarnings("CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE")
 open class ArrayCache<T>(
     val size: Int,
     private val cloneItem: (T) -> T,
@@ -116,19 +118,23 @@ open class ArrayCache<T>(
      * The item is wrapped in a [Container] to allow access to the time it was added to the cache, and we provide a
      * copy.
      */
-    fun getContainer(index: Int): Container? {
+    @JvmOverloads
+    fun getContainer(index: Int, shouldCloneItem: Boolean = true): Container? {
         val result = when {
             synchronize -> synchronized(syncRoot) {
-                doGet(index)
+                doGet(index, shouldCloneItem)
             }
-            else -> doGet(index)
+            else -> doGet(index, shouldCloneItem)
         }
 
         result?.let { _numHits.incrementAndGet() } ?: _numMisses.incrementAndGet()
         return result
     }
 
-    private fun doGet(index: Int): Container? {
+    private fun doGet(index: Int, shouldCloneItem: Boolean): Container? {
+        if (index < 0) {
+            return null
+        }
         if (head == -1) {
             // Not initialized (empty), or newer than head.
             return null
@@ -142,9 +148,36 @@ open class ArrayCache<T>(
 
         val position = (head + diff) floorMod size
         if (cache[position].index == index) {
-            return cache[position].clone()
+            return cache[position].clone(shouldCloneItem)
         }
         return null
+    }
+
+    /**
+     * Checks whether the cache contains an item with a given index.
+     */
+    fun containsIndex(index: Int): Boolean {
+        return if (synchronize) {
+            synchronized(syncRoot) {
+                doContains(index)
+            }
+        } else {
+            doContains(index)
+        }
+    }
+
+    private fun doContains(index: Int): Boolean {
+        if (head == -1) {
+            return false
+        }
+
+        val diff = index - cache[head].index
+        if (diff > 0) {
+            return false
+        }
+
+        val position = (head + diff) floorMod size
+        return (cache[position].index == index)
     }
 
     /**
@@ -172,8 +205,9 @@ open class ArrayCache<T>(
 
     /**
      * Iterates from the last index added to the cache down at most [size] elements. For each item, if it is in the
-     * last 'window', applies [predicate] on a clone of the item. If [predicate] returns [false] for any item, stops the
-     * iteration and returns.
+     * last 'window', calls [predicate] with the item.  If [predicate] returns [false] for any item, stops the
+     * iteration and returns.  Note that if the caller must clone the item on their own if they want to keep or modify
+     * it in any way.
      */
     fun forEachDescending(predicate: (T) -> Boolean) =
         if (synchronize) {
@@ -192,7 +226,7 @@ open class ArrayCache<T>(
             val position = (head - i) floorMod size
             if (cache[position].index in indexRange) {
                 // We maintain the invariant [index==-1 iff item==null]
-                if (!predicate(cloneItem(cache[position].item!!))) {
+                if (!predicate(cache[position].item!!)) {
                     return
                 }
             }
@@ -238,8 +272,8 @@ open class ArrayCache<T>(
         var index: Int = -1,
         var timeAdded: Long = -1
     ) {
-        fun clone(): Container {
-            return Container(item?.let { cloneItem(it) }, index, timeAdded)
+        fun clone(shouldCloneItem: Boolean): Container {
+            return Container(item?.let { if (shouldCloneItem) cloneItem(it) else it }, index, timeAdded)
         }
     }
 }

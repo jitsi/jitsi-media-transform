@@ -19,11 +19,10 @@ import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
 import org.jitsi.utils.logging2.*;
+import org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.config.SendSideBandwidthEstimationConfig;
 
 import java.time.*;
 import java.util.*;
-
-import static org.jitsi_modified.impl.neomedia.rtp.sendsidebandwidthestimation.config.SendSideBandwidthEstimationConfig.*;
 
 /**
  * Implements the send-side bandwidth estimation described in
@@ -196,7 +195,7 @@ public class SendSideBandwidthEstimation
     /**
      * send_side_bandwidth_estimation.h
      */
-    private Deque<Pair<Long>> min_bitrate_history_ = new LinkedList<>();
+    private Deque<BitrateHistoryRecord> min_bitrate_history_ = new LinkedList<>();
 
     /**
      * The {@link DiagnosticContext} of this instance.
@@ -220,23 +219,23 @@ public class SendSideBandwidthEstimation
         logger = parentLogger.createChildLogger(getClass().getName());
         this.diagnosticContext = diagnosticContext;
 
-        double lossExperimentProbability = Config.lossExperimentProbability();
+        double lossExperimentProbability = SendSideBandwidthEstimationConfig.lossExperimentProbability();
 
         if (kRandom.nextFloat() < lossExperimentProbability)
         {
-            low_loss_threshold_ = Config.experimentalLowLossThreshold();
-            high_loss_threshold_ = Config.experimentalHighLossThreshold();
-            bitrate_threshold_bps_ = 1000 * Config.experimentalBitrateThresholdKbps();
+            low_loss_threshold_ = SendSideBandwidthEstimationConfig.experimentalLowLossThreshold();
+            high_loss_threshold_ = SendSideBandwidthEstimationConfig.experimentalHighLossThreshold();
+            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.experimentalBitrateThreshold().getBps();
         }
         else
         {
-            low_loss_threshold_ = Config.defaultLowLossThreshold();
-            high_loss_threshold_ = Config.defaultHighLossThreshold();
-            bitrate_threshold_bps_ = 1000 * Config.defaultBitrateThresholdKbps();
+            low_loss_threshold_ = SendSideBandwidthEstimationConfig.defaultLowLossThreshold();
+            high_loss_threshold_ = SendSideBandwidthEstimationConfig.defaultHighLossThreshold();
+            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.defaultBitrateThreshold().getBps();
         }
 
 
-        double timeoutExperimentProbability = Config.timeoutExperimentProbability();
+        double timeoutExperimentProbability = SendSideBandwidthEstimationConfig.timeoutExperimentProbability();
 
         in_timeout_experiment_
             = kRandom.nextFloat() < timeoutExperimentProbability;
@@ -244,7 +243,7 @@ public class SendSideBandwidthEstimation
         setBitrate(startBitrate);
     }
 
-    public void reset(long startBitrate)
+    public synchronized void reset(long startBitrate)
     {
         first_report_time_ms_ = -1;
         lost_packets_since_last_loss_update_Q8_ = 0;
@@ -307,7 +306,7 @@ public class SendSideBandwidthEstimation
         {
             setBitrate(capBitrateToThresholds(bwe_incoming_));
             min_bitrate_history_.clear();
-            min_bitrate_history_.addLast(new Pair<>(now, bitrate_));
+            min_bitrate_history_.addLast(new BitrateHistoryRecord(now, bitrate_));
             return;
         }
         updateMinHistory(now);
@@ -341,7 +340,7 @@ public class SendSideBandwidthEstimation
                 //   whenever a receiver report is received with lower packet loss.
                 //   If instead one would do: bitrate_ *= 1.08^(delta time), it would
                 //   take over one second since the lower packet loss to achieve 108kbps.
-                bitrate = (long) (min_bitrate_history_.getFirst().second * 1.08 + 0.5);
+                bitrate = (long) (min_bitrate_history_.getFirst().bitrate * 1.08 + 0.5);
 
                 // Add 1 kbps extra, just to make sure that we do not get stuck
                 // (gives a little extra increase at low rates, negligible at higher
@@ -428,8 +427,7 @@ public class SendSideBandwidthEstimation
     /**
      * void SendSideBandwidthEstimation::UpdateReceiverBlock
      */
-    synchronized public void updateReceiverBlock(
-            long fraction_lost, long number_of_packets, long now)
+    synchronized private void updateReceiverBlock(long fraction_lost, long number_of_packets, long now)
     {
         last_feedback_ms_ = now;
         if (first_report_time_ms_ == -1)
@@ -460,7 +458,6 @@ public class SendSideBandwidthEstimation
             expected_packets_since_last_loss_update_ = 0;
 
             last_packet_report_ms_ = now;
-            updateEstimate(now);
         }
     }
 
@@ -470,7 +467,7 @@ public class SendSideBandwidthEstimation
         // Since history precision is in ms, add one so it is able to increase
         // bitrate if it is off by as little as 0.5ms.
         while (!min_bitrate_history_.isEmpty() &&
-                now_ms - min_bitrate_history_.getFirst().first + 1 >
+                now_ms - min_bitrate_history_.getFirst().timestampMs + 1 >
                         kBweIncreaseIntervalMs)
         {
             min_bitrate_history_.removeFirst();
@@ -479,12 +476,12 @@ public class SendSideBandwidthEstimation
         // Typical minimum sliding-window algorithm: Pop values higher than current
         // bitrate before pushing it.
         while (!min_bitrate_history_.isEmpty() &&
-                bitrate_ <= min_bitrate_history_.getLast().second)
+                bitrate_ <= min_bitrate_history_.getLast().bitrate)
         {
             min_bitrate_history_.removeLast();
         }
 
-        min_bitrate_history_.addLast(new Pair<>(now_ms, bitrate_));
+        min_bitrate_history_.addLast(new BitrateHistoryRecord(now_ms, bitrate_));
     }
 
     /**
@@ -566,7 +563,7 @@ public class SendSideBandwidthEstimation
         return statistics;
     }
 
-    public void onRttUpdate(Duration newRtt)
+    public synchronized void onRttUpdate(Duration newRtt)
     {
         this.rttMs = newRtt.toMillis();
     }
@@ -592,14 +589,15 @@ public class SendSideBandwidthEstimation
         return rttMs;
     }
 
-    private class Pair<T>
+    private static final class BitrateHistoryRecord
     {
-        T first;
-        T second;
-        Pair(T a, T b)
+        final long timestampMs;
+        final long bitrate;
+
+        BitrateHistoryRecord(long now, long br)
         {
-            first = a;
-            second = b;
+            timestampMs = now;
+            bitrate = br;
         }
     }
 

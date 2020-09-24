@@ -62,8 +62,8 @@ class ProbingDataSender(
     private var localVideoSsrc: Long? = null
 
     // Stats
-    private var numProbingBytesSentRtx: Int = 0
-    private var numProbingBytesSentDummyData: Int = 0
+    private var numProbingBytesSentRtx: Long = 0
+    private var numProbingBytesSentDummyData: Long = 0
 
     init {
         streamInformationStore.onRtpPayloadTypesChanged { currentRtpPayloadTypes ->
@@ -84,17 +84,23 @@ class ProbingDataSender(
         }
     }
 
-    fun sendProbing(mediaSsrc: Long, numBytes: Int): Int {
+    fun sendProbing(mediaSsrcs: Collection<Long>, numBytes: Int): Int {
         var totalBytesSent = 0
 
         if (rtxSupported) {
-            val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes)
-            numProbingBytesSentRtx += rtxBytesSent
-            totalBytesSent += rtxBytesSent
-            if (timeSeriesLogger.isTraceEnabled()) {
-                timeSeriesLogger.trace(diagnosticContext
+            for (mediaSsrc in mediaSsrcs) {
+                if (totalBytesSent >= numBytes) {
+                    break
+                }
+                val rtxBytesSent = sendRedundantDataOverRtx(mediaSsrc, numBytes - totalBytesSent)
+                numProbingBytesSentRtx += rtxBytesSent
+                totalBytesSent += rtxBytesSent
+                if (timeSeriesLogger.isTraceEnabled()) {
+                    timeSeriesLogger.trace(diagnosticContext
                         .makeTimeSeriesPoint("rtx_probing_bytes")
+                        .addField("ssrc", mediaSsrc)
                         .addField("bytes", rtxBytesSent))
+                }
             }
         }
         if (totalBytesSent < numBytes) {
@@ -118,57 +124,35 @@ class ProbingDataSender(
      */
     private fun sendRedundantDataOverRtx(mediaSsrc: Long, numBytes: Int): Int {
         var bytesSent = 0
-        val lastNPackets = packetCache.getMany(mediaSsrc, numBytes)
-
-        if (lastNPackets.isEmpty()) {
-            return bytesSent
-        }
-
-        // XXX this constant (2) is not great, however the final place of the stream
-        // protection strategy is not clear at this point so I expect the code
-        // will change before taking its final form.
-        val packetsToResend = mutableListOf<PacketInfo>()
-        for (i in 0 until 2) {
-            val lastNPacketIter = lastNPackets.iterator()
-
-            while (lastNPacketIter.hasNext()) {
-                val packet = lastNPacketIter.next()
-                val packetLen = packet.length
-                if (bytesSent + packetLen > numBytes) {
-                    // We don't have enough 'room' to send this packet; we're done
-                    break
-                }
-                bytesSent += packetLen
-                // The node after this one will be the RetransmissionSender, which handles
-                // encapsulating packets as RTX (with the proper ssrc and payload type) so we
-                // just need to find the packets to retransmit and forward them to the next node
-                // TODO(brian): do we need to clone it here?
-                packetsToResend.add(PacketInfo(packet.clone()))
-            }
-        }
         // TODO(brian): we're in a thread context mess here.  we'll be sending these out from the bandwidthprobing
         // context (or whoever calls this) which i don't think we want.  Need look at getting all the pipeline
         // work posted to one thread so we don't have to worry about concurrency nightmares
-        if (packetsToResend.isNotEmpty()) {
-            packetsToResend.forEach { rtxDataSender.processPacket(it) }
-        }
 
+        // Get the most recent packets whose length add up to no more than numBytes.
+        packetCache.getMany(mediaSsrc, numBytes).forEach {
+            bytesSent += it.length
+            rtxDataSender.processPacket(PacketInfo(it))
+        }
         return bytesSent
     }
 
-    private var currDummyTimestamp = Random().nextLong() and 0xFFFFFFFF
-    private var currDummySeqNum = Random().nextInt(0xFFFF)
+    private var currDummyTimestamp = random.nextLong() and 0xFFFFFFFF
+    private var currDummySeqNum = random.nextInt(0xFFFF)
 
     private fun sendDummyData(numBytes: Int): Int {
         var bytesSent = 0
         val pt = videoPayloadTypes.firstOrNull() ?: return bytesSent
         val senderSsrc = localVideoSsrc ?: return bytesSent
-        // TODO(brian): shouldn't this take into account numBytes? what if it's less than
-        // the size of one dummy packet?
-        val packetLength = RtpHeader.FIXED_HEADER_SIZE_BYTES + 0xFF
-        val numPackets = (numBytes / packetLength) + 1 /* account for the mod */
-        for (i in 0 until numPackets) {
-            val paddingPacket = PaddingVideoPacket.create(packetLength)
+
+        while (bytesSent < numBytes) {
+            val remainingBytes = numBytes - bytesSent
+            if (remainingBytes < RtpHeader.FIXED_HEADER_SIZE_BYTES) {
+                break
+            }
+            val paddingSize = (remainingBytes - RtpHeader.FIXED_HEADER_SIZE_BYTES).coerceAtMost(0xFF)
+            val packetLength = RtpHeader.FIXED_HEADER_SIZE_BYTES + paddingSize
+
+            val paddingPacket = PaddingVideoPacket.create(packetLength.toInt())
             paddingPacket.payloadType = pt.pt.toPositiveInt()
             paddingPacket.ssrc = senderSsrc
             paddingPacket.timestamp = currDummyTimestamp
@@ -204,5 +188,9 @@ class ProbingDataSender(
             addString("curr_dummy_seq_num", currDummySeqNum.toString())
             addString("video_payload_types", videoPayloadTypes.toString())
         }
+    }
+
+    companion object {
+        val random = Random()
     }
 }

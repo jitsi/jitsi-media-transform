@@ -16,20 +16,20 @@
 
 package org.jitsi.nlj.stats
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import io.kotlintest.IsolationMode
-import io.kotlintest.matchers.doubles.plusOrMinus
-import io.kotlintest.milliseconds
-import io.kotlintest.shouldBe
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.matchers.shouldBe
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.doubles.plusOrMinus
+import io.mockk.every
+import io.mockk.mockk
 import java.time.Duration
 import org.jitsi.nlj.resources.logging.StdoutLogger
-import org.jitsi.nlj.test_utils.FakeClock
+import org.jitsi.test.time.FakeClock
 import org.jitsi.nlj.test_utils.timeline
 import org.jitsi.rtp.rtcp.RtcpReportBlock
 import org.jitsi.rtp.rtcp.RtcpRrPacket
 import org.jitsi.rtp.rtcp.RtcpSrPacket
+import org.jitsi.utils.ms
 
 class EndpointConnectionStatsTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -48,49 +48,49 @@ class EndpointConnectionStatsTest : ShouldSpec() {
     }
 
     init {
-        "after an SR is sent" {
-            "with a non-zero timestamp" {
+        context("after an SR is sent") {
+            context("with a non-zero timestamp") {
                 val srPacket = createSrPacket(senderInfoTs = 100)
                 stats.rtcpPacketSent(srPacket)
 
-                "and an RR is received which refers to it" {
-                    clock.elapse(60.milliseconds)
+                context("and an RR is received which refers to it") {
+                    clock.elapse(60.ms)
 
-                    val rrPacket = createRrPacket(lastSrTimestamp = 100, delaySinceLastSr = 50.milliseconds)
+                    val rrPacket = createRrPacket(lastSrTimestamp = 100, delaySinceLastSr = 50.ms)
 
                     stats.rtcpPacketReceived(rrPacket, clock.instant().toEpochMilli())
-                    "the rtt" {
+                    context("the rtt") {
                         should("be updated correctly") {
-                            mostRecentPublishedRtt shouldBe(10.0.plusOrMinus(.1))
+                            mostRecentPublishedRtt shouldBe(10.0 plusOrMinus .1)
                         }
                     }
                 }
             }
-            "with a timestamp of 0" {
+            context("with a timestamp of 0") {
                 val srPacket = createSrPacket(senderInfoTs = 0)
                 stats.rtcpPacketSent(srPacket)
 
-                "and an RR is received which refers to it" {
-                    "with a non-zero delaySinceLastSr" {
-                        val rrPacket = createRrPacket(lastSrTimestamp = 0, delaySinceLastSr = 50.milliseconds)
-                        clock.elapse(60.milliseconds)
+                context("and an RR is received which refers to it") {
+                    context("with a non-zero delaySinceLastSr") {
+                        val rrPacket = createRrPacket(lastSrTimestamp = 0, delaySinceLastSr = 50.ms)
+                        clock.elapse(60.ms)
 
                         stats.rtcpPacketReceived(rrPacket, clock.instant().toEpochMilli())
-                        "the rtt" {
+                        context("the rtt") {
                             should("be updated correctly") {
                                 mostRecentPublishedRtt shouldBe(10.0.plusOrMinus(.1))
                             }
                         }
                     }
-                    "with a delaySinceLastSr value of 0" {
-                        val rrPacket = createRrPacket(lastSrTimestamp = 0, delaySinceLastSr = 0.milliseconds)
+                    context("with a delaySinceLastSr value of 0") {
+                        val rrPacket = createRrPacket(lastSrTimestamp = 0, delaySinceLastSr = 0.ms)
 
-                        clock.elapse(60.milliseconds)
+                        clock.elapse(60.ms)
 
                         stats.rtcpPacketReceived(rrPacket, clock.instant().toEpochMilli())
 
                         // This case is indistinguishable from no SR being received
-                        "the rtt" {
+                        context("the rtt") {
                             should("not have been updated") {
                                 numRttUpdates shouldBe 0
                             }
@@ -99,30 +99,30 @@ class EndpointConnectionStatsTest : ShouldSpec() {
                 }
             }
         }
-        "when a report block is received for which we can't find an SR" {
-            val rrPacket = createRrPacket(lastSrTimestamp = 100, delaySinceLastSr = 50.milliseconds)
+        context("when a report block is received for which we can't find an SR") {
+            val rrPacket = createRrPacket(lastSrTimestamp = 100, delaySinceLastSr = 50.ms)
 
             stats.rtcpPacketReceived(rrPacket, clock.instant().toEpochMilli())
 
-            "the rtt" {
+            context("the rtt") {
                 should("not have been updated") {
                     numRttUpdates shouldBe 0
                 }
             }
         }
-        "when a report block is received with a lastSrTimestamp of 0 but a non-zero delaySinceLastSr" {
+        context("when a report block is received with a lastSrTimestamp of 0 but a non-zero delaySinceLastSr") {
             timeline(clock) {
                 run { stats.rtcpPacketSent(createSrPacket(senderInfoTs = 0)) }
-                elapse(60.milliseconds)
+                elapse(60.ms)
                 run {
                     stats.rtcpPacketReceived(
-                        createRrPacket(lastSrTimestamp = 0, delaySinceLastSr = 50.milliseconds),
+                        createRrPacket(lastSrTimestamp = 0, delaySinceLastSr = 50.ms),
                         clock.instant().toEpochMilli()
                     )
                 }
             }.run()
 
-            "the rtt" {
+            context("the rtt") {
                 should("be updated correctly") {
                     mostRecentPublishedRtt shouldBe(10.0.plusOrMinus(.1))
                 }
@@ -134,25 +134,25 @@ class EndpointConnectionStatsTest : ShouldSpec() {
     private fun Duration.toDelaySinceLastSrFraction(): Long = (toNanos() * .000065536).toLong()
 
     private fun createSrPacket(senderInfoTs: Long): RtcpSrPacket {
-        val mockSenderInfo = mock<RtcpSrPacket.SenderInfo> {
-            on { compactedNtpTimestamp } doReturn senderInfoTs
+        val mockSenderInfo = mockk<RtcpSrPacket.SenderInfo> {
+            every { compactedNtpTimestamp } returns senderInfoTs
         }
 
-        return mock {
-            on { senderSsrc } doReturn 1234L
-            on { senderInfo } doReturn mockSenderInfo
+        return mockk {
+            every { senderSsrc } returns 1234L
+            every { senderInfo } returns mockSenderInfo
         }
     }
 
     private fun createRrPacket(lastSrTimestamp: Long, delaySinceLastSr: Duration): RtcpRrPacket {
-        val reportBlock = mock<RtcpReportBlock> {
-            on { ssrc } doReturn 1234L
-            on { this.lastSrTimestamp } doReturn lastSrTimestamp
-            on { this.delaySinceLastSr } doReturn delaySinceLastSr.toDelaySinceLastSrFraction()
+        val reportBlock = mockk<RtcpReportBlock> {
+            every { ssrc } returns 1234L
+            every { this@mockk.lastSrTimestamp } returns lastSrTimestamp
+            every { this@mockk.delaySinceLastSr } returns delaySinceLastSr.toDelaySinceLastSrFraction()
         }
 
-        return mock {
-            on { reportBlocks } doReturn listOf(reportBlock)
+        return mockk {
+            every { reportBlocks } returns listOf(reportBlock)
         }
     }
 }

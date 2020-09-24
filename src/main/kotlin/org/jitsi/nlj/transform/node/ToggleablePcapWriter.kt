@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.jitsi.nlj.transform.node
 
+import org.jitsi.config.JitsiConfig
+import org.jitsi.metaconfig.config
+import org.jitsi.metaconfig.from
 import org.jitsi.nlj.Event
 import org.jitsi.nlj.FeatureToggleEvent
 import org.jitsi.nlj.Features
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.transform.node.Node
-import org.jitsi.nlj.transform.node.ObserverNode
-import org.jitsi.nlj.transform.node.PcapWriter
 import org.jitsi.utils.logging2.Logger
+import java.lang.IllegalStateException
 import java.util.Date
 
 class ToggleablePcapWriter(
@@ -33,6 +35,9 @@ class ToggleablePcapWriter(
     private val pcapLock = Any()
 
     fun enable() {
+        if (!enabled) {
+            throw IllegalStateException("PCAP capture is disabled in configuration")
+        }
         synchronized(pcapLock) {
             if (pcapWriter == null) {
                 pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
@@ -69,5 +74,9 @@ class ToggleablePcapWriter(
         }
 
         override fun trace(f: () -> Unit) = f.invoke()
+    }
+
+    companion object {
+        val enabled: Boolean by config("jmt.debug.pcap.enabled".from(JitsiConfig.newConfig))
     }
 }

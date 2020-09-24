@@ -15,12 +15,12 @@
  */
 package org.jitsi.nlj
 
-import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
 import org.jitsi.nlj.srtp.SrtpTransformers
 import org.jitsi.nlj.stats.EndpointConnectionStats
 import org.jitsi.nlj.stats.PacketStreamStats
 import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsSnapshot
+import org.jitsi.nlj.util.Bandwidth
 
 abstract class RtpReceiver :
     StatsKeepingPacketHandler(), EventHandler, NodeStatsProducer, Stoppable,
@@ -41,13 +41,28 @@ abstract class RtpReceiver :
      */
     abstract fun setSrtpTransformers(srtpTransformers: SrtpTransformers)
 
-    abstract fun setAudioLevelListener(audioLevelListener: AudioLevelListener)
-
-    abstract fun onBandwidthEstimateChanged(listener: BandwidthEstimator.Listener)
-
     abstract fun getStreamStats(): IncomingStatisticsSnapshot
 
     abstract fun getPacketStreamStats(): PacketStreamStats.Snapshot
 
     abstract fun tearDown()
+
+    abstract fun isReceivingAudio(): Boolean
+    abstract fun isReceivingVideo(): Boolean
+
+    /**
+     * Forcibly mute or unmute the incoming audio stream
+     */
+    abstract fun forceMuteAudio(shouldMute: Boolean)
+}
+
+interface RtpReceiverEventHandler {
+    /**
+     * We received an audio level indication from the remote endpoint.
+     */
+    fun audioLevelReceived(sourceSsrc: Long, level: Long) {}
+    /**
+     * The estimation of the available send bandwidth changed.
+     */
+    fun bandwidthEstimationChanged(newValue: Bandwidth) {}
 }

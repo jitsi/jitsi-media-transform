@@ -15,24 +15,24 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
-import io.kotlintest.IsolationMode
-import io.kotlintest.matchers.numerics.shouldBeGreaterThan
-import io.kotlintest.seconds
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNotBe
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import org.jitsi.nlj.format.Vp8PayloadType
 import org.jitsi.nlj.format.Vp9PayloadType
 import org.jitsi.nlj.resources.logging.StdoutLogger
 import org.jitsi.nlj.rtp.RtpExtension
 import org.jitsi.nlj.rtp.RtpExtensionType
-import org.jitsi.nlj.test_utils.FakeClock
+import org.jitsi.test.time.FakeClock
 import org.jitsi.nlj.test_utils.RtpPacketGenerator
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.StreamInformationStoreImpl
 import org.jitsi.nlj.util.mbps
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.rtp.rtp.header_extensions.AbsSendTimeHeaderExtension
+import org.jitsi.utils.secs
 import java.time.Duration
 
 class RemoteBandwidthEstimatorTest : ShouldSpec() {
@@ -50,33 +50,34 @@ class RemoteBandwidthEstimatorTest : ShouldSpec() {
         addRtpPayloadType(vp8PayloadType)
     }
 
-    private val remoteBandwidthEstimator = RemoteBandwidthEstimator(streamInformationStore, StdoutLogger(), clock = clock)
+    private val remoteBandwidthEstimator =
+        RemoteBandwidthEstimator(streamInformationStore, StdoutLogger(), clock = clock)
 
     init {
-        "when REMB is not signaled" {
+        context("when REMB is not signaled") {
             streamInformationStore.clearRtpPayloadTypes()
             streamInformationStore.addRtpPayloadType(vp9PayloadTypeWithTcc)
             sendPackets()
-            "no feedback should be produced" {
+            context("no feedback should be produced") {
                 remoteBandwidthEstimator.createRemb() shouldBe null
             }
         }
-        "when both REMB and TCC are signaled" {
+        context("when both REMB and TCC are signaled") {
             streamInformationStore.addRtpPayloadType(vp9PayloadTypeWithTcc)
             sendPackets()
-            "no feedback should be produced" {
+            context("no feedback should be produced") {
                 remoteBandwidthEstimator.createRemb() shouldBe null
             }
         }
-        "when REMB is signaled" {
+        context("when REMB is signaled") {
             sendPackets(0.5.mbps)
             val rembPacket = remoteBandwidthEstimator.createRemb()
-            "a feedback packet should be produced" {
+            context("a feedback packet should be produced") {
                 rembPacket shouldNotBe null
-                "with valid bitrate" {
-                    rembPacket!!.bitrate shouldBeGreaterThan 0
+                context("with valid bitrate") {
+                    rembPacket!!.bitrate shouldBeGreaterThan 0L
                 }
-                "with the correct SSRCs" {
+                context("with the correct SSRCs") {
                     rembPacket!!.ssrcs shouldBe listOf(ssrc)
                 }
             }
@@ -84,17 +85,18 @@ class RemoteBandwidthEstimatorTest : ShouldSpec() {
             // We generate packets with no jitter, so we expect the estimate to he higher than the receive bitrate.
             val targetBitrate = 1.5.mbps
             sendPackets(targetBitrate)
-            "when receiving a higher bitrate, the estimate should grow" {
-                val rembPacket = remoteBandwidthEstimator.createRemb()
-                rembPacket!!.bitrate shouldBeGreaterThan targetBitrate.bps.toLong()
+            context("when receiving a higher bitrate, the estimate should grow") {
+                val rembPacket2 = remoteBandwidthEstimator.createRemb()
+                rembPacket2!!.bitrate shouldBeGreaterThan targetBitrate.bps.toLong()
             }
         }
     }
 
-    private fun sendPackets(targetBitrate: Bandwidth = 1.mbps, duration: Duration = 15.seconds) {
+    private fun sendPackets(targetBitrate: Bandwidth = 1.mbps, duration: Duration = 15.secs) {
         val rtpPacketGenerator = RtpPacketGenerator(targetBitrate, duration = duration, clock = clock)
         rtpPacketGenerator.generatePackets(ssrc = ssrc) {
-            val ext = it.packetAs<RtpPacket>().addHeaderExtension(astExtensionId, AbsSendTimeHeaderExtension.DATA_SIZE_BYTES)
+            val ext =
+                it.packetAs<RtpPacket>().addHeaderExtension(astExtensionId, AbsSendTimeHeaderExtension.DATA_SIZE_BYTES)
             AbsSendTimeHeaderExtension.setTime(ext, it.receivedTime * 1_000_000)
             remoteBandwidthEstimator.processPacket(it)
         }

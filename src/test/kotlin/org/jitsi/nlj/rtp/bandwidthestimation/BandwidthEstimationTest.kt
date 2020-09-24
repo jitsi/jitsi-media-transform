@@ -1,7 +1,24 @@
+/*
+ * Copyright @ 2019 - present 8x8, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jitsi.nlj.rtp.bandwidthestimation
 
-import io.kotlintest.matchers.doubles.shouldBeBetween
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.doubles.shouldBeBetween
+import io.mockk.spyk
+import org.jitsi.test.concurrent.FakeScheduledExecutorService
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -11,8 +28,6 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
-import org.jitsi.nlj.test_utils.FakeScheduledExecutorService
-import org.jitsi.nlj.test_utils.stubOnlySpy
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.NEVER
@@ -177,6 +192,7 @@ class PacketReceiver(
         /* All delay is send -> receive in this simulation, so one-way delay is rtt. */
         estimator.onRttUpdate(now, Duration.between(packet.sendTime, now))
         estimator.processPacketArrival(now, packet.sendTime, now, seq, packet.packetSize)
+        estimator.feedbackComplete(now)
         seq++
         val bw = estimator.getCurrentBw(now)
         if (timeSeriesLogger.isTraceEnabled) {
@@ -187,7 +203,7 @@ class PacketReceiver(
 }
 
 class BandwidthEstimationTest : ShouldSpec() {
-    private val scheduler: FakeScheduledExecutorService = stubOnlySpy()
+    private val scheduler: FakeScheduledExecutorService = spyk()
     private val clock: Clock = scheduler.clock
 
     private val ctx = DiagnosticContext(clock)
@@ -210,7 +226,7 @@ class BandwidthEstimationTest : ShouldSpec() {
     private val receiver: PacketReceiver = PacketReceiver(clock, estimator, ctx) { generator.rate = it }
 
     init {
-        "Running bandwidth estimation test" {
+        context("Running bandwidth estimation test") {
             should("work correctly") {
                 bottleneck.rate = bottleneckRate
                 generator.rate = estimator.getCurrentBw(clock.instant())

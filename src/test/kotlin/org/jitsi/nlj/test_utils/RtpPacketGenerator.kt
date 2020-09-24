@@ -20,9 +20,11 @@ import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.DataSize
 import org.jitsi.nlj.util.`in`
 import org.jitsi.nlj.util.atRate
-import org.jitsi.nlj.util.div
 import org.jitsi.nlj.util.howMuchCanISendAtRate
 import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.div
+import org.jitsi.utils.secs
 import java.time.Duration
 
 class RtpPacketGenerator internal constructor(
@@ -53,7 +55,7 @@ class RtpPacketGenerator internal constructor(
         /**
          * The total duration over which packets will be generated.
          */
-        duration: Duration = Duration.ofSeconds(10),
+        duration: Duration = 10.secs,
         clock: FakeClock = FakeClock()
     ) : this(
         length = length,
@@ -74,7 +76,7 @@ class RtpPacketGenerator internal constructor(
         /**
          * The total duration over which packets will be generated.
          */
-        duration: Duration = Duration.ofSeconds(10),
+        duration: Duration = 10.secs,
         clock: FakeClock = FakeClock()
     ) : this(
         length = howMuchCanISendAtRate(targetBitrate).`in`(interval),

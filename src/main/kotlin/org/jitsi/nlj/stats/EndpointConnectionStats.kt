@@ -31,14 +31,14 @@ import org.jitsi.rtp.rtcp.RtcpRrPacket
 import org.jitsi.rtp.rtcp.RtcpSrPacket
 import org.jitsi.utils.LRUCache
 import org.jitsi.utils.logging2.Logger
+import org.jitsi.utils.secs
 
 /**
  * The maximum number of SR packets and their timestamps to save.
  */
 private const val MAX_SR_TIMESTAMP_HISTORY = 200
 
-private typealias SsrcAndTimestamp = Pair<Long, Long>
-
+private data class SsrcAndTimestamp(val ssrc: Long, val timestamp: Long)
 /**
  * Tracks stats which are not necessarily tied to send or receive but the endpoint overall
  */
@@ -56,7 +56,8 @@ class EndpointConnectionStats(
 
     // Per-SSRC, maps the compacted NTP timestamp found in an SR SenderInfo to
     //  the clock time at which it was transmitted
-    private val srSentTimes: MutableMap<SsrcAndTimestamp, Instant> = Collections.synchronizedMap(LRUCache(MAX_SR_TIMESTAMP_HISTORY))
+    private val srSentTimes: MutableMap<SsrcAndTimestamp, Instant> =
+        Collections.synchronizedMap(LRUCache(MAX_SR_TIMESTAMP_HISTORY))
     private val logger = createChildLogger(parentLogger)
 
     /**
@@ -92,8 +93,10 @@ class EndpointConnectionStats(
     override fun rtcpPacketSent(packet: RtcpPacket) {
         when (packet) {
             is RtcpSrPacket -> {
-                logger.cdebug { "Tracking sent SR packet with compacted timestamp ${packet.senderInfo.compactedNtpTimestamp}" }
-                srSentTimes[Pair(packet.senderSsrc, packet.senderInfo.compactedNtpTimestamp)] = clock.instant()
+                logger.cdebug { "Tracking sent SR packet with compacted timestamp " +
+                    "${packet.senderInfo.compactedNtpTimestamp}" }
+                val entry = SsrcAndTimestamp(packet.senderSsrc, packet.senderInfo.compactedNtpTimestamp)
+                srSentTimes[entry] = clock.instant()
             }
         }
     }
@@ -111,13 +114,16 @@ class EndpointConnectionStats(
             // in nanoseconds
             val remoteProcessingDelay = Duration.ofNanos((reportBlock.delaySinceLastSr / .000065536).toLong())
             rtt = (Duration.between(srSentTime, receivedTime) - remoteProcessingDelay).toDoubleMillis()
-            if (rtt > Duration.ofSeconds(7).toMillis()) {
+            if (rtt > 7.secs.toMillis()) {
                 logger.warn("Suspiciously high rtt value: $rtt ms, remote processing delay was " +
-                    "$remoteProcessingDelay (${reportBlock.delaySinceLastSr}), srSentTime was $srSentTime, received time was $receivedTime")
+                    "$remoteProcessingDelay (${reportBlock.delaySinceLastSr}), srSentTime was $srSentTime, " +
+                    "received time was $receivedTime")
             } else if (rtt < -1.0) {
-                // Allow some small slop here, since receivedTime and srSentTime are only accurate to the nearest millisecond.
+                // Allow some small slop here, since receivedTime and srSentTime are only accurate to the nearest
+                // millisecond.
                 logger.warn("Negative rtt value: $rtt ms, remote processing delay was " +
-                    "$remoteProcessingDelay (${reportBlock.delaySinceLastSr}), srSentTime was $srSentTime, received time was $receivedTime")
+                    "$remoteProcessingDelay (${reportBlock.delaySinceLastSr}), srSentTime was $srSentTime, " +
+                    "received time was $receivedTime")
             }
             endpointConnectionStatsListeners.forEach { it.onRttUpdate(rtt) }
         } ?: run {

@@ -15,15 +15,10 @@
  */
 package org.jitsi.nlj
 
-import java.time.Clock
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.nlj.format.PayloadType
 import org.jitsi.nlj.rtcp.RtcpEventNotifier
 import org.jitsi.nlj.rtp.RtpExtension
-import org.jitsi.nlj.rtp.TransportCcEngine
 import org.jitsi.nlj.rtp.bandwidthestimation.BandwidthEstimator
-import org.jitsi.nlj.rtp.bandwidthestimation.GoogleCcEstimator
 import org.jitsi.nlj.srtp.SrtpUtil
 import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.stats.EndpointConnectionStats
@@ -31,16 +26,20 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.stats.PacketIOActivity
 import org.jitsi.nlj.stats.TransceiverStats
 import org.jitsi.nlj.transform.NodeStatsProducer
+import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.LocalSsrcAssociation
+import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.SsrcAssociation
 import org.jitsi.nlj.util.StreamInformationStoreImpl
-import org.jitsi.utils.logging2.cdebug
-import org.jitsi.utils.logging2.cinfo
-import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
-import org.jitsi_modified.impl.neomedia.rtp.MediaStreamTrackDesc
+import org.jitsi.utils.logging2.cdebug
+import org.jitsi.utils.logging2.cinfo
+import org.jitsi.utils.logging2.createChildLogger
+import java.time.Clock
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 
 // This is an API class, so its usages will largely be outside of this library
 @Suppress("unused")
@@ -67,12 +66,19 @@ class Transceiver(
     backgroundExecutor: ScheduledExecutorService,
     diagnosticContext: DiagnosticContext,
     parentLogger: Logger,
+    /**
+     * The handler for events coming out of this [Transceiver]. Note that these events are fired synchronously,
+     * potentially in one of the threads in the CPU pool, and it is up to the user of the library to handle the
+     * transition to another thread if necessary.
+     */
+    private val eventHandler: TransceiverEventHandler,
     private val clock: Clock = Clock.systemUTC()
 ) : Stoppable, NodeStatsProducer {
     private val logger = createChildLogger(parentLogger)
     val packetIOActivity = PacketIOActivity()
     private val endpointConnectionStats = EndpointConnectionStats(logger)
     private val streamInformationStore = StreamInformationStoreImpl()
+    val readOnlyStreamInformationStore: ReadOnlyStreamInformationStore = streamInformationStore
     /**
      * A central place to subscribe to be notified on the reception or transmission of RTCP packets for
      * this transceiver.  This is intended to be used by internal entities: mainly logic for things like generating
@@ -81,15 +87,20 @@ class Transceiver(
      */
     private val rtcpEventNotifier = RtcpEventNotifier()
 
-    private var mediaStreamTracks = MediaStreamTracks()
+    private var mediaSources = MediaSources()
 
-    private val bandwidthEstimator: BandwidthEstimator = GoogleCcEstimator(diagnosticContext, logger)
+    /**
+     * Whether this [Transceiver] is receiving audio from the remote endpoint.
+     */
+    fun isReceivingAudio(): Boolean = rtpReceiver.isReceivingAudio()
 
-    private val transportCcEngine = TransportCcEngine(bandwidthEstimator, logger)
+    /**
+     * Whether this [Transceiver] is receiving video from the remote endpoint.
+     */
+    fun isReceivingVideo(): Boolean = rtpReceiver.isReceivingVideo()
 
     private val rtpSender: RtpSender = RtpSenderImpl(
         id,
-        transportCcEngine,
         rtcpEventNotifier,
         senderExecutor,
         backgroundExecutor,
@@ -101,28 +112,34 @@ class Transceiver(
         RtpReceiverImpl(
             id,
             { rtcpPacket ->
+                if (rtcpPacket.length >= 1500) {
+                    logger.warn("Sending large locally-generated RTCP packet of size ${rtcpPacket.length}, " +
+                        "first packet of type ${rtcpPacket.packetType}.")
+                }
                 rtpSender.processPacket(PacketInfo(rtcpPacket))
             },
             rtcpEventNotifier,
             receiverExecutor,
             backgroundExecutor,
             streamInformationStore,
+            eventHandler,
             logger,
             diagnosticContext
         )
 
     init {
-        rtcpEventNotifier.addRtcpEventListener(endpointConnectionStats)
+        rtpSender.bandwidthEstimator.addListener(
+            object : BandwidthEstimator.Listener {
+                override fun bandwidthEstimationChanged(newValue: Bandwidth) {
+                    eventHandler.bandwidthEstimationChanged(newValue)
+                }
+            }
+        )
 
-        rtcpEventNotifier.addRtcpEventListener(transportCcEngine)
+        rtcpEventNotifier.addRtcpEventListener(endpointConnectionStats)
 
         endpointConnectionStats.addListener(rtpSender)
         endpointConnectionStats.addListener(rtpReceiver)
-    }
-
-    fun onBandwidthEstimateChanged(listener: BandwidthEstimator.Listener) {
-        bandwidthEstimator.addListener(listener)
-        rtpReceiver.onBandwidthEstimateChanged(listener)
     }
 
     /**
@@ -143,7 +160,7 @@ class Transceiver(
         rtpSender.processPacket(packetInfo)
     }
 
-    fun sendProbing(mediaSsrc: Long, numBytes: Int): Int = rtpSender.sendProbing(mediaSsrc, numBytes)
+    fun sendProbing(mediaSsrcs: Collection<Long>, numBytes: Int): Int = rtpSender.sendProbing(mediaSsrcs, numBytes)
 
     /**
      * Set a handler to be invoked when incoming RTP packets have finished
@@ -182,16 +199,16 @@ class Transceiver(
 
     fun receivesSsrc(ssrc: Long): Boolean = streamInformationStore.receiveSsrcs.contains(ssrc)
 
-    fun setMediaStreamTracks(mediaStreamTracks: Array<MediaStreamTrackDesc>): Boolean {
-        logger.cdebug { "$id setting media stream tracks: ${mediaStreamTracks.joinToString()}" }
-        val ret = this.mediaStreamTracks.setMediaStreamTracks(mediaStreamTracks)
-        rtpReceiver.handleEvent(SetMediaStreamTracksEvent(this.mediaStreamTracks.getMediaStreamTracks()))
+    fun setMediaSources(mediaSources: Array<MediaSourceDesc>): Boolean {
+        logger.cdebug { "$id setting media sources: ${mediaSources.joinToString()}" }
+        val ret = this.mediaSources.setMediaSources(mediaSources)
+        rtpReceiver.handleEvent(SetMediaSourcesEvent(this.mediaSources.getMediaSources()))
         return ret
     }
 
     // TODO(brian): we should only expose an immutable version of this, but Array doesn't have that.  Go in
-    // and change all the storage of the media stream tracks to use a list
-    fun getMediaStreamTracks(): Array<MediaStreamTrackDesc> = mediaStreamTracks.getMediaStreamTracks()
+    // and change all the storage of the media sources to use a list
+    fun getMediaSources(): Array<MediaSourceDesc> = mediaSources.getMediaSources()
 
     @JvmOverloads
     fun requestKeyFrame(mediaSsrc: Long? = null) = rtpSender.requestKeyframe(mediaSsrc)
@@ -218,11 +235,6 @@ class Transceiver(
 //        rtpReceiver.handleEvent(rtpExtensionClearEvent)
 //        rtpSender.handleEvent(rtpExtensionClearEvent)
 //        rtpExtensions.clear()
-    }
-
-    fun setAudioLevelListener(audioLevelListener: AudioLevelListener) {
-        logger.cdebug { "Setting audio level listener $audioLevelListener" }
-        rtpReceiver.setAudioLevelListener(audioLevelListener)
     }
 
     // TODO(brian): we may want to handle local and remote ssrc associations differently, as different parts of the
@@ -253,17 +265,26 @@ class Transceiver(
     }
 
     /**
+     * Forcibly mute or unmute the incoming audio stream
+     */
+    fun forceMuteAudio(shouldMute: Boolean) {
+        when (shouldMute) {
+            true -> logger.info("Muting incoming audio")
+            false -> logger.info("Unmuting incoming audio")
+        }
+        rtpReceiver.forceMuteAudio(shouldMute)
+    }
+
+    /**
      * Get stats about this transceiver's pipeline nodes
      */
     override fun getNodeStats(): NodeStatsBlock {
         return NodeStatsBlock("Transceiver $id").apply {
             addBlock(streamInformationStore.getNodeStats())
-            addBlock(mediaStreamTracks.getNodeStats())
+            addBlock(mediaSources.getNodeStats())
             addString("endpointConnectionStats", endpointConnectionStats.getSnapshot().toString())
-            addJson("Bandwidth Estimation", bandwidthEstimator.getStats(clock.instant()).toJson())
             addBlock(rtpReceiver.getNodeStats())
             addBlock(rtpSender.getNodeStats())
-            addJson("transportCcEngine", transportCcEngine.getStatistics().toJson())
         }
     }
 
@@ -277,7 +298,7 @@ class Transceiver(
             rtpReceiver.getPacketStreamStats(),
             rtpSender.getStreamStats(),
             rtpSender.getPacketStreamStats(),
-            bandwidthEstimator.getStats(clock.instant()))
+            rtpSender.bandwidthEstimator.getStats(clock.instant()))
     }
 
     override fun stop() {
@@ -286,6 +307,7 @@ class Transceiver(
     }
 
     fun teardown() {
+        logger.info("Tearing down")
         rtpReceiver.tearDown()
         rtpSender.tearDown()
     }
@@ -303,3 +325,9 @@ class Transceiver(
         }
     }
 }
+
+/**
+ * Interface for handling events coming from a [Transceiver]
+ * The intention is to extend if needed (e.g. merge with EndpointConnectionStats or a potential RtpSenderEventHandler).
+ */
+interface TransceiverEventHandler : RtpReceiverEventHandler

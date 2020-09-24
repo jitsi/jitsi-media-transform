@@ -58,8 +58,9 @@ abstract class PayloadType(
     /**
      * The rtcp feedback messages associated with the payload type (e.g. nack, nack pli, transport-cc, goog-remb, ccm fir, etc).
      */
-    val rtcpFeedbackSet: RtcpFeedbackSet = CopyOnWriteArraySet()
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
 ) {
+    val rtcpFeedbackSet = CopyOnWriteArraySet(rtcpFeedbackSet)
 
     override fun toString(): String = with(StringBuffer()) {
         append(pt).append(" -> ").append(encoding).append(" (").append(clockRate).append("): ").append(parameters)
@@ -73,10 +74,9 @@ enum class PayloadTypeEncoding {
     VP8,
     VP9,
     H264,
+    RED,
     RTX,
     OPUS;
-
-    var unknownVal: String? = null
 
     companion object {
         /**
@@ -85,16 +85,15 @@ enum class PayloadTypeEncoding {
          */
         fun createFrom(value: String): PayloadTypeEncoding {
             return try {
-                PayloadTypeEncoding.valueOf(value.toUpperCase())
+                valueOf(value.toUpperCase())
             } catch (e: IllegalArgumentException) {
-                return PayloadTypeEncoding.OTHER.also { it.unknownVal = value }
+                return OTHER
             }
         }
     }
 
     override fun toString(): String = with(StringBuffer()) {
         append(super.toString())
-        unknownVal?.let { append(" (").append(it).append(")") }
         toString()
     }
 }
@@ -104,25 +103,25 @@ abstract class VideoPayloadType(
     encoding: PayloadTypeEncoding,
     clockRate: Int = 90000,
     parameters: PayloadTypeParams = ConcurrentHashMap(),
-    rtcpFeedbackSet: RtcpFeedbackSet = CopyOnWriteArraySet()
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
 ) : PayloadType(pt, encoding, MediaType.VIDEO, clockRate, parameters, rtcpFeedbackSet)
 
 class Vp8PayloadType(
     pt: Byte,
     parameters: PayloadTypeParams = ConcurrentHashMap(),
-    rtcpFeedbackSet: RtcpFeedbackSet = CopyOnWriteArraySet()
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
 ) : VideoPayloadType(pt, PayloadTypeEncoding.VP8, parameters = parameters, rtcpFeedbackSet = rtcpFeedbackSet)
 
 class Vp9PayloadType(
     pt: Byte,
     parameters: PayloadTypeParams = ConcurrentHashMap(),
-    rtcpFeedbackSet: RtcpFeedbackSet = CopyOnWriteArraySet()
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
 ) : VideoPayloadType(pt, PayloadTypeEncoding.VP9, parameters = parameters, rtcpFeedbackSet = rtcpFeedbackSet)
 
 class H264PayloadType(
     pt: Byte,
     parameters: PayloadTypeParams = ConcurrentHashMap(),
-    rtcpFeedbackSet: RtcpFeedbackSet = CopyOnWriteArraySet()
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
 ) : VideoPayloadType(pt, PayloadTypeEncoding.H264, parameters = parameters, rtcpFeedbackSet = rtcpFeedbackSet)
 
 class RtxPayloadType(
@@ -144,6 +143,19 @@ class OpusPayloadType(
     pt: Byte,
     parameters: PayloadTypeParams = ConcurrentHashMap()
 ) : AudioPayloadType(pt, PayloadTypeEncoding.OPUS, parameters = parameters)
+
+class AudioRedPayloadType(
+    pt: Byte,
+    clockRate: Int = 48000,
+    parameters: PayloadTypeParams = ConcurrentHashMap()
+) : AudioPayloadType(pt, PayloadTypeEncoding.RED, clockRate, parameters)
+
+class VideoRedPayloadType(
+    pt: Byte,
+    clockRate: Int = 90000,
+    parameters: PayloadTypeParams = ConcurrentHashMap(),
+    rtcpFeedbackSet: RtcpFeedbackSet = emptySet()
+) : VideoPayloadType(pt, PayloadTypeEncoding.RED, clockRate, parameters, rtcpFeedbackSet)
 
 class OtherAudioPayloadType(
     pt: Byte,

@@ -15,32 +15,35 @@
  */
 package org.jitsi.nlj.srtp
 
-import org.bouncycastle.crypto.tls.ExporterLabel
-import org.bouncycastle.crypto.tls.SRTPProtectionProfile
-import org.bouncycastle.crypto.tls.TlsClientContext
-import org.bouncycastle.crypto.tls.TlsContext
-import org.bouncycastle.crypto.tls.TlsServerContext
+import org.bouncycastle.tls.SRTPProtectionProfile
 import org.jitsi.srtp.SrtpContextFactory
 import org.jitsi.srtp.SrtpPolicy
+import org.jitsi.srtp.crypto.Aes
 import org.jitsi.utils.logging2.Logger
 
 enum class TlsRole {
     CLIENT,
     SERVER;
-
-    companion object {
-        fun fromTlsContext(tlsContext: TlsContext): TlsRole {
-            return when (tlsContext) {
-                is TlsClientContext -> CLIENT
-                is TlsServerContext -> SERVER
-                else -> throw Exception("Unsupported tls role: ${tlsContext::class}")
-            }
-        }
-    }
 }
 
 class SrtpUtil {
     companion object {
+        init {
+            SrtpConfig.factoryClass?.let { Aes.setFactoryClassName(it) }
+        }
+
+        fun getSrtpProtectionProfileFromName(profileName: String): Int {
+            return when (profileName) {
+                "SRTP_AES128_CM_HMAC_SHA1_80" -> { SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80 }
+                "SRTP_AES128_CM_HMAC_SHA1_32" -> { SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32 }
+                "SRTP_NULL_HMAC_SHA1_32" -> { SRTPProtectionProfile.SRTP_NULL_HMAC_SHA1_32 }
+                "SRTP_NULL_HMAC_SHA1_80" -> { SRTPProtectionProfile.SRTP_NULL_HMAC_SHA1_80 }
+                "SRTP_AEAD_AES_128_GCM" -> { SRTPProtectionProfile.SRTP_AEAD_AES_128_GCM }
+                "SRTP_AEAD_AES_256_GCM" -> { SRTPProtectionProfile.SRTP_AEAD_AES_256_GCM }
+                else -> throw IllegalArgumentException("Unsupported SRTP protection profile: $profileName")
+            }
+        }
+
         fun getSrtpProfileInformationFromSrtpProtectionProfile(srtpProtectionProfile: Int): SrtpProfileInformation {
             return when (srtpProtectionProfile) {
                 SRTPProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32 -> {
@@ -87,16 +90,30 @@ class SrtpUtil {
                         rtpAuthTagLength = 80 / 8
                     )
                 }
+                SRTPProtectionProfile.SRTP_AEAD_AES_128_GCM -> {
+                    SrtpProfileInformation(
+                        cipherKeyLength = 128 / 8,
+                        cipherSaltLength = 96 / 8,
+                        cipherName = SrtpPolicy.AESGCM_ENCRYPTION,
+                        authFunctionName = SrtpPolicy.NULL_AUTHENTICATION,
+                        authKeyLength = 0,
+                        rtcpAuthTagLength = 128 / 8,
+                        rtpAuthTagLength = 128 / 8
+                    )
+                }
+                SRTPProtectionProfile.SRTP_AEAD_AES_256_GCM -> {
+                    SrtpProfileInformation(
+                        cipherKeyLength = 256 / 8,
+                        cipherSaltLength = 96 / 8,
+                        cipherName = SrtpPolicy.AESGCM_ENCRYPTION,
+                        authFunctionName = SrtpPolicy.NULL_AUTHENTICATION,
+                        authKeyLength = 0,
+                        rtcpAuthTagLength = 128 / 8,
+                        rtpAuthTagLength = 128 / 8
+                    )
+                }
                 else -> throw IllegalArgumentException("Unsupported SRTP protection profile: $srtpProtectionProfile")
             }
-        }
-
-        fun getKeyingMaterial(tlsContext: TlsContext, srtpProfileInformation: SrtpProfileInformation): ByteArray {
-            return tlsContext.exportKeyingMaterial(
-                ExporterLabel.dtls_srtp,
-                null,
-                2 * (srtpProfileInformation.cipherKeyLength + srtpProfileInformation.cipherSaltLength)
-            )
         }
 
         fun initializeTransformer(

@@ -21,6 +21,8 @@ import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ModifierNode
+import org.jitsi.nlj.util.StateChangeLogger
+import org.jitsi.rtp.extensions.toHex
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -42,6 +44,10 @@ class Vp8Parser(
     // Stats
     private var numKeyframes: Int = 0
 
+    private val pictureIdState = StateChangeLogger("missing picture id", logger)
+    private val extendedPictureIdState = StateChangeLogger("missing extended picture ID", logger)
+    private val tidWithoutTl0PicIdxState = StateChangeLogger("TID with missing TL0PICIDX", logger)
+
     override fun modify(packetInfo: PacketInfo): PacketInfo {
         val videoRtpPacket: VideoRtpPacket = packetInfo.packet as VideoRtpPacket
         if (videoRtpPacket is Vp8Packet) {
@@ -56,6 +62,18 @@ class Vp8Parser(
             if (videoRtpPacket.isKeyframe) {
                 logger.cdebug { "Received a keyframe for ssrc ${videoRtpPacket.ssrc} ${videoRtpPacket.sequenceNumber}" }
                 numKeyframes++
+            }
+
+            pictureIdState.setState(videoRtpPacket.hasPictureId, videoRtpPacket) {
+                "Packet Data: ${videoRtpPacket.toHex(80)}"
+            }
+            extendedPictureIdState.setState(videoRtpPacket.hasExtendedPictureId, videoRtpPacket) {
+                "Packet Data: ${videoRtpPacket.toHex(80)}"
+            }
+            tidWithoutTl0PicIdxState.setState(
+                videoRtpPacket.hasTL0PICIDX || !videoRtpPacket.hasTemporalLayerIndex, videoRtpPacket
+            ) {
+                "Packet Data: ${videoRtpPacket.toHex(80)}"
             }
         }
 

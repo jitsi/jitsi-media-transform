@@ -64,25 +64,33 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
     /**
      * Implements the loss-based part of Google CC.
      */
-    private val sendSideBandwidthEstimation = SendSideBandwidthEstimation(diagnosticContext, initBw.bps.toLong(), logger).also {
-        it.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
-    }
+    private val sendSideBandwidthEstimation =
+        SendSideBandwidthEstimation(diagnosticContext, initBw.bps.toLong(), logger).also {
+            it.setMinMaxBitrate(minBw.bps.toInt(), maxBw.bps.toInt())
+        }
 
-    override fun doProcessPacketArrival(now: Instant, sendTime: Instant?, recvTime: Instant?, seq: Int, size: DataSize, ecn: Byte) {
+    override fun doProcessPacketArrival(
+        now: Instant,
+        sendTime: Instant?,
+        recvTime: Instant?,
+        seq: Int,
+        size: DataSize,
+        ecn: Byte
+    ) {
         if (sendTime != null && recvTime != null) {
             bitrateEstimatorAbsSendTime.incomingPacketInfo(now.toEpochMilli(),
                     sendTime.toEpochMilli(), recvTime.toEpochMilli(), size.bytes.toInt())
         }
         sendSideBandwidthEstimation.updateReceiverEstimate(bitrateEstimatorAbsSendTime.latestEstimate)
         sendSideBandwidthEstimation.reportPacketArrived(now.toEpochMilli())
-
-        /* TODO: rate-limit how often we call updateEstimate? */
-        sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
-        reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
 
     override fun doProcessPacketLoss(now: Instant, sendTime: Instant?, seq: Int) {
         sendSideBandwidthEstimation.reportPacketLost(now.toEpochMilli())
+    }
+
+    override fun doFeedbackComplete(now: Instant) {
+        /* TODO: rate-limit how often we call updateEstimate? */
         sendSideBandwidthEstimation.updateEstimate(now.toEpochMilli())
         reportBandwidthEstimate(now, sendSideBandwidthEstimation.latestEstimate.bps)
     }
@@ -96,7 +104,9 @@ class GoogleCcEstimator(diagnosticContext: DiagnosticContext, parentLogger: Logg
         return sendSideBandwidthEstimation.latestEstimate.bps
     }
 
-    override fun getStats(now: Instant): StatisticsSnapshot = StatisticsSnapshot("GoogleCcEstimator", getCurrentBw(now)).apply {
+    override fun getStats(now: Instant): StatisticsSnapshot = StatisticsSnapshot(
+        "GoogleCcEstimator", getCurrentBw(now)
+    ).apply {
         addNumber("latestDelayEstimate", sendSideBandwidthEstimation.latestREMB)
         addNumber("latestFractionLoss", sendSideBandwidthEstimation.latestFractionLoss)
         with(sendSideBandwidthEstimation.statistics) {

@@ -27,6 +27,7 @@ import org.jitsi.nlj.util.bps
 import org.jitsi.nlj.util.formatMilli
 import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging.TimeSeriesLogger
+import java.time.Clock
 
 /**
  * An abstract interface to a bandwidth estimation algorithm.
@@ -62,9 +63,8 @@ abstract class BandwidthEstimator(
      * Inform the bandwidth estimator about a packet that has arrived at its
      * destination.
      *
-     * This function will be called at most once for any value of [seq];
-     * however, it may be called after a call to [processPacketLoss] for the
-     * same [seq] value, if a packet is delayed.
+     * This function will be called at most once for any value of [seq]; however, it may be called after a call to
+     * [processPacketLoss] for the same [seq] value, if a packet is delayed.
      *
      * It is possible (e.g., if feedback was lost) that neither
      * [processPacketArrival] nor [processPacketLoss] is called for a given [seq].
@@ -72,6 +72,10 @@ abstract class BandwidthEstimator(
      * The clocks reported by [now], [sendTime], and [recvTime] do not
      * necessarily have any relationship to each other, but must be consistent
      * within themselves across all calls to functions of this [BandwidthEstimator].
+     *
+     * All arrival and loss reports based on a single feedback message should have the
+     * same [now] value.  [feedbackComplete] should be called once all feedback reports
+     * based on a single feedback message have been processed.
      *
      * @param[now] The current time, when this function is called.
      * @param[sendTime] The time the packet was sent, if known, or null.
@@ -125,6 +129,10 @@ abstract class BandwidthEstimator(
     /**
      * Inform the bandwidth estimator that a packet was lost.
      *
+     * All arrival and loss reports based on a single feedback message should have the
+     * same [now] value.  [feedbackComplete] should be called once all feedback reports
+     * based on a single feedback message have been processed.
+     *
      * @param[now] The current time, when this function is called.
      * @param[sendTime] The time the packet was sent, if known, or null.
      * @param[seq] A 16-bit sequence number of packets processed by this
@@ -149,6 +157,28 @@ abstract class BandwidthEstimator(
      * See that function for parameter details.
      */
     protected abstract fun doProcessPacketLoss(now: Instant, sendTime: Instant?, seq: Int)
+
+    /**
+     * Inform the bandwidth estimator that a block of feedback is complete.
+     *
+     * @param[now] The current time, when this function is called.  This should match
+     *   the value passed to [processPacketArrival] and [processPacketLoss].
+     */
+    fun feedbackComplete(now: Instant) {
+        if (timeSeriesLogger.isTraceEnabled) {
+            val point = diagnosticContext.makeTimeSeriesPoint("bwe_feedback_complete", now)
+            timeSeriesLogger.trace(point)
+        }
+
+        doFeedbackComplete(now)
+    }
+
+    /**
+     * A subclass's implementation of [feedbackComplete].
+     *
+     * See that function for parameter details.
+     */
+    protected abstract fun doFeedbackComplete(now: Instant)
 
     /**
      * Inform the bandwidth estimator about a new round-trip time value
@@ -180,7 +210,7 @@ abstract class BandwidthEstimator(
      *
      * @param[now] The current time, when this function is called.
      */
-    abstract fun getStats(now: Instant): StatisticsSnapshot
+    abstract fun getStats(now: Instant = Clock.systemUTC().instant()): StatisticsSnapshot
 
     /** Reset the estimator to its initial state. */
     abstract fun reset(): Unit

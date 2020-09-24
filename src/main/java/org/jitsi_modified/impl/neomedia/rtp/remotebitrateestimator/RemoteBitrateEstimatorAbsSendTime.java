@@ -17,13 +17,12 @@ package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
 
 import org.jetbrains.annotations.*;
+import org.jitsi.nlj.util.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
 import org.jitsi.utils.logging2.*;
 
-import org.jitsi.utils.stats.*;
-
-import java.util.*;
+import java.time.*;
 
 /**
  * webrtc.org abs_send_time implementation as of June 26, 2017.
@@ -38,8 +37,6 @@ public class RemoteBitrateEstimatorAbsSendTime
      * webrtc/modules/remote_bitrate_estimator/include/bwe_defines.h
      */
     static final private int kBitrateWindowMs = 1000;
-
-    static final private int kBitrateScale = 8000;
 
     static final int kDefaultMinBitrateBps = 30000;
 
@@ -141,7 +138,7 @@ public class RemoteBitrateEstimatorAbsSendTime
     /**
      * Keeps track of how much data we're receiving.
      */
-    private RateStatistics incomingBitrate;
+    private BitrateTracker incomingBitrate;
 
     /**
      * Determines whether or not the incoming bitrate is initialized or not.
@@ -170,7 +167,7 @@ public class RemoteBitrateEstimatorAbsSendTime
         this.logger = parentLogger.createChildLogger(getClass().getName());
         this.diagnosticContext = diagnosticContext;
         this.remoteRate = new AimdRateControl(diagnosticContext);
-        this.incomingBitrate = new RateStatistics(kBitrateWindowMs, kBitrateScale);
+        this.incomingBitrate = new BitrateTracker(Duration.ofMillis(kBitrateWindowMs));
         this.incomingBitrateInitialized = false;
         this.firstPacketTimeMs = -1;
         this.lastPacketTimeMs = -1;
@@ -180,10 +177,10 @@ public class RemoteBitrateEstimatorAbsSendTime
     /**
      * Reset back to the state immediately after construction.
      */
-    public void reset()
+    public synchronized void reset()
     {
         remoteRate.reset();
-        this.incomingBitrate = new RateStatistics(kBitrateWindowMs, kBitrateScale);
+        this.incomingBitrate = new BitrateTracker(Duration.ofMillis(kBitrateWindowMs));
         this.incomingBitrateInitialized = false;
         this.firstPacketTimeMs = -1;
         this.lastPacketTimeMs = -1;
@@ -200,7 +197,7 @@ public class RemoteBitrateEstimatorAbsSendTime
      * @param sendTimeMs the send time of the packet in millis
      * @param payloadSize the payload size of the packet.
      */
-    public void incomingPacketInfo(
+    public synchronized void incomingPacketInfo(
         long nowMs,
         long sendTimeMs,
         long arrivalTimeMs,
@@ -225,7 +222,7 @@ public class RemoteBitrateEstimatorAbsSendTime
         // should be broken out from  here.
         // Check if incoming bitrate estimate is valid, and if it
         // needs to be reset.
-        long incomingBitrate_ = incomingBitrate.getRate(arrivalTimeMs);
+        long incomingBitrate_ = (long) incomingBitrate.getRate(arrivalTimeMs).getBps();
         if (incomingBitrate_ != 0)
         {
             incomingBitrateInitialized = true;
@@ -236,11 +233,11 @@ public class RemoteBitrateEstimatorAbsSendTime
             // enough data point are left within the current window.
             // Reset incoming bitrate estimator so that the window
             // size will only contain new data points.
-            incomingBitrate = new RateStatistics(kBitrateWindowMs, kBitrateScale);
+            incomingBitrate = new BitrateTracker(Duration.ofMillis(kBitrateWindowMs));
             incomingBitrateInitialized = false;
         }
 
-        incomingBitrate.update(payloadSize, arrivalTimeMs);
+        incomingBitrate.update(DataSizeKt.getBytes(payloadSize), arrivalTimeMs);
 
         if (firstPacketTimeMs == -1)
         {
@@ -248,73 +245,69 @@ public class RemoteBitrateEstimatorAbsSendTime
         }
 
         boolean updateEstimate = false;
-        long targetBitrateBps = 0;
 
-        synchronized (this)
+        checkTimeouts(nowMs);
+        lastPacketTimeMs = nowMs;
+
+        long[] deltas = this.deltas;
+
+        /* long timestampDelta */ deltas[0] = 0;
+        /* long timeDelta */ deltas[1] = 0;
+        /* int sizeDelta */ deltas[2] = 0;
+
+        if (detector == null)
         {
-            checkTimeouts(nowMs);
-            lastPacketTimeMs = nowMs;
+            detector = new Detector(new OverUseDetectorOptions(), true, logger);
+        }
 
-            long[] deltas = this.deltas;
+        if (detector.interArrival.computeDeltas(
+            timestamp, arrivalTimeMs, payloadSize, deltas, nowMs))
+        {
+            double tsDeltaMs = deltas[0] * kTimestampToMs;
 
-            /* long timestampDelta */ deltas[0] = 0;
-            /* long timeDelta */ deltas[1] = 0;
-            /* int sizeDelta */ deltas[2] = 0;
+            detector.estimator.update(
+                /* timeDelta */ deltas[1],
+                /* timestampDelta */ tsDeltaMs,
+                /* sizeDelta */ (int) deltas[2],
+                detector.detector.getState(), nowMs);
 
-            if (detector == null)
-            {
-                detector = new Detector(new OverUseDetectorOptions(), true, logger);
-            }
+            detector.detector.detect(
+                detector.estimator.getOffset(), tsDeltaMs,
+                detector.estimator.getNumOfDeltas(), arrivalTimeMs);
+        }
 
-            if (detector.interArrival.computeDeltas(
-                timestamp, arrivalTimeMs, payloadSize, deltas, nowMs))
-            {
-                double tsDeltaMs = deltas[0] * kTimestampToMs;
+        // Check if it's time for a periodic update or if we
+        // should update because of an over-use.
+        if (lastUpdateMs == -1
+            || nowMs - lastUpdateMs > remoteRate.getFeedBackInterval())
+        {
+            updateEstimate = true;
+        }
+        else if (
+            detector.detector.getState() == BandwidthUsage.kBwOverusing)
+        {
+            long incomingRate_ = (long) incomingBitrate.getRate(arrivalTimeMs).getBps();
 
-                detector.estimator.update(
-                    /* timeDelta */ deltas[1],
-                    /* timestampDelta */ tsDeltaMs,
-                    /* sizeDelta */ (int) deltas[2],
-                    detector.detector.getState(), nowMs);
-
-                detector.detector.detect(
-                    detector.estimator.getOffset(), tsDeltaMs,
-                    detector.estimator.getNumOfDeltas(), arrivalTimeMs);
-            }
-
-            // Check if it's time for a periodic update or if we
-            // should update because of an over-use.
-            if (lastUpdateMs == -1
-                || nowMs - lastUpdateMs > remoteRate.getFeedBackInterval())
+            if (incomingRate_ > 0 && remoteRate
+                .isTimeToReduceFurther(nowMs, incomingBitrate_))
             {
                 updateEstimate = true;
             }
-            else if (
-                detector.detector.getState() == BandwidthUsage.kBwOverusing)
-            {
-                long incomingRate_ = incomingBitrate.getRate(arrivalTimeMs);
+        }
 
-                if (incomingRate_ > 0 && remoteRate
-                    .isTimeToReduceFurther(nowMs, incomingBitrate_))
-                {
-                    updateEstimate = true;
-                }
-            }
+        if (updateEstimate)
+        {
+            // The first overuse should immediately trigger a new estimate.
+            // We also have to update the estimate immediately if we are
+            // overusing and the target bitrate is too high compared to
+            // what we are receiving.
+            input.bwState = detector.detector.getState();
+            input.incomingBitRate = (long) incomingBitrate.getRate(arrivalTimeMs).getBps();
+            input.noiseVar = detector.estimator.getVarNoise();
 
-            if (updateEstimate)
-            {
-                // The first overuse should immediately trigger a new estimate.
-                // We also have to update the estimate immediately if we are
-                // overusing and the target bitrate is too high compared to
-                // what we are receiving.
-                input.bwState = detector.detector.getState();
-                input.incomingBitRate = incomingBitrate.getRate(arrivalTimeMs);
-                input.noiseVar = detector.estimator.getVarNoise();
-
-                remoteRate.update(input, nowMs);
-                targetBitrateBps = remoteRate.updateBandwidthEstimate(nowMs);
-                updateEstimate = remoteRate.isValidEstimate();
-            }
+            remoteRate.update(input, nowMs);
+            remoteRate.updateBandwidthEstimate(nowMs);
+            updateEstimate = remoteRate.isValidEstimate();
         }
 
         if (updateEstimate)
@@ -421,7 +414,7 @@ public class RemoteBitrateEstimatorAbsSendTime
                 kTimestampGroupLengthTicks, kTimestampToMs,
                 enableBurstGrouping, diagnosticContext, parentLogger);
             this.estimator = new OveruseEstimator(options, diagnosticContext, logger);
-            this.detector = new OveruseDetector(options, diagnosticContext, logger);
+            this.detector = new OveruseDetector(options, diagnosticContext);
         }
     }
 

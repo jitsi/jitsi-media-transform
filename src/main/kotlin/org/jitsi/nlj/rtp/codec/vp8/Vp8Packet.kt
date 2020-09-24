@@ -16,13 +16,13 @@
 
 package org.jitsi.nlj.rtp.codec.vp8
 
+import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi.nlj.codec.vp8.Vp8Utils
 import org.jitsi.nlj.rtp.ParsedVideoPacket
 import org.jitsi.utils.logging2.cwarn
 import org.jitsi.rtp.extensions.bytearray.hashCodeOfSegment
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi_modified.impl.neomedia.codec.video.vp8.DePacketizer
-import kotlin.properties.Delegates
 
 /**
  * If this [Vp8Packet] instance is being created via a clone,
@@ -60,23 +60,42 @@ class Vp8Packet private constructor (
     /** Due to the format of the VP8 payload, this value is only reliable for packets where [isStartOfFrame] is true. */
     override val isKeyframe: Boolean = isKeyframe ?: DePacketizer.isKeyFrame(this.buffer, payloadOffset, payloadLength)
 
-    override val isStartOfFrame: Boolean = isStartOfFrame ?: DePacketizer.VP8PayloadDescriptor.isStartOfFrame(buffer, payloadOffset)
+    override val isStartOfFrame: Boolean =
+        isStartOfFrame ?: DePacketizer.VP8PayloadDescriptor.isStartOfFrame(buffer, payloadOffset)
 
     /** End of VP8 frame is the marker bit. */
     override val isEndOfFrame: Boolean
         /** This uses [get] rather than initialization because [isMarked] is a var. */
         get() = isMarked
 
-    var TL0PICIDX: Int by Delegates.observable(TL0PICIDX ?: DePacketizer.VP8PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)) {
-        _, _, newValue ->
-            if (!DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
+    val hasTemporalLayerIndex =
+        DePacketizer.VP8PayloadDescriptor.hasTemporalLayerIndex(buffer, payloadOffset, payloadLength)
+
+    val hasPictureId = DePacketizer.VP8PayloadDescriptor.hasPictureId(buffer, payloadOffset, payloadLength)
+
+    val hasExtendedPictureId =
+        DePacketizer.VP8PayloadDescriptor.hasExtendedPictureId(buffer, payloadOffset, payloadLength)
+
+    val hasTL0PICIDX = DePacketizer.VP8PayloadDescriptor.hasTL0PICIDX(buffer, payloadOffset, payloadLength)
+
+    private var _TL0PICIDX = TL0PICIDX
+        ?: DePacketizer.VP8PayloadDescriptor.getTL0PICIDX(buffer, payloadOffset, payloadLength)
+
+    var TL0PICIDX: Int
+        get() = _TL0PICIDX
+        set(newValue) {
+            _TL0PICIDX = newValue
+            if (newValue != -1 && !DePacketizer.VP8PayloadDescriptor.setTL0PICIDX(
                     buffer, payloadOffset, payloadLength, newValue)) {
                 logger.cwarn { "Failed to set the TL0PICIDX of a VP8 packet." }
             }
         }
 
-    var pictureId: Int by Delegates.observable(pictureId ?: DePacketizer.VP8PayloadDescriptor.getPictureId(buffer, payloadOffset)) {
-        _, _, newValue ->
+    private var _pictureId = pictureId ?: DePacketizer.VP8PayloadDescriptor.getPictureId(buffer, payloadOffset)
+    var pictureId: Int
+        get() = _pictureId
+        set(newValue) {
+            _pictureId = newValue
             if (!DePacketizer.VP8PayloadDescriptor.setExtendedPictureId(
                     buffer, payloadOffset, payloadLength, newValue)) {
                 logger.cwarn { "Failed to set the picture id of a VP8 packet." }
@@ -84,6 +103,10 @@ class Vp8Packet private constructor (
         }
 
     val temporalLayerIndex: Int = Vp8Utils.getTemporalLayerIdOfFrame(this)
+
+    override val layerId: Int
+        get() = if (hasTemporalLayerIndex) RtpLayerDesc.getIndex(0, 0, temporalLayerIndex) else super.layerId
+
     /**
      * This is currently used as an overall spatial index, not an in-band spatial quality index a la vp9.  That is,
      * this index will correspond to an overall simulcast layer index across multiple simulcast stream.  e.g.

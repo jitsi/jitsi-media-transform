@@ -15,9 +15,12 @@
  */
 package org.jitsi.nlj
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import java.time.Duration
 import org.jitsi.rtp.Packet
+import java.util.Collections
 
+@SuppressFBWarnings("CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE")
 class EventTimeline(
     private val timeline: MutableList<Pair<String, Long>> = mutableListOf()
 ) : Iterable<Pair<String, Long>> {
@@ -75,6 +78,7 @@ class EventTimeline(
  * (as it is parsed into different types), the wrapping [PacketInfo] stays consistent
  * and allows for metadata to be passed along with a packet.
  */
+@SuppressFBWarnings("CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE")
 open class PacketInfo @JvmOverloads constructor(
     var packet: Packet,
     val timeline: EventTimeline = EventTimeline()
@@ -132,12 +136,50 @@ open class PacketInfo @JvmOverloads constructor(
         }
         clone.receivedTime = receivedTime
         clone.payloadVerification = payloadVerification
+        @Suppress("UNCHECKED_CAST") /* ArrayList.clone() really does return ArrayList, not Object. */
+        clone.onSentActions = onSentActions?.clone() as ArrayList<()->Unit>?
         return clone
     }
 
     fun addEvent(desc: String) {
         if (ENABLE_TIMELINE) {
             timeline.addEvent(desc)
+        }
+    }
+
+    /**
+     * The list of pending actions, or [null] if none.
+     */
+    private var onSentActions: ArrayList<() -> Unit>? = null
+
+    /**
+     * Add an action to be performed when the packet is sent (i.e. when this packet's
+     * [sent] method is called).
+     *
+     * If this [PacketInfo] object is cloned, the action will be called for every
+     * cloned instance.  If packet is dropped (i.e. [sent] is never called), the
+     * action will not be called.
+     */
+    fun onSent(action: () -> Unit) {
+        synchronized(this) {
+            if (onSentActions == null) {
+                onSentActions = ArrayList(1)
+            }
+            onSentActions!!.add(action)
+        }
+    }
+
+    /**
+     * Invoke any actions previously registered with this [PacketInfo]'s [onSent]
+     * method.  This should be called just before, or after, this packet is sent.
+     */
+    fun sent() {
+        var actions: List<() -> Unit> = Collections.emptyList()
+        synchronized(this) {
+            onSentActions?.let { actions = it; onSentActions = null } ?: run { return@sent }
+        }
+        for (action in actions) {
+            action.invoke()
         }
     }
 
