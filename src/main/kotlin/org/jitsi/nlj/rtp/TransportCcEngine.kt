@@ -103,7 +103,7 @@ class TransportCcEngine(
 
     private fun tccReceived(tccPacket: RtcpFbTccPacket) {
         val now = clock.instant()
-        var currArrivalTimestamp = Instant.ofEpochMilli(tccPacket.GetBaseTimeUs() / 1000)
+        var currArrivalTimestamp = Instant.ofEpochMilli((tccPacket.GetBaseTimeUs() + 500) / 1000)
         if (remoteReferenceTime == NEVER) {
             remoteReferenceTime = currArrivalTimestamp
             localReferenceTime = now
@@ -134,20 +134,18 @@ class TransportCcEngine(
 
                     when (packetDetail.state) {
                         PacketDetailState.unreported, PacketDetailState.reportedLost -> {
-                            if (packetDetail.state == PacketDetailState.reportedLost) {
+                            val previouslyReportedLost = packetDetail.state == PacketDetailState.reportedLost
+                            if (previouslyReportedLost) {
                                 numPacketsReportedAfterLost.getAndIncrement()
                             }
 
                             val arrivalTimeInLocalClock =
                                 currArrivalTimestamp - Duration.between(localReferenceTime, remoteReferenceTime)
 
-                            /* TODO: BandwidthEstimator should have an API for "previously reported lost packet
-                             *  has arrived" for the reportedLost case.
-                             */
                             bandwidthEstimator.processPacketArrival(
                                 now, packetDetail.packetSendTime, arrivalTimeInLocalClock,
-                                tccSeqNum, packetDetail.packetLength
-                            )
+                                tccSeqNum, packetDetail.packetLength,
+                                previouslyReportedLost = previouslyReportedLost)
                             packetDetail.state = PacketDetailState.reportedReceived
                         }
 
