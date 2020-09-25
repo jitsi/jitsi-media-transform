@@ -145,7 +145,8 @@ class AudioRedHandler(
                 val redPacket = RedAudioRtpPacket.builder.build(redPayloadType, audioRtpPacket, redundancy)
                 packetInfo.packet = redPacket
 
-                redundancy.forEach { BufferPool.returnBuffer(it.buffer) }
+                // We replaced packetInfo.packet with our newly allocated packet, so the original can now be returned.
+                // We do not return the redundancy packets, because we only peek()ed at them from the cache.
                 BufferPool.returnBuffer(audioRtpPacket.buffer)
 
                 stats.audioPacketEncapsulated()
