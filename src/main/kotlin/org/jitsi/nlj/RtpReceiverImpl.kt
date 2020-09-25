@@ -45,6 +45,7 @@ import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
 import org.jitsi.nlj.transform.node.incoming.BitrateCalculator
 import org.jitsi.nlj.transform.node.incoming.DuplicateTermination
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
+import org.jitsi.nlj.transform.node.incoming.LayerLookup
 import org.jitsi.nlj.transform.node.incoming.PaddingTermination
 import org.jitsi.nlj.transform.node.incoming.RemoteBandwidthEstimator
 import org.jitsi.nlj.transform.node.incoming.RetransmissionRequesterNode
@@ -54,7 +55,6 @@ import org.jitsi.nlj.transform.node.incoming.DiscardableDiscarder
 import org.jitsi.nlj.transform.node.incoming.TccGeneratorNode
 import org.jitsi.nlj.transform.node.incoming.VideoBitrateCalculator
 import org.jitsi.nlj.transform.node.incoming.VideoParser
-import org.jitsi.nlj.transform.node.incoming.Vp8Parser
 import org.jitsi.nlj.transform.packetPath
 import org.jitsi.nlj.transform.pipeline
 import org.jitsi.nlj.util.PacketInfoQueue
@@ -70,10 +70,6 @@ import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
-import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
-import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
-import org.jitsi.nlj.transform.node.incoming.LayerLookup
-import org.jitsi.nlj.transform.node.incoming.Vp9Parser
 import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.BufferPool
 
@@ -195,12 +191,6 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
         incomingPacketQueue.setErrorHandler(queueErrorCounter)
 
-        val videoPathTail = pipeline {
-            node(LayerLookup(logger))
-            node(videoBitrateCalculator)
-            node(packetHandlerWrapper)
-        }
-
         inputTreeRoot = pipeline {
             node(packetStreamStats)
             demux("SRTP/SRTCP") {
@@ -243,29 +233,9 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                     node(retransmissionRequester)
                                     node(paddingOnlyDiscarder)
                                     node(VideoParser(streamInformationStore, logger))
-                                    demux("Payload Type") {
-                                        packetPath {
-                                            name = "VP8"
-                                            predicate = PacketPredicate { it is Vp8Packet }
-                                            path = pipeline {
-                                                node(Vp8Parser(logger))
-                                                node(videoPathTail)
-                                            }
-                                            packetPath {
-                                                name = "VP9"
-                                                predicate = PacketPredicate { it is Vp9Packet }
-                                                path = pipeline {
-                                                    node(Vp9Parser(logger))
-                                                    node(videoPathTail)
-                                                }
-                                            }
-                                            packetPath {
-                                                name = "Other payloads"
-                                                predicate = PacketPredicate { true }
-                                                path = videoPathTail
-                                            }
-                                        }
-                                    }
+                                    node(LayerLookup(logger))
+                                    node(videoBitrateCalculator)
+                                    node(packetHandlerWrapper)
                                 }
                             }
                         }

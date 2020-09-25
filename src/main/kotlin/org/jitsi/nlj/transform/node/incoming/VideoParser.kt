@@ -15,9 +15,11 @@
  */
 package org.jitsi.nlj.transform.node.incoming
 
+import org.jitsi.nlj.Event
+import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
+import org.jitsi.nlj.SetMediaSourcesEvent
 import org.jitsi.nlj.format.Vp8PayloadType
-import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
@@ -26,7 +28,11 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.nlj.format.Vp9PayloadType
 import org.jitsi.nlj.rtp.ParsedVideoPacket
+import org.jitsi.nlj.rtp.codec.CodecParser
+import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
+import org.jitsi.nlj.rtp.codec.vp8.Vp8Parser
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
+import org.jitsi.nlj.rtp.codec.vp9.Vp9Parser
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.utils.logging2.cdebug
 import java.util.concurrent.atomic.AtomicInteger
@@ -42,6 +48,10 @@ class VideoParser(
     private val numPacketsDroppedUnknownPt = AtomicInteger()
     private var numKeyframes: Int = 0
 
+    private var sources: Array<MediaSourceDesc> = arrayOf()
+
+    private var codecParser: CodecParser? = null
+
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         var packet = packetInfo.packetAs<RtpPacket>()
         val payloadType = streamInformationStore.rtpPayloadTypes[packet.payloadType.toByte()] ?: run {
@@ -55,19 +65,29 @@ class VideoParser(
                     val vp8Packet = packetInfo.packet.toOtherType(::Vp8Packet)
                     packetInfo.packet = vp8Packet
                     packetInfo.resetPayloadVerification()
+
+                    if (codecParser !is Vp8Parser) {
+                        codecParser = Vp8Parser(sources, logger)
+                    }
                 }
                 is Vp9PayloadType -> {
                     val vp9Packet = packetInfo.packet.toOtherType(::Vp9Packet)
                     packetInfo.packet = vp9Packet
                     packetInfo.resetPayloadVerification()
+
+                    if (codecParser !is Vp9Parser) {
+                        codecParser = Vp9Parser(sources, logger)
+                    }
                 }
             }
+            codecParser?.parse(packetInfo)
             packet = packetInfo.packetAs()
         } catch (e: Exception) {
             logger.error("Exception parsing video packet.  Packet data is: " +
                 packet.buffer.toHex(packet.offset, Math.min(packet.length, 80)), e)
             return null
         }
+
         if (packet is ParsedVideoPacket) {
             /* Some codecs mark keyframes in every packet of the keyframe - only count the start of the frame,
              * so the count is correct. */
@@ -79,6 +99,16 @@ class VideoParser(
         }
 
         return packetInfo
+    }
+
+    override fun handleEvent(event: Event) {
+        when (event) {
+            is SetMediaSourcesEvent -> {
+                sources = event.mediaSourceDescs
+                codecParser?.sources = sources
+            }
+        }
+        super.handleEvent(event)
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

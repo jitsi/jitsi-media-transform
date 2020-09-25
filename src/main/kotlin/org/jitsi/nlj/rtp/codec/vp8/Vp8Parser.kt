@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package org.jitsi.nlj.transform.node.incoming
+package org.jitsi.nlj.rtp.codec.vp8
 
-import org.jitsi.nlj.Event
 import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.RtpEncodingDesc
 import org.jitsi.nlj.RtpLayerDesc
-import org.jitsi.nlj.SetMediaSourcesEvent
-import org.jitsi.nlj.rtp.VideoRtpPacket
-import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
-import org.jitsi.nlj.transform.node.ObserverNode
+import org.jitsi.nlj.rtp.codec.CodecParser
 import org.jitsi.nlj.util.StateChangeLogger
 import org.jitsi.rtp.extensions.toHex
 import org.jitsi.utils.logging2.Logger
@@ -36,21 +31,21 @@ import org.jitsi.utils.logging2.createChildLogger
  * from frames, and also diagnoses packet format variants that the Jitsi videobridge won't be able to route.
  */
 class Vp8Parser(
+    sources: Array<MediaSourceDesc>,
     parentLogger: Logger
-) : ObserverNode("Vp8 parser") {
+) : CodecParser(sources) {
     private val logger = createChildLogger(parentLogger)
-    // Stats
-    private var sources: Array<MediaSourceDesc> = arrayOf()
 
+    // Consistency
     private val pictureIdState = StateChangeLogger("missing picture id", logger)
     private val extendedPictureIdState = StateChangeLogger("missing extended picture ID", logger)
     private val tidWithoutTl0PicIdxState = StateChangeLogger("TID with missing TL0PICIDX", logger)
 
-    override fun observe(packetInfo: PacketInfo) {
+    override fun parse(packetInfo: PacketInfo) {
         val vp8Packet = packetInfo.packetAs<Vp8Packet>()
         if (vp8Packet.height > -1) {
             // TODO: handle case where new height is from a packet older than the
-            // latest height we've seen.
+            //  latest height we've seen.
             val enc = findRtpEncodingDesc(vp8Packet)
             if (enc != null) {
                 val newLayers = enc.layers.map { layer -> RtpLayerDesc(layer, height = vp8Packet.height) }
@@ -70,24 +65,4 @@ class Vp8Parser(
             "Packet Data: ${vp8Packet.toHex(80)}"
         }
     }
-
-    override fun handleEvent(event: Event) {
-        when (event) {
-            is SetMediaSourcesEvent -> {
-                sources = event.mediaSourceDescs
-            }
-        }
-        super.handleEvent(event)
-    }
-
-    private fun findRtpEncodingDesc(packet: VideoRtpPacket): RtpEncodingDesc? {
-        for (source in sources) {
-            source.findRtpEncodingDesc(packet.ssrc)?.let {
-                return it
-            }
-        }
-        return null
-    }
-
-    override fun trace(f: () -> Unit) = f.invoke()
 }

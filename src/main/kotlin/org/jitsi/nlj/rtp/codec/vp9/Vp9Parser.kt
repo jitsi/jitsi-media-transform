@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package org.jitsi.nlj.transform.node.incoming
+package org.jitsi.nlj.rtp.codec.vp9
 
-import org.jitsi.nlj.Event
 import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.RtpEncodingDesc
-import org.jitsi.nlj.RtpLayerDesc
-import org.jitsi.nlj.SetMediaSourcesEvent
-import org.jitsi.nlj.rtp.VideoRtpPacket
-import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
-import org.jitsi.nlj.transform.node.ObserverNode
+import org.jitsi.nlj.rtp.codec.CodecParser
 import org.jitsi.nlj.util.StateChangeLogger
 import org.jitsi.rtp.extensions.toHex
 import org.jitsi.utils.logging2.Logger
@@ -36,11 +30,10 @@ import org.jitsi.utils.logging2.createChildLogger
  * from frames, and also diagnoses packet format variants that the Jitsi videobridge won't be able to route.
  */
 class Vp9Parser(
+    sources: Array<MediaSourceDesc>,
     parentLogger: Logger
-) : ObserverNode("Vp9 parser") {
+) : CodecParser(sources) {
     private val logger = createChildLogger(parentLogger)
-    // Stats
-    private var sources: Array<MediaSourceDesc> = arrayOf()
 
     private val pictureIdState = StateChangeLogger("missing picture id", logger)
     private val extendedPictureIdState = StateChangeLogger("missing extended picture ID", logger)
@@ -49,7 +42,7 @@ class Vp9Parser(
     /** Encodings we've actually seen.  Used to clear out inferred-from-signaling encoding information. */
     private val ssrcsSeen = HashSet<Long>()
 
-    override fun observe(packetInfo: PacketInfo) {
+    override fun parse(packetInfo: PacketInfo) {
         val vp9Packet = packetInfo.packetAs<Vp9Packet>()
 
         ssrcsSeen.add(vp9Packet.ssrc)
@@ -96,33 +89,4 @@ class Vp9Parser(
             "Packet Data: ${vp9Packet.toHex(80)}"
         }
     }
-
-    override fun handleEvent(event: Event) {
-        when (event) {
-            is SetMediaSourcesEvent -> {
-                sources = event.mediaSourceDescs
-            }
-        }
-        super.handleEvent(event)
-    }
-
-    private fun findSourceDescAndRtpEncodingDesc(packet: VideoRtpPacket): Pair<MediaSourceDesc, RtpEncodingDesc>? {
-        for (source in sources) {
-            source.findRtpEncodingDesc(packet.ssrc)?.let {
-                return Pair(source, it)
-            }
-        }
-        return null
-    }
-
-    private fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? {
-        for (source in sources) {
-            source.findRtpLayerDesc(packet)?.let {
-                return it
-            }
-        }
-        return null
-    }
-
-    override fun trace(f: () -> Unit) = f.invoke()
 }
