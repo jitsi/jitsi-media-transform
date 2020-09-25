@@ -19,7 +19,7 @@ package org.jitsi.nlj.rtp.codec.vp8
 import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpLayerDesc
-import org.jitsi.nlj.rtp.codec.CodecParser
+import org.jitsi.nlj.rtp.codec.VideoCodecParser
 import org.jitsi.nlj.util.StateChangeLogger
 import org.jitsi.rtp.extensions.toHex
 import org.jitsi.utils.logging2.Logger
@@ -33,7 +33,7 @@ import org.jitsi.utils.logging2.createChildLogger
 class Vp8Parser(
     sources: Array<MediaSourceDesc>,
     parentLogger: Logger
-) : CodecParser(sources) {
+) : VideoCodecParser(sources) {
     private val logger = createChildLogger(parentLogger)
 
     // Consistency

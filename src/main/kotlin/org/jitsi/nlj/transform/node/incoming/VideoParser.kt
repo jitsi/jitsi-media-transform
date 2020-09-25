@@ -28,7 +28,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.nlj.format.Vp9PayloadType
 import org.jitsi.nlj.rtp.ParsedVideoPacket
-import org.jitsi.nlj.rtp.codec.CodecParser
+import org.jitsi.nlj.rtp.codec.VideoCodecParser
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Parser
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
@@ -50,7 +50,7 @@ class VideoParser(
 
     private var sources: Array<MediaSourceDesc> = arrayOf()
 
-    private var codecParser: CodecParser? = null
+    private var videoCodecParser: VideoCodecParser? = null
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         var packet = packetInfo.packetAs<RtpPacket>()
@@ -66,8 +66,8 @@ class VideoParser(
                     packetInfo.packet = vp8Packet
                     packetInfo.resetPayloadVerification()
 
-                    if (codecParser !is Vp8Parser) {
-                        codecParser = Vp8Parser(sources, logger)
+                    if (videoCodecParser !is Vp8Parser) {
+                        videoCodecParser = Vp8Parser(sources, logger)
                     }
                 }
                 is Vp9PayloadType -> {
@@ -75,12 +75,12 @@ class VideoParser(
                     packetInfo.packet = vp9Packet
                     packetInfo.resetPayloadVerification()
 
-                    if (codecParser !is Vp9Parser) {
-                        codecParser = Vp9Parser(sources, logger)
+                    if (videoCodecParser !is Vp9Parser) {
+                        videoCodecParser = Vp9Parser(sources, logger)
                     }
                 }
             }
-            codecParser?.parse(packetInfo)
+            videoCodecParser?.parse(packetInfo)
             packet = packetInfo.packetAs()
         } catch (e: Exception) {
             logger.error("Exception parsing video packet.  Packet data is: " +
@@ -105,7 +105,7 @@ class VideoParser(
         when (event) {
             is SetMediaSourcesEvent -> {
                 sources = event.mediaSourceDescs
-                codecParser?.sources = sources
+                videoCodecParser?.sources = sources
             }
         }
         super.handleEvent(event)

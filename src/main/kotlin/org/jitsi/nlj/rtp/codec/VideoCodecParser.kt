@@ -28,7 +28,7 @@ import org.jitsi.nlj.rtp.VideoRtpPacket
  * Typically this will set layer information as interpreted from received packets,
  * and verify stream consistency.
  */
-abstract class CodecParser(
+abstract class VideoCodecParser(
     var sources: Array<MediaSourceDesc>
 ) {
     abstract fun parse(packetInfo: PacketInfo)
