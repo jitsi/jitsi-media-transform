@@ -24,11 +24,9 @@ import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi.nlj.SetMediaSourcesEvent
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
-import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.StateChangeLogger
 import org.jitsi.rtp.extensions.toHex
-import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 
@@ -42,7 +40,6 @@ class Vp8Parser(
 ) : ObserverNode("Vp8 parser") {
     private val logger = createChildLogger(parentLogger)
     // Stats
-    private var numKeyframes: Int = 0
     private var sources: Array<MediaSourceDesc> = arrayOf()
 
     private val pictureIdState = StateChangeLogger("missing picture id", logger)
@@ -59,10 +56,6 @@ class Vp8Parser(
                 val newLayers = enc.layers.map { layer -> RtpLayerDesc(layer, height = vp8Packet.height) }
                 enc.layers = newLayers.toTypedArray()
             }
-        }
-        if (vp8Packet.isKeyframe) {
-            logger.cdebug { "Received a keyframe for ssrc ${vp8Packet.ssrc} ${vp8Packet.sequenceNumber}" }
-            numKeyframes++
         }
 
         pictureIdState.setState(vp8Packet.hasPictureId, vp8Packet) {
@@ -94,12 +87,6 @@ class Vp8Parser(
             }
         }
         return null
-    }
-
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("num_keyframes", numKeyframes)
-        }
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

@@ -24,11 +24,9 @@ import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi.nlj.SetMediaSourcesEvent
 import org.jitsi.nlj.rtp.VideoRtpPacket
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
-import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.ObserverNode
 import org.jitsi.nlj.util.StateChangeLogger
 import org.jitsi.rtp.extensions.toHex
-import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 
@@ -42,7 +40,6 @@ class Vp9Parser(
 ) : ObserverNode("Vp9 parser") {
     private val logger = createChildLogger(parentLogger)
     // Stats
-    private var numKeyframes: Int = 0
     private var sources: Array<MediaSourceDesc> = arrayOf()
 
     private val pictureIdState = StateChangeLogger("missing picture id", logger)
@@ -82,12 +79,6 @@ class Vp9Parser(
             /* TODO: we need a way to restore the encoding desc's old layer set if it switches back to some other codec
              *  (i.e. VP8)
              */
-        }
-        /* VP9 marks keyframes in every packet of the keyframe - only count the start of the frame so the count is correct. */
-        /* Alternately we could keep track of keyframes we've already seen, by timestamp, but that seems unnecessary. */
-        if (vp9Packet.isKeyframe && vp9Packet.isStartOfFrame) {
-            logger.cdebug { "Received a keyframe for ssrc ${vp9Packet.ssrc} ${vp9Packet.sequenceNumber}" }
-            numKeyframes++
         }
         if (vp9Packet.spatialLayerIndex > 0 && vp9Packet.isInterPicturePredicted) {
             /* Check if this layer is using K-SVC. */
@@ -131,12 +122,6 @@ class Vp9Parser(
             }
         }
         return null
-    }
-
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("num_keyframes", numKeyframes)
-        }
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

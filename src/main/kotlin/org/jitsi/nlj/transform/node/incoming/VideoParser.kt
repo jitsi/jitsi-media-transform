@@ -25,8 +25,10 @@ import org.jitsi.rtp.extensions.bytearray.toHex
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.nlj.format.Vp9PayloadType
+import org.jitsi.nlj.rtp.ParsedVideoPacket
 import org.jitsi.nlj.rtp.codec.vp9.Vp9Packet
 import org.jitsi.rtp.rtp.RtpPacket
+import org.jitsi.utils.logging2.cdebug
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -38,9 +40,10 @@ class VideoParser(
 ) : TransformerNode("Video parser") {
     private val logger = createChildLogger(parentLogger)
     private val numPacketsDroppedUnknownPt = AtomicInteger()
+    private var numKeyframes: Int = 0
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        val packet = packetInfo.packetAs<RtpPacket>()
+        var packet = packetInfo.packetAs<RtpPacket>()
         val payloadType = streamInformationStore.rtpPayloadTypes[packet.payloadType.toByte()] ?: run {
             logger.error("Unrecognized video payload type ${packet.payloadType}, cannot parse video information")
             numPacketsDroppedUnknownPt.incrementAndGet()
@@ -59,10 +62,20 @@ class VideoParser(
                     packetInfo.resetPayloadVerification()
                 }
             }
+            packet = packetInfo.packetAs()
         } catch (e: Exception) {
             logger.error("Exception parsing video packet.  Packet data is: " +
-                "${packet.buffer.toHex(packet.offset, Math.min(packet.length, 80))}", e)
+                packet.buffer.toHex(packet.offset, Math.min(packet.length, 80)), e)
             return null
+        }
+        if (packet is ParsedVideoPacket) {
+            /* Some codecs mark keyframes in every packet of the keyframe - only count the start of the frame,
+             * so the count is correct. */
+            /* Alternately we could keep track of keyframes we've already seen, by timestamp, but that seems unnecessary. */
+            if (packet.isKeyframe && packet.isStartOfFrame) {
+                logger.cdebug { "Received a keyframe for ssrc ${packet.ssrc} ${packet.sequenceNumber}" }
+                numKeyframes++
+            }
         }
 
         return packetInfo
@@ -73,6 +86,7 @@ class VideoParser(
     override fun getNodeStats(): NodeStatsBlock {
         return super.getNodeStats().apply {
             addNumber("num_packets_dropped_unknown_pt", numPacketsDroppedUnknownPt.get())
+            addNumber("num_keyframes", numKeyframes)
         }
     }
 }
