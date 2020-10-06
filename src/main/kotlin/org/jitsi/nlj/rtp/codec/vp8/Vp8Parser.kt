@@ -18,7 +18,6 @@ package org.jitsi.nlj.rtp.codec.vp8
 
 import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
-import org.jitsi.nlj.RtpLayerDesc
 import org.jitsi.nlj.rtp.codec.VideoCodecParser
 import org.jitsi.nlj.util.StateChangeLogger
 import org.jitsi.rtp.extensions.toHex
@@ -48,7 +47,7 @@ class Vp8Parser(
             //  latest height we've seen.
             val enc = findRtpEncodingDesc(vp8Packet)
             if (enc != null) {
-                val newLayers = enc.layers.map { layer -> RtpLayerDesc(layer, height = vp8Packet.height) }
+                val newLayers = enc.layers.map { layer -> layer.copy(height = vp8Packet.height) }
                 enc.layers = newLayers.toTypedArray()
             }
         }

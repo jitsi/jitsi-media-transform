@@ -72,19 +72,20 @@ constructor(
     }
 
     /**
-     * Constructor that clones an existing layer desc, inheriting its statistics,
+     * Clone an existing layer desc, inheriting its statistics,
      * modifying only specific values.
      */
-    constructor(
-        orig: RtpLayerDesc,
-        eid: Int = orig.eid,
-        tid: Int = orig.tid,
-        sid: Int = orig.sid,
-        height: Int = orig.height,
-        frameRate: Double = orig.frameRate,
-        dependencyLayers: Array<RtpLayerDesc> = orig.dependencyLayers,
-        softDependencyLayers: Array<RtpLayerDesc> = orig.softDependencyLayers
-    ) : this(eid, tid, sid, height, frameRate, dependencyLayers, softDependencyLayers)
+    fun copy(
+        eid: Int = this.eid,
+        tid: Int = this.tid,
+        sid: Int = this.sid,
+        height: Int = this.height,
+        frameRate: Double = this.frameRate,
+        dependencyLayers: Array<RtpLayerDesc> = this.dependencyLayers,
+        softDependencyLayers: Array<RtpLayerDesc> = this.softDependencyLayers
+    ) = RtpLayerDesc(eid, tid, sid, height, frameRate, dependencyLayers, softDependencyLayers).also {
+        it.inheritFrom(this)
+    }
 
     /**
      * Whether softDependencyLayers are to be used.
