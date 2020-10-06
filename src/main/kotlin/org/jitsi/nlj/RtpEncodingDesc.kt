@@ -92,6 +92,17 @@ constructor(
     }
 
     /**
+     * Clone an existing encoding desc, inheriting layer descs' statistics,
+     * modifying only specific values.
+     */
+    fun copy(
+        primarySSRC: Long = this.primarySSRC,
+        layers: Array<RtpLayerDesc> = Array(this.layers.size) { i -> this.layers[i].copy() }
+    ) = RtpEncodingDesc(primarySSRC, layers).also {
+        this.secondarySsrcs.forEach { (ssrc, type) -> it.addSecondarySsrc(ssrc, type) }
+    }
+
+    /**
      * {@inheritDoc}
      */
     override fun toString(): String {

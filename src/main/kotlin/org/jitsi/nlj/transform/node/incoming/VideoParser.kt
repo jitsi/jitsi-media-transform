@@ -19,6 +19,7 @@ import org.jitsi.nlj.Event
 import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.SetMediaSourcesEvent
+import org.jitsi.nlj.copy
 import org.jitsi.nlj.format.Vp8PayloadType
 import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.transform.node.TransformerNode
@@ -49,6 +50,7 @@ class VideoParser(
     private var numKeyframes: Int = 0
 
     private var sources: Array<MediaSourceDesc> = arrayOf()
+    private var origSources: Array<MediaSourceDesc> = sources
 
     private var videoCodecParser: VideoCodecParser? = null
 
@@ -67,6 +69,7 @@ class VideoParser(
                     packetInfo.resetPayloadVerification()
 
                     if (videoCodecParser !is Vp8Parser) {
+                        resetSources()
                         videoCodecParser = Vp8Parser(sources, logger)
                     }
                 }
@@ -76,6 +79,7 @@ class VideoParser(
                     packetInfo.resetPayloadVerification()
 
                     if (videoCodecParser !is Vp9Parser) {
+                        resetSources()
                         videoCodecParser = Vp9Parser(sources, logger)
                     }
                 }
@@ -108,10 +112,25 @@ class VideoParser(
         when (event) {
             is SetMediaSourcesEvent -> {
                 sources = event.mediaSourceDescs
+                origSources = sources.copy()
                 videoCodecParser?.sources = sources
             }
         }
         super.handleEvent(event)
+    }
+
+    private fun resetSources() {
+        for (origSource in origSources) {
+            for (source in sources) {
+                if (source.primarySSRC != origSource.primarySSRC) {
+                    continue
+                }
+                for (origEncoding in origSource.rtpEncodings) {
+                    source.setEncodingLayers(origEncoding.layers, origEncoding.primarySSRC)
+                }
+                break
+            }
+        }
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

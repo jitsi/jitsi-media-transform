@@ -144,6 +144,16 @@ class MediaSourceDesc
         updateLayerCache()
     }
 
+    /**
+     * Clone an existing media source desc, inheriting layer descs' statistics,
+     * modifying only specific values.
+     */
+    @Synchronized
+    fun copy(
+        rtpEncodings: Array<RtpEncodingDesc> = Array(this.rtpEncodings.size) { i -> this.rtpEncodings[i].copy() },
+        owner: String? = this.owner
+    ) = MediaSourceDesc(rtpEncodings, owner)
+
     override fun toString(): String = buildString {
         append("MediaSourceDesc ").append(hashCode()).append(" has encodings:\n  ")
         append(rtpEncodings.joinToString(separator = "\n  "))
@@ -161,3 +171,8 @@ class MediaSourceDesc
      */
     fun matches(ssrc: Long) = rtpEncodings.getOrNull(0)?.primarySSRC == ssrc
 }
+
+/**
+ * Clone an array of media source descriptions.
+ */
+fun Array<MediaSourceDesc>.copy() = Array(this.size) { i -> this[i].copy() }
