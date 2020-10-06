@@ -79,6 +79,9 @@ class VideoParser(
                         videoCodecParser = Vp9Parser(sources, logger)
                     }
                 }
+                else -> {
+                    videoCodecParser = null
+                }
             }
             videoCodecParser?.parse(packetInfo)
             packet = packetInfo.packetAs()
