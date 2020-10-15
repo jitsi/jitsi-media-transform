@@ -120,13 +120,13 @@ class VideoParser(
     }
 
     private fun resetSources() {
-        for (origSource in signaledSources) {
+        for (signaledSource in signaledSources) {
             for (source in sources) {
-                if (source.primarySSRC != origSource.primarySSRC) {
+                if (source.primarySSRC != signaledSource.primarySSRC) {
                     continue
                 }
-                for (origEncoding in origSource.rtpEncodings) {
-                    source.setEncodingLayers(origEncoding.layers, origEncoding.primarySSRC)
+                for (signaledEncoding in signaledSource.rtpEncodings) {
+                    source.setEncodingLayers(signaledEncoding.layers, signaledEncoding.primarySSRC)
                 }
                 break
             }
