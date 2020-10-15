@@ -45,7 +45,7 @@ import org.jitsi.nlj.transform.node.incoming.AudioLevelReader
 import org.jitsi.nlj.transform.node.incoming.BitrateCalculator
 import org.jitsi.nlj.transform.node.incoming.DuplicateTermination
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsTracker
-import org.jitsi.nlj.transform.node.incoming.LayerLookup
+import org.jitsi.nlj.transform.node.incoming.VideoQualityLayerLookup
 import org.jitsi.nlj.transform.node.incoming.PaddingTermination
 import org.jitsi.nlj.transform.node.incoming.RemoteBandwidthEstimator
 import org.jitsi.nlj.transform.node.incoming.RetransmissionRequesterNode
@@ -233,7 +233,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
                                     node(retransmissionRequester)
                                     node(paddingOnlyDiscarder)
                                     node(VideoParser(streamInformationStore, logger))
-                                    node(LayerLookup(logger))
+                                    node(VideoQualityLayerLookup(logger))
                                     node(videoBitrateCalculator)
                                     node(packetHandlerWrapper)
                                 }

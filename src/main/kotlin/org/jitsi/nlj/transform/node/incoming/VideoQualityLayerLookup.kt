@@ -30,9 +30,9 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Set video packets' quality layer info
  */
-class LayerLookup(
+class VideoQualityLayerLookup(
     parentLogger: Logger
-) : TransformerNode("Video parser") {
+) : TransformerNode("Video quality layer lookup") {
     private val logger = createChildLogger(parentLogger)
     private var sources: Array<MediaSourceDesc> = arrayOf()
     private val numPacketsDroppedNoEncoding = AtomicInteger()

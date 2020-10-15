@@ -27,10 +27,10 @@ import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.rtp.rtp.RtpPacket
 import org.jitsi.utils.logging2.createLogger
 
-class LayerLookupTest : ShouldSpec() {
+class VideoQualityLayerLookupTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val parser = LayerLookup(createLogger())
+    private val parser = VideoQualityLayerLookup(createLogger())
 
     private val vp8PacketBuf = org.jitsi.rtp.extensions.bytearray.byteArrayOf(
         // V=2,P=false,X=true,CC=0,M=false,PT=100,SeqNum=16535
