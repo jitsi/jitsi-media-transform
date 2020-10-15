@@ -151,13 +151,7 @@ constructor(
      * @return the cumulative bitrate (in bps) of this [RtpLayerDesc]
      * and its dependencies.
      */
-    fun getBitrate(nowMs: Long): Bandwidth {
-        val rates = HashMap<Int, Bandwidth>()
-
-        getBitrate(nowMs, rates)
-
-        return rates.values.sum()
-    }
+    fun getBitrate(nowMs: Long): Bandwidth = calcBitrate(nowMs).values.sum()
 
     /**
      * Recursively adds the bitrate (in bps) of this [RTPLayerDesc] and
@@ -168,17 +162,19 @@ constructor(
      *
      * @param nowMs
      */
-    private fun getBitrate(nowMs: Long, rates: MutableMap<Int, Bandwidth>) {
+    private fun calcBitrate(nowMs: Long, rates: MutableMap<Int, Bandwidth> = HashMap()): MutableMap<Int, Bandwidth> {
         if (rates.containsKey(index)) {
-            return
+            return rates
         }
         rates[index] = bitrateTracker.getRate(nowMs)
 
-        dependencyLayers.forEach { it.getBitrate(nowMs, rates) }
+        dependencyLayers.forEach { it.calcBitrate(nowMs, rates) }
 
         if (useSoftDependencies) {
-            softDependencyLayers.forEach { it.getBitrate(nowMs, rates) }
+            softDependencyLayers.forEach { it.calcBitrate(nowMs, rates) }
         }
+
+        return rates
     }
 
     /**
