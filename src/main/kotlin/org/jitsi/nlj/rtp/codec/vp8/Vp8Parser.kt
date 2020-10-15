@@ -45,8 +45,7 @@ class Vp8Parser(
         if (vp8Packet.height > -1) {
             // TODO: handle case where new height is from a packet older than the
             //  latest height we've seen.
-            val enc = findRtpEncodingDesc(vp8Packet)
-            if (enc != null) {
+            findRtpEncodingDesc(vp8Packet)?.let { enc ->
                 val newLayers = enc.layers.map { layer -> layer.copy(height = vp8Packet.height) }
                 enc.layers = newLayers.toTypedArray()
             }
