@@ -141,10 +141,4 @@ fun DataSize.per(duration: Duration): Bandwidth {
 /**
  * Returns the sum of all elements in the collection.
  */
-fun Iterable<Bandwidth>.sum(): Bandwidth {
-    var sum: Bandwidth = 0.bps
-    for (element in this) {
-        sum += element
-    }
-    return sum
-}
+fun Iterable<Bandwidth>.sum(): Bandwidth = reduce(Bandwidth::plus)
