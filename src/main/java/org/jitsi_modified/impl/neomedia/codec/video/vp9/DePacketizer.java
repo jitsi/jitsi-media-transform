@@ -182,12 +182,18 @@ public class DePacketizer
          *
          * @param buf the byte buffer that holds the VP9 payload.
          * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
          * @param start the new value of the start of frame bit.
          */
-        public static void setStartOfFrame(byte[] buf, int off, boolean start)
+        public static void setStartOfFrame(byte[] buf, int off, int len, boolean start)
         {
             // Check if this is the start of a VP9 layer frame in the payload
             // descriptor.
+
+            if (!isValid(buf, off, len))
+            {
+                throw new IllegalStateException("Can't set startOfFrame for invalid VP9 packet");
+            }
 
             buf[off] = ByteKt.putBitWithMask(buf[off], B_BIT, start);
         }
@@ -217,10 +223,16 @@ public class DePacketizer
          *
          * @param buf the byte buffer that holds the VP9 payload.
          * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
          * @param end the new value of the end of frame bit.
          */
-        public static void setEndOfFrame(byte[] buf, int off, boolean end)
+        public static void setEndOfFrame(byte[] buf, int off, int len, boolean end)
         {
+            if (!isValid(buf, off, len))
+            {
+                throw new IllegalStateException("Can't set endOfFrame for invalid VP9 packet");
+            }
+
             buf[off] = ByteKt.putBitWithMask(buf[off], E_BIT, end);
         }
 
@@ -277,11 +289,17 @@ public class DePacketizer
          *
          * @param buf the byte buffer that holds the VP9 payload.
          * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
          * @param ref whether the frame might be an upper-layer reference.
          *        (Note this is inverted from the sense of the Z bit in the payload header.)
          */
-        public static void setUpperLevelReference(byte[] buf, int off, boolean ref)
+        public static void setUpperLevelReference(byte[] buf, int off, int len, boolean ref)
         {
+            if (!isValid(buf, off, len))
+            {
+                throw new IllegalStateException("Can't set upperLevelReference for invalid VP9 packet");
+            }
+
             buf[off] = ByteKt.putBitWithMask(buf[off], Z_BIT, !ref);
         }
 
@@ -389,10 +407,16 @@ public class DePacketizer
          *
          * @param buf the byte buffer that holds the VP9 payload.
          * @param off the offset in the byte buffer where the VP9 payload starts.
+         * @param len the length of the VP9 payload.
          * @param pred the new value of the inter-picture predicted bit.
          */
-        public static void setInterPicturePredicted(byte[] buf, int off, boolean pred)
+        public static void setInterPicturePredicted(byte[] buf, int off, int len, boolean pred)
         {
+            if (!isValid(buf, off, len))
+            {
+                throw new IllegalStateException("Can't set interPicturePredicted for invalid VP9 packet");
+            }
+
             buf[off] = ByteKt.putBitWithMask(buf[off], P_BIT, pred);
         }
 
