@@ -204,7 +204,7 @@ private fun createSource(
 private class FakeBitrateTracker(
     private val fakeRateBps: Long
 ) : BitrateTracker(1.secs) {
-    override fun getRate(nowMs: Long): Bandwidth {
+    override fun getRate(now: Long): Bandwidth {
         return fakeRateBps.bps
     }
 }
