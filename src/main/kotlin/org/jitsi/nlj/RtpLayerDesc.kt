@@ -67,8 +67,8 @@ constructor(
     private val softDependencyLayers: Array<RtpLayerDesc> = emptyArray()
 ) {
     init {
-        if (tid > 7) throw IllegalArgumentException("Invalid temporal ID $tid")
-        if (sid > 7) throw IllegalArgumentException("Invalid spatial ID $sid")
+        require(tid >= 0 && tid < 8) { "Invalid temporal ID $tid" }
+        require(sid >= 0 && sid < 8) { "Invalid spatial ID $sid" }
     }
 
     /**
