@@ -20,6 +20,7 @@ import org.jitsi.nlj.MediaSourceDesc
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.nlj.RtpEncodingDesc
 import org.jitsi.nlj.RtpLayerDesc
+import org.jitsi.nlj.findRtpLayerDesc
 import org.jitsi.nlj.rtp.VideoRtpPacket
 
 /**
@@ -51,12 +52,5 @@ abstract class VideoCodecParser(
         return null
     }
 
-    protected fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? {
-        for (source in sources) {
-            source.findRtpLayerDesc(packet)?.let {
-                return it
-            }
-        }
-        return null
-    }
+    protected fun findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? = sources.findRtpLayerDesc(packet)
 }

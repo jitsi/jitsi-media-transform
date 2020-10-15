@@ -176,3 +176,12 @@ class MediaSourceDesc
  * Clone an array of media source descriptions.
  */
 fun Array<MediaSourceDesc>.copy() = Array(this.size) { i -> this[i].copy() }
+
+fun Array<MediaSourceDesc>.findRtpLayerDesc(packet: VideoRtpPacket): RtpLayerDesc? {
+    for (source in this) {
+        source.findRtpLayerDesc(packet)?.let {
+            return it
+        }
+    }
+    return null
+}
