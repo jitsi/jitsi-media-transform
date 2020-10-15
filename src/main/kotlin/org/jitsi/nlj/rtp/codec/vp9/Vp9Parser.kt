@@ -58,9 +58,8 @@ class Vp9Parser(
                 numSpatialLayers = packetSpatialLayers
             }
             findSourceDescAndRtpEncodingDesc(vp9Packet)?.let { (src, enc) ->
-                val newEnc = vp9Packet.getScalabilityStructure(eid = enc.layers[0].eid)
-                if (newEnc != null) {
-                    src.setEncodingLayers(newEnc.layers, vp9Packet.ssrc)
+                vp9Packet.getScalabilityStructure(eid = enc.layers[0].eid)?.let {
+                    src.setEncodingLayers(it.layers, vp9Packet.ssrc)
                 }
                 for (otherEnc in src.rtpEncodings) {
                     if (!ssrcsSeen.contains(otherEnc.primarySSRC)) {
