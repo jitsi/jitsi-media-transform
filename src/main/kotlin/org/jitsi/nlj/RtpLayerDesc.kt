@@ -36,11 +36,11 @@ constructor(
      */
     val eid: Int,
     /**
-     * The temporal layer ID of this instance.
+     * The temporal layer ID of this instance, or negative for unknown.
      */
     val tid: Int,
     /**
-     * The spatial layer ID of this instance.
+     * The spatial layer ID of this instance, or negative for unknown.
      */
     val sid: Int,
     /**
@@ -67,8 +67,8 @@ constructor(
     private val softDependencyLayers: Array<RtpLayerDesc> = emptyArray()
 ) {
     init {
-        require(tid >= 0 && tid < 8) { "Invalid temporal ID $tid" }
-        require(sid >= 0 && sid < 8) { "Invalid spatial ID $sid" }
+        require(tid < 8) { "Invalid temporal ID $tid" }
+        require(sid < 8) { "Invalid spatial ID $sid" }
     }
 
     /**
