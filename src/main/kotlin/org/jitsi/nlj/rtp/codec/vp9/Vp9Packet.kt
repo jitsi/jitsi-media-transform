@@ -139,117 +139,7 @@ class Vp9Packet private constructor (
     fun getScalabilityStructure(
         eid: Int = 0,
         baseFrameRate: Double = 30.0
-    ): RtpEncodingDesc? {
-        /*
-         * VP9 Scalability structure:
-         *
-         *      +-+-+-+-+-+-+-+-+
-         * V:   | N_S |Y|G|-|-|-|
-         *      +-+-+-+-+-+-+-+-+              -\
-         * Y:   |     WIDTH     | (OPTIONAL)    .
-         *      +               +               .
-         *      |               | (OPTIONAL)    .
-         *      +-+-+-+-+-+-+-+-+               . - N_S + 1 times
-         *      |     HEIGHT    | (OPTIONAL)    .
-         *      +               +               .
-         *      |               | (OPTIONAL)    .
-         *      +-+-+-+-+-+-+-+-+              -/
-         * G:   |      N_G      | (OPTIONAL)
-         *      +-+-+-+-+-+-+-+-+                            -\
-         * N_G: | TID |U| R |-|-| (OPTIONAL)                 .
-         *      +-+-+-+-+-+-+-+-+              -\            . - N_G times
-         *      |    P_DIFF     | (OPTIONAL)    . - R times  .
-         *      +-+-+-+-+-+-+-+-+              -/            -/
-         */
-
-        var off = DePacketizer.VP9PayloadDescriptor.getScalabilityStructureOffset(buffer, payloadOffset, payloadLength)
-        if (off == -1) {
-            return null
-        }
-        val ssHeader = buffer[off].toInt()
-
-        val numSpatial = ((ssHeader and 0xE0) shr 5) + 1
-        val hasResolution = (ssHeader and Y_BIT) != 0
-        val hasPictureGroup = (ssHeader and G_BIT) != 0
-
-        off++
-
-        val heights = if (hasResolution) {
-            Array(numSpatial) {
-                off += 2 // We only record height, not width
-
-                val height = ((buffer[off].toInt() and 0xff) shl 8) or
-                    (buffer[off + 1].toInt() and 0xff)
-                off += 2
-                height
-            }
-        } else {
-            Array(numSpatial) { RtpLayerDesc.NO_HEIGHT }
-        }
-
-        val tlCounts = Array(MAX_NUM_TLAYERS) { 0 }
-        val groupSize = if (hasPictureGroup) {
-            val groupSize = buffer[off].toInt()
-            off++
-
-            for (i in 0 until groupSize) {
-                val descByte = buffer[off].toInt()
-                val tid = (descByte and 0xE0) shr 5
-                val numRefs = (descByte and 0x0C) shr 2
-                off++
-
-                tlCounts[tid]++
-
-                /* TODO: do something with U, R, P_DIFF? */
-                for (j in 0 until numRefs) {
-                    off++
-                }
-            }
-            groupSize
-        } else {
-            tlCounts[0] = 1
-            1
-        }
-
-        val numTemporal = tlCounts.indexOfLast { it > 0 } + 1
-
-        for (t in 1 until numTemporal) {
-            /* Sum up frames per picture group */
-            tlCounts[t] += tlCounts[t - 1]
-        }
-
-        val layers = ArrayList<RtpLayerDesc>()
-
-        for (s in 0 until numSpatial) {
-            for (t in 0 until numTemporal) {
-                val dependencies = ArrayList<RtpLayerDesc>()
-                val softDependencies = ArrayList<RtpLayerDesc>()
-                if (s > 0) {
-                    /* Because of K-SVC, spatial layer dependencies are soft */
-                    layers.find { it.sid == s - 1 && it.tid == t }?.let { softDependencies.add(it) }
-                }
-                if (t > 0) {
-                    layers.find { it.sid == s && it.tid == t - 1 }?.let { dependencies.add(it) }
-                }
-                val layerDesc = RtpLayerDesc(
-                    eid = eid,
-                    tid = t,
-                    sid = s,
-                    height = heights[s],
-                    frameRate = if (hasPictureGroup) {
-                        baseFrameRate * tlCounts[t] / groupSize
-                    } else {
-                        RtpLayerDesc.NO_FRAME_RATE
-                    },
-                    dependencyLayers = dependencies.toArray(arrayOf<RtpLayerDesc>()),
-                    softDependencyLayers = softDependencies.toArray(arrayOf<RtpLayerDesc>())
-                )
-                layers.add(layerDesc)
-            }
-        }
-
-        return RtpEncodingDesc(ssrc, layers.toArray(arrayOf()))
-    }
+    ) = Companion.getScalabilityStructure(buffer, payloadOffset, payloadLength, ssrc, eid, baseFrameRate)
 
     val scalabilityStructureNumSpatial: Int
         get() {
@@ -301,5 +191,128 @@ class Vp9Packet private constructor (
         private val G_BIT = 1 shl 3
 
         private val MAX_NUM_TLAYERS = 8
+
+        /* In theory this would fit better in vp9.DePacketizer, but I don't feel like translating this code
+         * to Java, or translating that file to Kotlin.
+         */
+        fun getScalabilityStructure(
+            buffer: ByteArray,
+            payloadOffset: Int,
+            payloadLength: Int,
+            ssrc: Long,
+            eid: Int,
+            baseFrameRate: Double
+        ): RtpEncodingDesc? {
+            /*
+             * VP9 Scalability structure:
+             *
+             *      +-+-+-+-+-+-+-+-+
+             * V:   | N_S |Y|G|-|-|-|
+             *      +-+-+-+-+-+-+-+-+              -\
+             * Y:   |     WIDTH     | (OPTIONAL)    .
+             *      +               +               .
+             *      |               | (OPTIONAL)    .
+             *      +-+-+-+-+-+-+-+-+               . - N_S + 1 times
+             *      |     HEIGHT    | (OPTIONAL)    .
+             *      +               +               .
+             *      |               | (OPTIONAL)    .
+             *      +-+-+-+-+-+-+-+-+              -/
+             * G:   |      N_G      | (OPTIONAL)
+             *      +-+-+-+-+-+-+-+-+                            -\
+             * N_G: | TID |U| R |-|-| (OPTIONAL)                 .
+             *      +-+-+-+-+-+-+-+-+              -\            . - N_G times
+             *      |    P_DIFF     | (OPTIONAL)    . - R times  .
+             *      +-+-+-+-+-+-+-+-+              -/            -/
+             */
+
+            var off = DePacketizer.VP9PayloadDescriptor.getScalabilityStructureOffset(
+                buffer, payloadOffset, payloadLength)
+            if (off == -1) {
+                return null
+            }
+            val ssHeader = buffer[off].toInt()
+
+            val numSpatial = ((ssHeader and 0xE0) shr 5) + 1
+            val hasResolution = (ssHeader and Y_BIT) != 0
+            val hasPictureGroup = (ssHeader and G_BIT) != 0
+
+            off++
+
+            val heights = if (hasResolution) {
+                Array(numSpatial) {
+                    off += 2 // We only record height, not width
+
+                    val height = ((buffer[off].toInt() and 0xff) shl 8) or
+                        (buffer[off + 1].toInt() and 0xff)
+                    off += 2
+                    height
+                }
+            } else {
+                Array(numSpatial) { RtpLayerDesc.NO_HEIGHT }
+            }
+
+            val tlCounts = Array(MAX_NUM_TLAYERS) { 0 }
+            val groupSize = if (hasPictureGroup) {
+                val groupSize = buffer[off].toInt()
+                off++
+
+                for (i in 0 until groupSize) {
+                    val descByte = buffer[off].toInt()
+                    val tid = (descByte and 0xE0) shr 5
+                    val numRefs = (descByte and 0x0C) shr 2
+                    off++
+
+                    tlCounts[tid]++
+
+                    /* TODO: do something with U, R, P_DIFF? */
+                    for (j in 0 until numRefs) {
+                        off++
+                    }
+                }
+                groupSize
+            } else {
+                tlCounts[0] = 1
+                1
+            }
+
+            val numTemporal = tlCounts.indexOfLast { it > 0 } + 1
+
+            for (t in 1 until numTemporal) {
+                /* Sum up frames per picture group */
+                tlCounts[t] += tlCounts[t - 1]
+            }
+
+            val layers = ArrayList<RtpLayerDesc>()
+
+            for (s in 0 until numSpatial) {
+                for (t in 0 until numTemporal) {
+                    val dependencies = ArrayList<RtpLayerDesc>()
+                    val softDependencies = ArrayList<RtpLayerDesc>()
+                    if (s > 0) {
+                        /* Because of K-SVC, spatial layer dependencies are soft */
+                        layers.find { it.sid == s - 1 && it.tid == t }?.let { softDependencies.add(it) }
+                    }
+                    if (t > 0) {
+                        layers.find { it.sid == s && it.tid == t - 1 }?.let { dependencies.add(it) }
+                    }
+                    val layerDesc = RtpLayerDesc(
+                        eid = eid,
+                        tid = t,
+                        sid = s,
+                        height = heights[s],
+                        frameRate = if (hasPictureGroup) {
+                            baseFrameRate * tlCounts[t] / groupSize
+                        } else {
+                            RtpLayerDesc.NO_FRAME_RATE
+                        },
+                        dependencyLayers = dependencies.toArray(arrayOf<RtpLayerDesc>()),
+                        softDependencyLayers = softDependencies.toArray(arrayOf<RtpLayerDesc>())
+                    )
+                    layers.add(layerDesc)
+                }
+            }
+
+            return RtpEncodingDesc(ssrc, layers.toArray(arrayOf()))
+        }
     }
 }
