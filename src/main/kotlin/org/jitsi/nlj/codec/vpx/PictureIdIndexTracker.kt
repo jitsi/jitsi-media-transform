@@ -45,13 +45,9 @@ class PictureIdIndexTracker {
         return 0x8000 * v + seqNum
     }
 
-    fun update(seq: Int): Int {
-        return getIndex(seq, true)
-    }
+    fun update(seq: Int) = getIndex(seq, updateRoc = true)
 
-    fun interpret(seq: Int): Int {
-        return getIndex(seq, false)
-    }
+    fun interpret(seq: Int) = getIndex(seq, updateRoc = false)
 
     /** Force this sequence to be interpreted as the new highest, regardless
      * of its rollover state.
