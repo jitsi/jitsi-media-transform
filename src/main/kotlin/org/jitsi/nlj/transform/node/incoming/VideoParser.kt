@@ -50,7 +50,7 @@ class VideoParser(
     private var numKeyframes: Int = 0
 
     private var sources: Array<MediaSourceDesc> = arrayOf()
-    private var origSources: Array<MediaSourceDesc> = sources
+    private var signaledSources: Array<MediaSourceDesc> = sources
 
     private var videoCodecParser: VideoCodecParser? = null
 
@@ -112,7 +112,7 @@ class VideoParser(
         when (event) {
             is SetMediaSourcesEvent -> {
                 sources = event.mediaSourceDescs
-                origSources = sources.copy()
+                signaledSources = sources.copy()
                 videoCodecParser?.sources = sources
             }
         }
@@ -120,7 +120,7 @@ class VideoParser(
     }
 
     private fun resetSources() {
-        for (origSource in origSources) {
+        for (origSource in signaledSources) {
             for (source in sources) {
                 if (source.primarySSRC != origSource.primarySSRC) {
                     continue
