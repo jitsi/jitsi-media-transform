@@ -29,15 +29,16 @@ class PictureIdIndexTracker {
             return seqNum
         }
         val delta = VpxUtils.getExtendedPictureIdDelta(seqNum, highestSeqNumReceived)
-        val v: Int
-        if (delta < 0 && highestSeqNumReceived < seqNum) {
-            v = roc - 1
-        } else if (delta > 0 && seqNum < highestSeqNumReceived) {
-            v = roc + 1
-            if (updateRoc) roc = v
-        } else {
-            v = roc
-        }
+        val v =
+            if (delta < 0 && highestSeqNumReceived < seqNum) {
+                roc - 1
+            } else if (delta > 0 && seqNum < highestSeqNumReceived) {
+                (roc + 1).also {
+                    if (updateRoc) roc = it
+                }
+            } else {
+                roc
+            }
         if (updateRoc && delta > 0) {
             highestSeqNumReceived = seqNum
         }
