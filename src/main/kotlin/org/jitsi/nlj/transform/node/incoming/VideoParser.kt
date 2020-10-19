@@ -48,6 +48,7 @@ class VideoParser(
     private val logger = createChildLogger(parentLogger)
     private val numPacketsDroppedUnknownPt = AtomicInteger()
     private var numKeyframes: Int = 0
+    private var numLayeringChanges: Int = 0
 
     private var sources: Array<MediaSourceDesc> = arrayOf()
     private var signaledSources: Array<MediaSourceDesc> = sources
@@ -105,6 +106,10 @@ class VideoParser(
             logger.cdebug { "Received a keyframe for ssrc ${packet.ssrc} ${packet.sequenceNumber}" }
             numKeyframes++
         }
+        if (packetInfo.layeringChanged) {
+            logger.cdebug { "Layering structure changed for ssrc ${packet.ssrc} ${packet.sequenceNumber}" }
+            numLayeringChanges++
+        }
 
         return packetInfo
     }
@@ -140,6 +145,7 @@ class VideoParser(
         return super.getNodeStats().apply {
             addNumber("num_packets_dropped_unknown_pt", numPacketsDroppedUnknownPt.get())
             addNumber("num_keyframes", numKeyframes)
+            addNumber("num_layering_changes", numLayeringChanges)
         }
     }
 }
