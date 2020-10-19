@@ -84,9 +84,6 @@ class Vp9Packet private constructor (
     val hasExtendedPictureId =
         DePacketizer.VP9PayloadDescriptor.hasExtendedPictureId(buffer, payloadOffset, payloadLength)
 
-    val hasTL0PICIDX =
-        DePacketizer.VP9PayloadDescriptor.hasTL0PICIDX(buffer, payloadOffset, payloadLength)
-
     val hasScalabilityStructure =
         DePacketizer.VP9PayloadDescriptor.hasScalabilityStructure(buffer, payloadOffset, payloadLength)
 
@@ -108,6 +105,9 @@ class Vp9Packet private constructor (
             }
             _TL0PICIDX = newValue
         }
+
+    val hasTL0PICIDX: Boolean
+        get() = _TL0PICIDX != -1
 
     private var _pictureId =
         pictureId ?: DePacketizer.VP9PayloadDescriptor.getPictureId(buffer, payloadOffset, payloadLength)
