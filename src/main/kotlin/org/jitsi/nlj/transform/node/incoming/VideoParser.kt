@@ -55,14 +55,15 @@ class VideoParser(
     private var videoCodecParser: VideoCodecParser? = null
 
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
-        var packet = packetInfo.packetAs<RtpPacket>()
+        val packet = packetInfo.packetAs<RtpPacket>()
         val payloadType = streamInformationStore.rtpPayloadTypes[packet.payloadType.toByte()] ?: run {
             logger.error("Unrecognized video payload type ${packet.payloadType}, cannot parse video information")
             numPacketsDroppedUnknownPt.incrementAndGet()
             return null
         }
+        val parsedPacket: ParsedVideoPacket
         try {
-            when (payloadType) {
+            parsedPacket = when (payloadType) {
                 is Vp8PayloadType -> {
                     val vp8Packet = packetInfo.packet.toOtherType(::Vp8Packet)
                     packetInfo.packet = vp8Packet
@@ -72,6 +73,7 @@ class VideoParser(
                         resetSources()
                         videoCodecParser = Vp8Parser(sources, logger)
                     }
+                    vp8Packet
                 }
                 is Vp9PayloadType -> {
                     val vp9Packet = packetInfo.packet.toOtherType(::Vp9Packet)
@@ -82,27 +84,26 @@ class VideoParser(
                         resetSources()
                         videoCodecParser = Vp9Parser(sources, logger)
                     }
+                    vp9Packet
                 }
                 else -> {
                     videoCodecParser = null
+                    return packetInfo
                 }
             }
             videoCodecParser?.parse(packetInfo)
-            packet = packetInfo.packetAs()
         } catch (e: Exception) {
             logger.error("Exception parsing video packet.  Packet data is: " +
                 packet.buffer.toHex(packet.offset, Math.min(packet.length, 80)), e)
             return null
         }
 
-        if (packet is ParsedVideoPacket) {
-            /* Some codecs mark keyframes in every packet of the keyframe - only count the start of the frame,
-             * so the count is correct. */
-            /* Alternately we could keep track of keyframes we've already seen, by timestamp, but that seems unnecessary. */
-            if (packet.isKeyframe && packet.isStartOfFrame) {
-                logger.cdebug { "Received a keyframe for ssrc ${packet.ssrc} ${packet.sequenceNumber}" }
-                numKeyframes++
-            }
+        /* Some codecs mark keyframes in every packet of the keyframe - only count the start of the frame,
+         * so the count is correct. */
+        /* Alternately we could keep track of keyframes we've already seen, by timestamp, but that seems unnecessary. */
+        if (parsedPacket.isKeyframe && parsedPacket.isStartOfFrame) {
+            logger.cdebug { "Received a keyframe for ssrc ${packet.ssrc} ${packet.sequenceNumber}" }
+            numKeyframes++
         }
 
         return packetInfo
