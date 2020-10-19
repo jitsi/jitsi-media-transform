@@ -28,7 +28,6 @@ import org.jitsi.rtp.extensions.bytearray.toHex
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.nlj.format.Vp9PayloadType
-import org.jitsi.nlj.rtp.ParsedVideoPacket
 import org.jitsi.nlj.rtp.codec.VideoCodecParser
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Packet
 import org.jitsi.nlj.rtp.codec.vp8.Vp8Parser
@@ -62,9 +61,8 @@ class VideoParser(
             numPacketsDroppedUnknownPt.incrementAndGet()
             return null
         }
-        val parsedPacket: ParsedVideoPacket
-        try {
-            parsedPacket = when (payloadType) {
+        val parsedPacket = try {
+            when (payloadType) {
                 is Vp8PayloadType -> {
                     val vp8Packet = packetInfo.packet.toOtherType(::Vp8Packet)
                     packetInfo.packet = vp8Packet
@@ -91,8 +89,9 @@ class VideoParser(
                     videoCodecParser = null
                     return packetInfo
                 }
+            }.also {
+                videoCodecParser?.parse(packetInfo)
             }
-            videoCodecParser?.parse(packetInfo)
         } catch (e: Exception) {
             logger.error("Exception parsing video packet.  Packet data is: " +
                 packet.buffer.toHex(packet.offset, Math.min(packet.length, 80)), e)
