@@ -199,8 +199,7 @@ class DtlsUtils {
             // handshake MUST match the fingerprint exchanged via the signaling path
             // in the SDP."
             val remoteFingerprint = remoteFingerprints[hashFunction] ?: throw DtlsException(
-                "No fingerprint " +
-                    "declared over the signaling path with hash function: $hashFunction"
+                "No fingerprint declared over the signaling path with hash function: $hashFunction"
             )
 
             // TODO(boris) check if the below is still true, and re-introduce the hack if it is.

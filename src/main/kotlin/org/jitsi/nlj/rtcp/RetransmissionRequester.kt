@@ -195,8 +195,8 @@ class RetransmissionRequester(
                         }
                     } ?: run {
                         logger.cdebug {
-                            "$ssrc packet $nackedSeqNum must have just been received, it was" +
-                                " no longer in the requests map"
+                            "$ssrc packet $nackedSeqNum must have just been received, it was " +
+                                "no longer in the requests map"
                         }
                     }
                 }

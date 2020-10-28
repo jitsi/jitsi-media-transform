@@ -378,8 +378,7 @@ abstract class TransformerNode(name: String) : StatsKeepingNode(name) {
 
     final override fun packetDiscarded(packetInfo: PacketInfo) {
         throw Exception(
-            "No subclass of TransformerNode should call packetDiscarded, " +
-                "return null from 'transform' instead"
+            "No subclass of TransformerNode should call packetDiscarded, return null from 'transform' instead"
         )
     }
 }
