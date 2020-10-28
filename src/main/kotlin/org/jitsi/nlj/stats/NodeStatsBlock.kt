@@ -110,15 +110,15 @@ class NodeStatsBlock(val name: String) {
             // promoted them when adding. For other value types, we override with the new one.
             when {
                 existingValue == null && (value is Long || value is Double)
-                    -> stats[name] = value
+                -> stats[name] = value
                 existingValue is Long && value is Long
-                    -> stats[name] = existingValue + value
+                -> stats[name] = existingValue + value
                 existingValue is Double && value is Double
-                    -> stats[name] = existingValue + value
+                -> stats[name] = existingValue + value
                 existingValue is Long && value is Double
-                    -> stats[name] = existingValue + value
+                -> stats[name] = existingValue + value
                 existingValue is Double && value is Long
-                    -> stats[name] = existingValue + value
+                -> stats[name] = existingValue + value
                 else -> stats[name] = value
             }
         }
