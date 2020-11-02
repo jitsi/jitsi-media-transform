@@ -93,9 +93,11 @@ class VideoParser(
                 videoCodecParser?.parse(packetInfo)
             }
         } catch (e: Exception) {
-            logger.error("Exception parsing video packet.  Packet data is: " +
-                packet.buffer.toHex(packet.offset, Math.min(packet.length, 80)),
-                e)
+            logger.error(
+                "Exception parsing video packet.  Packet data is: " +
+                    packet.buffer.toHex(packet.offset, Math.min(packet.length, 80)),
+                e
+            )
             return null
         }
 

@@ -41,8 +41,10 @@ class VideoQualityLayerLookup(
     override fun transform(packetInfo: PacketInfo): PacketInfo? {
         val videoPacket = packetInfo.packetAs<VideoRtpPacket>()
         val encodingDesc = sources.findRtpLayerDesc(videoPacket) ?: run {
-            logger.warn("Unable to find encoding matching packet! packet=$videoPacket; " +
-                "sources=${sources.joinToString(separator = "\n")}")
+            logger.warn(
+                "Unable to find encoding matching packet! packet=$videoPacket; " +
+                    "sources=${sources.joinToString(separator = "\n")}"
+            )
             numPacketsDroppedNoEncoding.incrementAndGet()
             return null
         }

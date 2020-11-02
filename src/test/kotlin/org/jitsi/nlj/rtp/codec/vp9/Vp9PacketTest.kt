@@ -47,7 +47,8 @@ class Vp9PacketTest : ShouldSpec() {
             tL0PICIDX: Int?,
             descriptorSize: Int,
             scalabilityStructure: RtpEncodingDesc? = null
-        ) : this(description = description,
+        ) : this(
+            description = description,
             data = DatatypeConverter.parseHexBinary(hexData),
             isStartOfFrame = isStartOfFrame,
             isEndOfFrame = isEndOfFrame,
@@ -70,9 +71,10 @@ class Vp9PacketTest : ShouldSpec() {
     /* Packets captured from Chrome VP9 call */
     private val testPackets = arrayOf(
         /* Live video - Chrome 81 */
-        SampleVp9Packet("Chrome: Start of keyframe (with SS) in K-SVC stream",
+        SampleVp9Packet(
+            "Chrome: Start of keyframe (with SS) in K-SVC stream",
             // RTP
-        "906536b69f3077686098017b" +
+            "906536b69f3077686098017b" +
                 // RTP header extension
                 "bede0002" + "3202168751210700" +
                 // I=1,P=0,L=1,F=0,B=1,E=0,V=1,Z=0
@@ -131,7 +133,8 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
             descriptorSize = 27,
-            scalabilityStructure = RtpEncodingDesc(0x6098017bL,
+            scalabilityStructure = RtpEncodingDesc(
+                0x6098017bL,
                 arrayOf(
                     RtpLayerDesc(0, 0, 0, 180, 7.5),
                     RtpLayerDesc(0, 1, 0, 180, 15.0 /* TODO: dependencies */),
@@ -142,9 +145,11 @@ class Vp9PacketTest : ShouldSpec() {
                     RtpLayerDesc(0, 0, 2, 720, 7.5 /* TODO: dependencies */),
                     RtpLayerDesc(0, 1, 2, 720, 15.0 /* TODO: dependencies */),
                     RtpLayerDesc(0, 2, 2, 720, 30.0 /* TODO: dependencies */)
-                    ))
+                )
+            )
         ),
-        SampleVp9Packet("Middle of keyframe (SID = 0)",
+        SampleVp9Packet(
+            "Middle of keyframe (SID = 0)",
             "906536b79f3077686098017b" +
                 "bede0002" + "3202168751210800" +
                 // I=1,P=0,L=1,F=0,B=0,E=0,V=0,Z=0
@@ -170,8 +175,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("End of keyframe (SID = 0)",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "End of keyframe (SID = 0)",
             "906536bb9f3077686098017b" +
                 "bede0002" + "32021ba651210c00" +
                 // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=0
@@ -197,8 +204,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("Beginning of SID=1 in keyframe picture",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "Beginning of SID=1 in keyframe picture",
             "906536bc9f3077686098017b" +
                 "bede0002" + "32021ba651210d00" +
                 // I=1,P=0,L=1,F=0,B=1,E=0,V=0,Z=0
@@ -224,8 +233,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("Middle of SID=1 in keyframe picture",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "Middle of SID=1 in keyframe picture",
             "906536c09f3077686098017b" +
                 "bede0002" + "320221cb51211100" +
                 // I=1,P=0,L=1,F=0,B=0,E=0,V=0,Z=0
@@ -251,8 +262,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("End of SID=1 in keyframe picture",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "End of SID=1 in keyframe picture",
             "906536c39f3077686098017b" +
                 "bede0002" + "320227f051211400" +
                 // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=0
@@ -278,8 +291,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("Beginning of SID=2 in keyframe picture",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "Beginning of SID=2 in keyframe picture",
             "906536c49f3077686098017b" +
                 "bede0002" + "320227f051211500" +
                 // I=1,P=0,L=1,F=0,B=1,E=0,V=0,Z=1
@@ -305,8 +320,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("End of SID=2 in keyframe picture -- end of picture",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "End of SID=2 in keyframe picture -- end of picture",
             "90e536dd9f3077686098017b" +
                 "bede0002" + "32025a1d51212e00" +
                 // I=1,P=0,L=1,F=0,B=0,E=1,V=0,Z=1
@@ -332,8 +349,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = true,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("Complete SID=0,TID=1 K-SVC frame",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "Complete SID=0,TID=1 K-SVC frame",
             "906536de9f3081f46098017b" +
                 "bede0002" + "32025a1d51212f00" +
                 // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
@@ -359,8 +378,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = true,
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("Complete SID=1,TID=1 K-SVC frame",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "Complete SID=1,TID=1 K-SVC frame",
             "906536df9f3081f46098017b" +
                 "bede0002" + "32025a1d51213000" +
                 // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
@@ -386,8 +407,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = true,
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
-            descriptorSize = 5),
-        SampleVp9Packet("Complete SID=2,TID=1 K-SVC frame",
+            descriptorSize = 5
+        ),
+        SampleVp9Packet(
+            "Complete SID=2,TID=1 K-SVC frame",
             "90e536e09f3081f46098017b" +
                 "bede0002" + "32025a1d51213100" +
                 // I=1,P=1,L=1,F=0,B=1,E=1,V=0,Z=1
@@ -413,10 +436,12 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = true,
             usesInterLayerDependency = false,
             tL0PICIDX = 253,
-            descriptorSize = 5),
+            descriptorSize = 5
+        ),
 
         /* Window capture - Chrome 81 */
-        SampleVp9Packet("Beginning of window capture keyframe - contains SS, 1 layer",
+        SampleVp9Packet(
+            "Beginning of window capture keyframe - contains SS, 1 layer",
             "90656dc9440dac37184b0cc4" +
                 "bede0002" + "326bcdd351000100" +
                 // I=1,P=0,L=0,F=0,B=1,E=0,V=1,Z=1
@@ -451,12 +476,15 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = null,
             descriptorSize = 11,
-            scalabilityStructure = RtpEncodingDesc(0x184b0cc4L,
+            scalabilityStructure = RtpEncodingDesc(
+                0x184b0cc4L,
                 arrayOf(
                     RtpLayerDesc(0, 0, 0, 1158, 30.0)
-            ))
+                )
+            )
         ),
-        SampleVp9Packet("Middle of window capture keyframe",
+        SampleVp9Packet(
+            "Middle of window capture keyframe",
             "90656dca440dac37184b0cc4" +
                 "bede0002" + "326bd1ec51000200" +
                 // I=1,P=0,L=0,F=0,B=0,E=0,V=0,Z=1
@@ -478,8 +506,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = null,
-            descriptorSize = 3),
-        SampleVp9Packet("End of window capture keyframe",
+            descriptorSize = 3
+        ),
+        SampleVp9Packet(
+            "End of window capture keyframe",
             "90e56de4440dac37184b0cc4" +
                 "bede0002" + "326cf8d551001c00" +
                 // I=1,P=0,L=0,F=0,B=0,E=1,V=0,Z=1
@@ -501,8 +531,10 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = null,
-            descriptorSize = 3),
-        SampleVp9Packet("Complete window capture non-keyframe",
+            descriptorSize = 3
+        ),
+        SampleVp9Packet(
+            "Complete window capture non-keyframe",
             "90656e01440eb32f184b0cc4" +
                 "bede0002" + "326e77cf51003900" +
                 // I=1,P=1,L=0,F=0,B=1,E=1,V=0,Z=1
@@ -524,10 +556,12 @@ class Vp9PacketTest : ShouldSpec() {
             isSwitchingUpPoint = false,
             usesInterLayerDependency = false,
             tL0PICIDX = null,
-            descriptorSize = 3),
+            descriptorSize = 3
+        ),
 
         /* Live video - Firefox 75 */
-        SampleVp9Packet("Beginning of Firefox 75 keyframe - no scalability",
+        SampleVp9Packet(
+            "Beginning of Firefox 75 keyframe - no scalability",
             "9065385f33e8e7666538459e" +
                 "bede0001" + "32a4e45a" +
                 // I=1,P=0,L=0,F=0,B=1,E=0,V=1,Z=0
@@ -562,14 +596,17 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = null,
             descriptorSize = 11,
-            scalabilityStructure = RtpEncodingDesc(0x6538459eL,
+            scalabilityStructure = RtpEncodingDesc(
+                0x6538459eL,
                 arrayOf(
                     RtpLayerDesc(0, 0, 0, 720, 30.0)
-            ))
+                )
+            )
         ),
 
         /* Live video - Firefox 77 Nightly */
-        SampleVp9Packet("Beginning of Firefox 77 keyframe - only temporal scalability",
+        SampleVp9Packet(
+            "Beginning of Firefox 77 keyframe - only temporal scalability",
             "90656563e256bc64a4d04528" +
                 "bede0001" + "329c676d" +
                 // I=1,P=0,L=1,F=0,B=1,E=0,V=1,Z=0
@@ -622,14 +659,16 @@ class Vp9PacketTest : ShouldSpec() {
             usesInterLayerDependency = false,
             tL0PICIDX = 91,
             descriptorSize = 20,
-            scalabilityStructure = RtpEncodingDesc(0xa4d04528L,
+            scalabilityStructure = RtpEncodingDesc(
+                0xa4d04528L,
                 arrayOf(
                     RtpLayerDesc(0, 0, 0, 720, 7.5),
                     RtpLayerDesc(0, 1, 0, 720, 15.0),
                     RtpLayerDesc(0, 2, 0, 720, 30.0)
-                ))
+                )
+            )
         )
-        )
+    )
 
     /*
         Template:
