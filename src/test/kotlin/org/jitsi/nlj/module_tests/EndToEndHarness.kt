@@ -44,7 +44,7 @@ fun main() {
         return ByteArray(size)
     }
     var numBuffersReturned = 0
-    fun returnBuffer(buf: ByteArray) {
+    fun returnBuffer(@Suppress("UNUSED_PARAMETER") buf: ByteArray) {
         numBuffersReturned++
     }
     BufferPool.getBuffer = ::getBuffer
@@ -65,7 +65,8 @@ fun main() {
     val receiver = ReceiverFactory.createReceiver(
         executor, backgroundExecutor, pcap.srtpData,
         pcap.payloadTypes, pcap.headerExtensions, pcap.ssrcAssociations,
-        { rtcpPacket -> sender.processPacket(PacketInfo(rtcpPacket)) })
+        { rtcpPacket -> sender.processPacket(PacketInfo(rtcpPacket)) }
+    )
 
     producer.subscribe { pkt ->
         val packetInfo = PacketInfo(pkt)

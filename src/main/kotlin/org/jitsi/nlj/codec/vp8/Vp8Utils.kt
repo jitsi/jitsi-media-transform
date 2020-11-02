@@ -41,10 +41,12 @@ class Vp8Utils {
                 DePacketizer.VP8PayloadDescriptor.getSize(
                     vp8Payload.array(),
                     vp8Payload.arrayOffset(),
-                    vp8Payload.limit())
+                    vp8Payload.limit()
+            )
             val height = DePacketizer.VP8KeyframeHeader.getHeight(
                 vp8Payload.array(),
-                vp8Payload.arrayOffset() + payloadDescriptorLen + VP8_PAYLOAD_HEADER_LEN)
+                vp8Payload.arrayOffset() + payloadDescriptorLen + VP8_PAYLOAD_HEADER_LEN
+            )
             return when {
                 height >= MIN_HD_HEIGHT -> HD_LAYER_ID
                 height >= MIN_SD_HEIGHT -> SD_LAYER_ID
@@ -58,9 +60,11 @@ class Vp8Utils {
                 DePacketizer.VP8PayloadDescriptor.getSize(
                     vp8Packet.buffer,
                     vp8Packet.payloadOffset,
-                    vp8Packet.payloadLength)
+                    vp8Packet.payloadLength
+                )
             return DePacketizer.VP8KeyframeHeader.getHeight(
-                vp8Packet.buffer, vp8Packet.payloadOffset + payloadDescriptorLen + VP8_PAYLOAD_HEADER_LEN)
+                vp8Packet.buffer, vp8Packet.payloadOffset + payloadDescriptorLen + VP8_PAYLOAD_HEADER_LEN
+            )
         }
 
         fun getSpatialLayerIndexFromKeyFrame(vp8Packet: RtpPacket): Int {
