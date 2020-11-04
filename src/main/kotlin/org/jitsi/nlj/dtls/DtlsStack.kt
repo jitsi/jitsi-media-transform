@@ -28,7 +28,7 @@ import org.jitsi.utils.logging2.createChildLogger
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.Semaphore
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.math.min
@@ -54,7 +54,7 @@ class DtlsStack(
     parentLogger: Logger
 ) {
     private val logger = createChildLogger(parentLogger)
-    private val roleSet = Semaphore(0)
+    private val roleSet = CountDownLatch(1)
 
     /**
      * The certificate info for this particular [DtlsStack] instance. We save it in a local val because the global one
@@ -124,7 +124,7 @@ class DtlsStack(
             this::verifyAndValidateRemoteCertificate,
             logger
         )
-        roleSet.release()
+        roleSet.countDown()
     }
 
     fun actAsClient() {
@@ -137,7 +137,7 @@ class DtlsStack(
             this::verifyAndValidateRemoteCertificate,
             logger
         )
-        roleSet.release()
+        roleSet.countDown()
     }
     /**
      * 'start' this stack, in whatever role it has been told to operate (client or server).  If a role
@@ -145,7 +145,7 @@ class DtlsStack(
      * has been set.
      */
     fun start() {
-        roleSet.acquire()
+        roleSet.await()
 
         dtlsTransport = role?.start()
         // There is a bit of a race here: It's technically possible the
