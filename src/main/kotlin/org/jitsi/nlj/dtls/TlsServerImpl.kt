@@ -142,6 +142,8 @@ class TlsServerImpl(
         }
     }
 
+    override fun getHandshakeTimeoutMillis(): Int = DtlsConfig.handshakeTimeout.toMillis().toInt()
+
     override fun notifyHandshakeComplete() {
         super.notifyHandshakeComplete()
         context.resumableSession?.let { newSession ->
