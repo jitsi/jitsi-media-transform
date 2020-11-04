@@ -20,9 +20,7 @@ import org.jitsi.metaconfig.config
 import java.time.Duration
 
 class DtlsConfig {
-    companion object {
-        val handshakeTimeout: Duration by config {
-            "jmt.dtls.handshake-timeout".from(JitsiConfig.newConfig)
-        }
+    val handshakeTimeout: Duration by config {
+        "jmt.dtls.handshake-timeout".from(JitsiConfig.newConfig)
     }
 }
