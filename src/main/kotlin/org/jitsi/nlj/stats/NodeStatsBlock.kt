@@ -58,7 +58,7 @@ class NodeStatsBlock(val name: String) {
     }
 
     /**
-     * Adds a block with a given name from a from a JSON-ish key-value object map..
+     * Adds a block with a given name from a from a JSON-ish key-value object map.
      */
     fun addJson(name: String, json: Map<*, *>) {
         addBlock(fromJson(name, json))
