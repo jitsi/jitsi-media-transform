@@ -84,7 +84,7 @@ class PacketStreamStats {
             put("bitrate_bps", bitrate.bps)
             put("packetrate", packetRate)
             put("total_bytes", bytes)
-            put("total_packets", packetRate)
+            put("total_packets", packets)
         }
     }
 }
