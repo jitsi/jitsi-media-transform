@@ -278,6 +278,7 @@ class RtpSenderImpl(
         addString("running", running.toString())
         addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
         addString("localAudioSsrc", localAudioSsrc?.toString() ?: "null")
+        addJson("outgoing streams", statsTracker.getSnapshot().toJson())
         addJson("transportCcEngine", transportCcEngine.getStatistics().toJson())
         addJson("Bandwidth Estimation", bandwidthEstimator.getStats().toJson())
     }

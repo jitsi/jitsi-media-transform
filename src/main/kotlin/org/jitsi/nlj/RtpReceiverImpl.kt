@@ -271,6 +271,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP receiver $id").apply {
         addBlock(super.getNodeStats())
+        addJson("incoming streams", statsTracker.getSnapshot().toJson())
         addString("running", running.toString())
         NodeStatsVisitor(this).visit(inputTreeRoot)
     }
