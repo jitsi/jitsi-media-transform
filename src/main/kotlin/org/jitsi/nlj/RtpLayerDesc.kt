@@ -27,7 +27,7 @@ import org.jitsi.nlj.util.DataSize
  *
  * @author George Politis
  */
-class RtpLayerDesc
+open class RtpLayerDesc
 constructor(
     /**
      * The index of this instance's encoding in the source encoding array.
@@ -122,7 +122,7 @@ constructor(
      * @return the cumulative bitrate (in bps) of this [RtpLayerDesc]
      * and its dependencies.
      */
-    fun getBitrate(nowMs: Long): Bandwidth {
+    open fun getBitrate(nowMs: Long): Bandwidth {
         var bitrate = bitrateTracker.getRate(nowMs)
 
         /* TODO: does the wrong thing if we have multiple dependencies */
