@@ -25,6 +25,9 @@ import org.jitsi.nlj.util.DataSize
  * Keeps track of its subjective quality index,
  * its last stable bitrate and other useful things for adaptivity/routing.
  *
+ * Note: this class and [getBitrate] are only open to allow to be overridden for testing. We found that mocking has
+ * severe overhead and is not suitable for performance tests.
+ *
  * @author George Politis
  */
 open class RtpLayerDesc
