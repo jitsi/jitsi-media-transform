@@ -26,9 +26,12 @@ import org.jitsi.nlj.util.sum
  * Keeps track of its subjective quality index,
  * its last stable bitrate and other useful things for adaptivity/routing.
  *
+ * Note: this class and [getBitrate] are only open to allow to be overridden for testing. We found that mocking has
+ * severe overhead and is not suitable for performance tests.
+ *
  * @author George Politis
  */
-class RtpLayerDesc
+open class RtpLayerDesc
 @JvmOverloads
 constructor(
     /**
@@ -151,7 +154,7 @@ constructor(
      * @return the cumulative bitrate (in bps) of this [RtpLayerDesc]
      * and its dependencies.
      */
-    fun getBitrate(nowMs: Long): Bandwidth = calcBitrate(nowMs).values.sum()
+    open fun getBitrate(nowMs: Long): Bandwidth = calcBitrate(nowMs).values.sum()
 
     /**
      * Recursively adds the bitrate (in bps) of this [RTPLayerDesc] and
