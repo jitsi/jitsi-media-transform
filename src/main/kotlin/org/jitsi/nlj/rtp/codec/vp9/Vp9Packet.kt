@@ -135,6 +135,12 @@ class Vp9Packet private constructor (
     val spatialLayerIndex: Int =
         DePacketizer.VP9PayloadDescriptor.getSpatialLayerIndex(buffer, payloadOffset, payloadLength)
 
+    val effectiveTemporalLayerIndex: Int =
+        if (hasLayerIndices) temporalLayerIndex else 0
+
+    val effectiveSpatialLayerIndex: Int =
+        if (hasLayerIndices) spatialLayerIndex else 0
+
     val isSwitchingUpPoint: Boolean =
         DePacketizer.VP9PayloadDescriptor.isSwitchingUpPoint(buffer, payloadOffset, payloadLength)
 
