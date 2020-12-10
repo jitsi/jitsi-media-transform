@@ -67,8 +67,16 @@ class AudioRedHandler(
     override fun trace(f: () -> Unit) = f.invoke()
 
     override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addStatsToAggregate()
         addString("red_payload_type", redPayloadType?.toString() ?: "null")
         addString("audio_level_ext_id", audioLevelExtId?.toString() ?: "null")
+    }
+
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStatsToAggregate().apply {
+        addStatsToAggregate()
+    }
+
+    private fun NodeStatsBlock.addStatsToAggregate() {
         addString("policy", config.policy.toString())
         addString("distance", config.distance.toString())
         addBoolean("vad_only", config.vadOnly)

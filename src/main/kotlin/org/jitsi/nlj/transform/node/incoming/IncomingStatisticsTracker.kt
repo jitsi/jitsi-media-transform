@@ -53,12 +53,10 @@ class IncomingStatisticsTracker(
         }
     }
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            val stats = getSnapshot()
-            stats.ssrcStats.forEach { (ssrc, streamStats) ->
-                addJson(ssrc.toString(), streamStats.toJson())
-            }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        val stats = getSnapshot()
+        stats.ssrcStats.forEach { (ssrc, streamStats) ->
+            addJson(ssrc.toString(), streamStats.toJson())
         }
     }
 

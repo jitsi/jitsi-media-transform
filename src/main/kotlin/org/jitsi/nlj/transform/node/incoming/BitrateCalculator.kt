@@ -112,15 +112,14 @@ open class BitrateCalculator(
 
     override fun trace(f: () -> Unit) = f.invoke()
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("bitrate_bps", bitrate.bps)
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addNumber("bitrate_bps", bitrate.bps)
     }
 
-    override fun getNodeStatsToAggregate(): NodeStatsBlock {
-        return super.getNodeStats()
-    }
+    /**
+     * Do not aggregate any of the custom stats we add.
+     */
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStats()
 
     companion object {
         /**

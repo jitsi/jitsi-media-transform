@@ -183,13 +183,19 @@ class TccGeneratorNode(
 
     override fun trace(f: () -> Unit) = f.invoke()
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("num_tcc_packets_sent", numTccSent)
-            addNumber("tcc_feedback_bitrate_bps", tccFeedbackBitrate.rate.bps)
-            addString("tcc_extension_id", tccExtensionId.toString())
-            addNumber("num_multiple_tcc_packets", numMultipleTccPackets)
-            addBoolean("enabled", enabled)
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addStatsToAggregate()
+        addNumber("tcc_feedback_bitrate_bps", tccFeedbackBitrate.rate.bps)
+        addString("tcc_extension_id", tccExtensionId.toString())
+        addBoolean("enabled", enabled)
+    }
+
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStatsToAggregate().apply {
+        addStatsToAggregate()
+    }
+
+    private fun NodeStatsBlock.addStatsToAggregate() {
+        addNumber("num_tcc_packets_sent", numTccSent)
+        addNumber("num_multiple_tcc_packets", numMultipleTccPackets)
     }
 }

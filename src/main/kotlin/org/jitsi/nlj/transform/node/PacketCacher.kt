@@ -35,9 +35,12 @@ class PacketCacher : ObserverNode("Packet cache") {
 
     fun getPacketCache(): PacketCache = packetCache
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addBlock(packetCache.getNodeStats())
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addBlock(packetCache.getNodeStats())
     }
+
+    /**
+     * Do not aggregate any of the custom stats we add.
+     */
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStats()
 }

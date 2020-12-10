@@ -72,11 +72,14 @@ class TccSeqNumTagger(
         return packetInfo
     }
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addString("tcc_ext_id", tccExtensionId.toString())
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addString("tcc_ext_id", tccExtensionId.toString())
     }
+
+    /**
+     * Do not aggregate any of the custom stats we add.
+     */
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStats()
 
     override fun trace(f: () -> Unit) = f.invoke()
 }

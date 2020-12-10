@@ -115,8 +115,16 @@ class RemoteBandwidthEstimator(
     }
 
     override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addStatsToAggregate()
         addString("ast_ext_id", astExtId.toString())
         addBoolean("enabled", enabled)
+    }
+
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStatsToAggregate().apply {
+        addStatsToAggregate()
+    }
+
+    private fun NodeStatsBlock.addStatsToAggregate() {
         addNumber("num_rembs_created", numRembsCreated)
         addNumber("num_packets_without_ast", numPacketsWithoutAbsSendTime)
     }

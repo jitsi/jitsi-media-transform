@@ -106,10 +106,8 @@ class VideoParser(
 
     override fun trace(f: () -> Unit) = f.invoke()
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("num_packets_dropped_no_encoding", numPacketsDroppedNoEncoding.get())
-            addNumber("num_packets_dropped_unknown_pt", numPacketsDroppedUnknownPt.get())
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addNumber("num_packets_dropped_no_encoding", numPacketsDroppedNoEncoding.get())
+        addNumber("num_packets_dropped_unknown_pt", numPacketsDroppedUnknownPt.get())
     }
 }

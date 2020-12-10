@@ -124,13 +124,11 @@ class RtcpTermination(
         }
     }
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            packetReceiveCounts.forEach { type, count ->
-                addNumber("num_${type}_rx", count)
-            }
-            addNumber("num_failed_to_forward", numFailedToForward)
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        packetReceiveCounts.forEach { type, count ->
+            addNumber("num_${type}_rx", count)
         }
+        addNumber("num_failed_to_forward", numFailedToForward)
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

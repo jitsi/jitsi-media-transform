@@ -63,7 +63,15 @@ class AudioLevelReader(
     }
 
     override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addStatsToAggregate()
         addString("audio_level_ext_id", audioLevelExtId.toString())
+    }
+
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStatsToAggregate().apply {
+        addStatsToAggregate()
+    }
+
+    private fun NodeStatsBlock.addStatsToAggregate() {
         addNumber("num_silence_packets_discarded", numSilencePacketsDiscarded)
     }
 

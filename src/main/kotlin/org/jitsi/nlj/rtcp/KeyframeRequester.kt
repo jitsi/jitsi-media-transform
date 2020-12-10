@@ -186,18 +186,24 @@ class KeyframeRequester @JvmOverloads constructor(
 
     override fun trace(f: () -> Unit) = f.invoke()
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("wait_interval_ms", waitInterval.toMillis())
-            addNumber("num_api_requests", numApiRequests)
-            addNumber("num_api_requests_dropped", numApiRequestsDropped)
-            addNumber("num_firs_dropped", numFirsDropped)
-            addNumber("num_firs_generated", numFirsGenerated)
-            addNumber("num_firs_forwarded", numFirsForwarded)
-            addNumber("num_plis_dropped", numPlisDropped)
-            addNumber("num_plis_generated", numPlisGenerated)
-            addNumber("num_plis_forwarded", numPlisForwarded)
-        }
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStatsToAggregate().apply {
+        addStatsToAggregate()
+    }
+
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addStatsToAggregate()
+        addNumber("wait_interval_ms", waitInterval.toMillis())
+    }
+
+    private fun NodeStatsBlock.addStatsToAggregate() {
+        addNumber("num_api_requests", numApiRequests)
+        addNumber("num_api_requests_dropped", numApiRequestsDropped)
+        addNumber("num_firs_dropped", numFirsDropped)
+        addNumber("num_firs_generated", numFirsGenerated)
+        addNumber("num_firs_forwarded", numFirsForwarded)
+        addNumber("num_plis_dropped", numPlisDropped)
+        addNumber("num_plis_generated", numPlisGenerated)
+        addNumber("num_plis_forwarded", numPlisForwarded)
     }
 
     fun onRttUpdate(newRtt: Double) {

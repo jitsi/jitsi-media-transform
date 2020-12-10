@@ -80,10 +80,8 @@ class Vp8Parser(
         return packetInfo
     }
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("num_keyframes", numKeyframes)
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addNumber("num_keyframes", numKeyframes)
     }
 
     override fun trace(f: () -> Unit) = f.invoke()

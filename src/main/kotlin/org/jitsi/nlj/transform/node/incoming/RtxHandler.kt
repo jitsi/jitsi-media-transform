@@ -84,12 +84,18 @@ class RtxHandler(
         return packetInfo
     }
 
-    override fun getNodeStats(): NodeStatsBlock {
-        return super.getNodeStats().apply {
-            addNumber("num_rtx_packets_received", numRtxPacketsReceived)
-            addNumber("num_padding_packets_received", numPaddingPacketsReceived)
-            addString("rtx_payload_types", rtxPtToRtxPayloadType.values.toString())
-        }
+    override fun getNodeStats(): NodeStatsBlock = super.getNodeStats().apply {
+        addStatsToAggregate()
+        addString("rtx_payload_types", rtxPtToRtxPayloadType.values.toString())
+    }
+
+    override fun getNodeStatsToAggregate(): NodeStatsBlock = super.getNodeStatsToAggregate().apply {
+        addStatsToAggregate()
+    }
+
+    private fun NodeStatsBlock.addStatsToAggregate() {
+        addNumber("num_rtx_packets_received", numRtxPacketsReceived)
+        addNumber("num_padding_packets_received", numPaddingPacketsReceived)
     }
 
     override fun trace(f: () -> Unit) = f.invoke()
