@@ -152,6 +152,8 @@ sealed class Node(
         fun enableNodeTracing(enable: Boolean) {
             TRACE_ENABLED = enable
         }
+
+        fun isNodeTracingEnabled(): Boolean = TRACE_ENABLED
     }
 }
 
