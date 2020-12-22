@@ -21,33 +21,40 @@ import org.jitsi.metaconfig.from
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.utils.logging2.Logger
 import java.util.Date
-import java.util.concurrent.atomic.AtomicReference
 
 class ToggleablePcapWriter(
     private val parentLogger: Logger,
     private val prefix: String
 ) {
-    private val pcapWriter = AtomicReference<PcapWriter?>(null)
+    private var pcapWriter: PcapWriter? = null
+    private val pcapLock = Any()
 
     fun enable() {
         if (!allowed) {
             throw IllegalStateException("PCAP capture is disabled in configuration")
         }
 
-        pcapWriter.compareAndSet(null, PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap"))
+        synchronized(pcapLock) {
+            if (pcapWriter == null) {
+                pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
+            }
+        }
     }
 
     fun disable() {
-        pcapWriter.getAndSet(null)?.close()
+        synchronized(pcapLock) {
+            pcapWriter?.close()
+            pcapWriter = null
+        }
     }
 
-    fun isEnabled(): Boolean = pcapWriter.get() != null
+    fun isEnabled(): Boolean = pcapWriter != null
 
     fun newObserverNode(): Node = PcapWriterNode("Toggleable pcap writer: $prefix")
 
     private inner class PcapWriterNode(name: String) : ObserverNode(name) {
         override fun observe(packetInfo: PacketInfo) {
-            pcapWriter.get()?.processPacket(packetInfo)
+            pcapWriter?.processPacket(packetInfo)
         }
 
         override fun trace(f: () -> Unit) = f.invoke()
