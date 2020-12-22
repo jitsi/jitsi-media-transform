@@ -25,38 +25,31 @@ import org.jitsi.nlj.PacketInfo
 import org.jitsi.utils.logging2.Logger
 import java.lang.IllegalStateException
 import java.util.Date
+import java.util.concurrent.atomic.AtomicReference
 
 class ToggleablePcapWriter(
-    val parentLogger: Logger,
-    val prefix: String
+    private val parentLogger: Logger,
+    private val prefix: String
 ) {
-    private var pcapWriter: PcapWriter? = null
-
-    private val pcapLock = Any()
+    private val pcapWriter = AtomicReference<PcapWriter?>(null)
 
     fun enable() {
         if (!enabled) {
             throw IllegalStateException("PCAP capture is disabled in configuration")
         }
-        synchronized(pcapLock) {
-            if (pcapWriter == null) {
-                pcapWriter = PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap")
-            }
-        }
+
+        pcapWriter.compareAndSet(null, PcapWriter(parentLogger, "/tmp/$prefix-${Date().toInstant()}.pcap"))
     }
 
     fun disable() {
-        synchronized(pcapLock) {
-            pcapWriter?.close()
-            pcapWriter = null
-        }
+        pcapWriter.set(null)
     }
 
     fun newObserverNode(): Node = PcapWriterNode("Toggleable pcap writer: $prefix")
 
     private inner class PcapWriterNode(name: String) : ObserverNode(name) {
         override fun observe(packetInfo: PacketInfo) {
-            pcapWriter?.processPacket(packetInfo)
+            pcapWriter.get()?.processPacket(packetInfo)
         }
 
         override fun handleEvent(event: Event) {
