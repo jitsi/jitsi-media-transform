@@ -38,7 +38,7 @@ class ToggleablePcapWriter(
     }
 
     fun disable() {
-        pcapWriter.set(null)
+        pcapWriter.getAndSet(null)?.close()
     }
 
     fun isEnabled(): Boolean = pcapWriter.get() != null
