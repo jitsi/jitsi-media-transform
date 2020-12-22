@@ -42,6 +42,7 @@ abstract class RtpSender :
     abstract fun getPacketStreamStats(): PacketStreamStats.Snapshot
     abstract fun getTransportCcEngineStats(): TransportCcEngine.StatisticsSnapshot
     abstract fun requestKeyframe(mediaSsrc: Long? = null)
+    abstract fun setFeature(feature: Features, enabled: Boolean)
     abstract fun tearDown()
 
     abstract val bandwidthEstimator: BandwidthEstimator

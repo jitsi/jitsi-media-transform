@@ -319,9 +319,8 @@ class Transceiver(
     }
 
     fun setFeature(feature: Features, enabled: Boolean) {
-        val featureToggleEvent = FeatureToggleEvent(feature, enabled)
-        rtpReceiver.handleEvent(featureToggleEvent)
-        rtpSender.handleEvent(featureToggleEvent)
+        rtpReceiver.setFeature(feature, enabled)
+        rtpSender.setFeature(feature, enabled)
     }
 
     companion object {

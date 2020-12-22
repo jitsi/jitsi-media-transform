@@ -302,6 +302,18 @@ class RtpReceiverImpl @JvmOverloads constructor(
         audioLevelReader.forceMute = shouldMute
     }
 
+    override fun setFeature(feature: Features, enabled: Boolean) {
+        when (feature) {
+            Features.TRANSCEIVER_PCAP_DUMP -> {
+                if (enabled) {
+                    toggleablePcapWriter.enable()
+                } else {
+                    toggleablePcapWriter.disable()
+                }
+            }
+        }
+    }
+
     override fun stop() {
         running = false
         rtcpRrGenerator.running = false
