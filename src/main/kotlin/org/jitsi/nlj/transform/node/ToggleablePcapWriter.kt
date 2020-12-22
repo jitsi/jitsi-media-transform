@@ -18,12 +18,8 @@ package org.jitsi.nlj.transform.node
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.from
-import org.jitsi.nlj.Event
-import org.jitsi.nlj.FeatureToggleEvent
-import org.jitsi.nlj.Features
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.utils.logging2.Logger
-import java.lang.IllegalStateException
 import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
 
@@ -50,20 +46,6 @@ class ToggleablePcapWriter(
     private inner class PcapWriterNode(name: String) : ObserverNode(name) {
         override fun observe(packetInfo: PacketInfo) {
             pcapWriter.get()?.processPacket(packetInfo)
-        }
-
-        override fun handleEvent(event: Event) {
-            when (event) {
-                is FeatureToggleEvent -> {
-                    if (event.feature == Features.TRANSCEIVER_PCAP_DUMP) {
-                        if (event.enable) {
-                            enable()
-                        } else {
-                            disable()
-                        }
-                    }
-                }
-            }
         }
 
         override fun trace(f: () -> Unit) = f.invoke()
