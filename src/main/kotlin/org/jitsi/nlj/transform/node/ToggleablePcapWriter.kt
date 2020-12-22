@@ -30,7 +30,7 @@ class ToggleablePcapWriter(
     private val pcapWriter = AtomicReference<PcapWriter?>(null)
 
     fun enable() {
-        if (!enabled) {
+        if (!allowed) {
             throw IllegalStateException("PCAP capture is disabled in configuration")
         }
 
@@ -52,6 +52,6 @@ class ToggleablePcapWriter(
     }
 
     companion object {
-        val enabled: Boolean by config("jmt.debug.pcap.enabled".from(JitsiConfig.newConfig))
+        val allowed: Boolean by config("jmt.debug.pcap.enabled".from(JitsiConfig.newConfig))
     }
 }
