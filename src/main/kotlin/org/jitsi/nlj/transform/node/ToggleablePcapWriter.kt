@@ -41,6 +41,8 @@ class ToggleablePcapWriter(
         pcapWriter.set(null)
     }
 
+    fun isEnabled(): Boolean = pcapWriter.get() != null
+
     fun newObserverNode(): Node = PcapWriterNode("Toggleable pcap writer: $prefix")
 
     private inner class PcapWriterNode(name: String) : ObserverNode(name) {
