@@ -54,6 +54,6 @@ class ToggleablePcapWriter(
     }
 
     companion object {
-        val allowed: Boolean by config("jmt.debug.pcap.enabled".from(JitsiConfig.newConfig))
+        private val allowed: Boolean by config("jmt.debug.pcap.enabled".from(JitsiConfig.newConfig))
     }
 }
