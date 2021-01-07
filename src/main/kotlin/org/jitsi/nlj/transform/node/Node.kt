@@ -34,6 +34,7 @@ import org.jitsi.nlj.util.PacketPredicate
 import org.jitsi.nlj.util.addMbps
 import org.jitsi.nlj.util.addRatio
 import org.json.simple.JSONObject
+import java.util.concurrent.CopyOnWriteArraySet
 
 /**
  * An abstract base class for all [Node] subclasses.  This class
@@ -146,9 +147,13 @@ sealed class Node(
             }
         }
 
+        fun isPayloadVerificationEnabled(): Boolean = PacketInfo.ENABLE_PAYLOAD_VERIFICATION
+
         fun enableNodeTracing(enable: Boolean) {
             TRACE_ENABLED = enable
         }
+
+        fun isNodeTracingEnabled(): Boolean = TRACE_ENABLED
     }
 }
 
@@ -476,7 +481,7 @@ class ConditionalPacketPath() {
 }
 
 abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
-    protected var transformPaths: MutableSet<ConditionalPacketPath> = mutableSetOf()
+    protected var transformPaths: MutableSet<ConditionalPacketPath> = CopyOnWriteArraySet()
 
     fun addPacketPath(packetPath: ConditionalPacketPath): DemuxerNode {
         transformPaths.add(packetPath)
@@ -496,7 +501,6 @@ abstract class DemuxerNode(name: String) : StatsKeepingNode("$name demuxer") {
     }
 
     fun removePacketPaths() {
-        // TODO: concurrency issues here
         transformPaths.forEach { it.path.removeParent(this) }
         transformPaths.clear()
     }

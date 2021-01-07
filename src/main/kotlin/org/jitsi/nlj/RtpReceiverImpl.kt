@@ -271,7 +271,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP receiver $id").apply {
         addBlock(super.getNodeStats())
-        addString("running", running.toString())
+        addBoolean("running", running)
         NodeStatsVisitor(this).visit(inputTreeRoot)
     }
 
@@ -300,6 +300,24 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun forceMuteAudio(shouldMute: Boolean) {
         audioLevelReader.forceMute = shouldMute
+    }
+
+    override fun setFeature(feature: Features, enabled: Boolean) {
+        when (feature) {
+            Features.TRANSCEIVER_PCAP_DUMP -> {
+                if (enabled) {
+                    toggleablePcapWriter.enable()
+                } else {
+                    toggleablePcapWriter.disable()
+                }
+            }
+        }
+    }
+
+    override fun isFeatureEnabled(feature: Features): Boolean {
+        return when (feature) {
+            Features.TRANSCEIVER_PCAP_DUMP -> toggleablePcapWriter.isEnabled()
+        }
     }
 
     override fun stop() {
