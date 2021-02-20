@@ -160,8 +160,9 @@ class DtlsStack(
 
     fun close() {
         datagramTransport.close()
-        incomingProtocolData.forEach {
-            BufferPool.returnBuffer(it.array())
+        while (incomingProtocolData.isNotEmpty()) {
+            val buf = incomingProtocolData.poll() ?: break
+            BufferPool.returnBuffer(buf.array())
         }
     }
 
