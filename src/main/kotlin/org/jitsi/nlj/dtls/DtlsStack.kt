@@ -27,9 +27,7 @@ import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.math.min
 
@@ -50,6 +48,7 @@ import kotlin.math.min
  * or server.  This can be done by calling either the [actAsClient] or [actAsServer] methods.  Once the role has
  * been set, [start] can be called to start the negotiation.
  */
+@ExperimentalStdlibApi
 class DtlsStack(
     parentLogger: Logger
 ) {
@@ -88,7 +87,12 @@ class DtlsStack(
      */
     var eventHandler: EventHandler? = null
 
-    private val incomingProtocolData = ArrayBlockingQueue<ByteBuffer>(50)
+    private var running: Boolean = false
+    private val incomingProtocolData = ArrayDeque<ByteBuffer>(50)
+    /**
+     * This lock is used to make access to [running] and [incomingProtocolData] atomic
+     */
+    private val lock = Any()
     private var numPacketDropsQueueFull = 0
 
     /**
@@ -146,6 +150,10 @@ class DtlsStack(
      */
     fun start() {
         roleSet.await()
+        synchronized(lock) {
+            running = true
+            // TODO: could updating dtlsTransport in this lock solve the issue below?
+        }
 
         dtlsTransport = role?.start()
         // There is a bit of a race here: It's technically possible the
@@ -160,9 +168,12 @@ class DtlsStack(
 
     fun close() {
         datagramTransport.close()
-        while (incomingProtocolData.isNotEmpty()) {
-            val buf = incomingProtocolData.poll() ?: break
-            BufferPool.returnBuffer(buf.array())
+        synchronized(lock) {
+            running = false
+            incomingProtocolData.forEach { buf ->
+                BufferPool.returnBuffer(buf.array())
+            }
+            incomingProtocolData.clear()
         }
     }
 
@@ -221,10 +232,15 @@ class DtlsStack(
         val bufCopy = BufferPool.getBuffer(len).apply {
             System.arraycopy(data, off, this, 0, len)
         }
-        if (!incomingProtocolData.offer(ByteBuffer.wrap(bufCopy, 0, len))) {
-            logger.warn("DTLS stack queue full, dropping packet")
-            BufferPool.returnBuffer(bufCopy)
-            numPacketDropsQueueFull++
+        synchronized(lock) {
+            if (!running) {
+                // TODO: we could avoid allocating this and then just returning it but then we'd have to
+                // grab from the pool and copy within this lock
+                BufferPool.returnBuffer(bufCopy)
+                return
+            }
+            // TODO: we lose the fixed size here...do we care?
+            incomingProtocolData.add(ByteBuffer.wrap(bufCopy, 0, len))
         }
 
         processIncomingProtocolData()
@@ -263,7 +279,16 @@ class DtlsStack(
         private val logger = createChildLogger(parentLogger)
 
         override fun receive(buf: ByteArray, off: Int, len: Int, waitMillis: Int): Int {
-            val data = this@DtlsStack.incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
+            val data = synchronized(lock) {
+                if (!running) {
+                    return -1
+                }
+                // Note: we don't use the timeout values here because we don't actually need them.  We add a buffer
+                // into this queue above and then call a method which will pull it through via this method.  The
+                // only reason waitMillis exists is because the BouncyCastle DatagramTransport interface this class
+                // implements defines it that way.
+                this@DtlsStack.incomingProtocolData.removeFirstOrNull() ?: return -1
+            }
             val length = min(len, data.limit())
             if (length < data.limit()) {
                 logger.warn(

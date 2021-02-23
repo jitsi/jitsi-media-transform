@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import kotlin.concurrent.thread
 
+@ExperimentalStdlibApi
 class DtlsTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
     private val debugEnabled = true
