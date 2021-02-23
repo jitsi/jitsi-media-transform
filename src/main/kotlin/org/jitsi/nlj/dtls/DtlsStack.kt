@@ -48,7 +48,6 @@ import kotlin.math.min
  * or server.  This can be done by calling either the [actAsClient] or [actAsServer] methods.  Once the role has
  * been set, [start] can be called to start the negotiation.
  */
-@ExperimentalStdlibApi
 class DtlsStack(
     parentLogger: Logger
 ) {
@@ -88,7 +87,7 @@ class DtlsStack(
     var eventHandler: EventHandler? = null
 
     private var running: Boolean = false
-    private val incomingProtocolData = ArrayDeque<ByteBuffer>(50)
+    private val incomingProtocolData = java.util.ArrayDeque<ByteBuffer>(50)
     /**
      * This lock is used to make access to [running] and [incomingProtocolData] atomic
      */
@@ -280,14 +279,14 @@ class DtlsStack(
 
         override fun receive(buf: ByteArray, off: Int, len: Int, waitMillis: Int): Int {
             val data = synchronized(lock) {
-                if (!running) {
+                if (!running || this@DtlsStack.incomingProtocolData.isEmpty()) {
                     return -1
                 }
                 // Note: we don't use the timeout values here because we don't actually need them.  We add a buffer
                 // into this queue above and then call a method which will pull it through via this method.  The
                 // only reason waitMillis exists is because the BouncyCastle DatagramTransport interface this class
                 // implements defines it that way.
-                this@DtlsStack.incomingProtocolData.removeFirstOrNull() ?: return -1
+                this@DtlsStack.incomingProtocolData.removeFirst()
             }
             val length = min(len, data.limit())
             if (length < data.limit()) {
