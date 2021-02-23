@@ -158,9 +158,9 @@ class StreamInformationStoreImpl : StreamInformationStore {
     override fun addRtpPayloadType(payloadType: PayloadType) {
         synchronized(payloadTypesLock) {
             _rtpPayloadTypes[payloadType.pt] = payloadType
-            supportsPli = rtpPayloadTypes.values.find { it.rtcpFeedbackSet.supportsPli() } != null
-            supportsRemb = rtpPayloadTypes.values.find { it.rtcpFeedbackSet.supportsRemb() } != null
-            supportsTcc = rtpPayloadTypes.values.find { it.rtcpFeedbackSet.supportsTcc() } != null
+            supportsPli = supportsPli || payloadType.rtcpFeedbackSet.supportsPli()
+            supportsRemb = supportsRemb || payloadType.rtcpFeedbackSet.supportsRemb()
+            supportsTcc = supportsTcc || payloadType.rtcpFeedbackSet.supportsTcc()
             payloadTypeHandlers.forEach { it(_rtpPayloadTypes) }
         }
     }
