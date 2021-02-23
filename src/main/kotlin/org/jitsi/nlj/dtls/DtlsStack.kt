@@ -151,7 +151,6 @@ class DtlsStack(
         roleSet.await()
         synchronized(lock) {
             running = true
-            // TODO: could updating dtlsTransport in this lock solve the issue below?
         }
 
         dtlsTransport = role?.start()
