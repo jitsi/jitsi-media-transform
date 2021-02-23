@@ -87,7 +87,7 @@ class DtlsStack(
     var eventHandler: EventHandler? = null
 
     private var running: Boolean = false
-    private val incomingProtocolData = java.util.ArrayDeque<ByteBuffer>(50)
+    private val incomingProtocolData = java.util.ArrayDeque<ByteBuffer>(QUEUE_SIZE)
     /**
      * This lock is used to make access to [running] and [incomingProtocolData] atomic
      */
@@ -233,13 +233,17 @@ class DtlsStack(
         }
         synchronized(lock) {
             if (!running) {
-                // TODO: we could avoid allocating this and then just returning it but then we'd have to
-                // grab from the pool and copy within this lock
                 BufferPool.returnBuffer(bufCopy)
                 return
             }
-            // TODO: we lose the fixed size here...do we care?
-            incomingProtocolData.add(ByteBuffer.wrap(bufCopy, 0, len))
+            if (incomingProtocolData.size >= QUEUE_SIZE) {
+                logger.warn("DTLS stack queue full, dropping packet")
+                BufferPool.returnBuffer(bufCopy)
+                numPacketDropsQueueFull++
+                Unit
+            } else {
+                incomingProtocolData.add(ByteBuffer.wrap(bufCopy, 0, len))
+            }
         }
 
         processIncomingProtocolData()
@@ -253,6 +257,7 @@ class DtlsStack(
     }
 
     companion object {
+        private const val QUEUE_SIZE = 50
         /**
          * Because generating the certificateInfo can be expensive, we generate a single
          * one to be used everywhere which expires in 24 hours (when we'll generate
