@@ -24,11 +24,9 @@ import kotlin.math.sign
  * [Bandwidth] models a current bandwidth, represented as a rate
  * of bits per second.
  */
-class Bandwidth(bps: Double) : Comparable<Bandwidth> {
-    val bps: Double = bps
-
-    val kbps: Double = bps / 1000
-    val mbps: Double = bps / (1000 * 1000)
+inline class Bandwidth(val bps: Double) : Comparable<Bandwidth> {
+    fun kbps(): Double = bps / 1000
+    fun mbps(): Double = bps / (1000 * 1000)
 
     operator fun minus(other: Bandwidth): Bandwidth =
         Bandwidth(bps - other.bps)
@@ -73,27 +71,17 @@ class Bandwidth(bps: Double) : Comparable<Bandwidth> {
         // in the ones place
         val format = DecimalFormat("0.##")
         return when {
-            mbps >= 1 -> "${format.format(mbps)} mbps"
-            kbps >= 1 -> "${format.format(kbps)} kbps"
+            mbps() >= 1 -> "${format.format(mbps())} mbps"
+            kbps() >= 1 -> "${format.format(kbps())} kbps"
             else -> "${format.format(bps)} bps"
         }
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (other !is Bandwidth) {
-            return false
-        }
-        return compareTo(other) == 0
-    }
-
-    override fun hashCode(): Int = bps.hashCode()
 
     companion object {
         fun fromString(str: String): Bandwidth {
             val (digits, notDigits) = str.partition { it.isDigit() }
             val amount = digits.toInt()
-            val unit = notDigits.trim().toLowerCase()
-            return when (unit) {
+            return when (val unit = notDigits.trim().toLowerCase()) {
                 "bps" -> amount.bps
                 "kbps" -> amount.kbps
                 "mbps" -> amount.mbps
