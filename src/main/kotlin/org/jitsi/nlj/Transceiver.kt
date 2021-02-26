@@ -26,7 +26,6 @@ import org.jitsi.nlj.stats.NodeStatsBlock
 import org.jitsi.nlj.stats.PacketIOActivity
 import org.jitsi.nlj.stats.TransceiverStats
 import org.jitsi.nlj.transform.NodeStatsProducer
-import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.LocalSsrcAssociation
 import org.jitsi.nlj.util.ReadOnlyStreamInformationStore
 import org.jitsi.nlj.util.SsrcAssociation
@@ -132,7 +131,7 @@ class Transceiver(
     init {
         rtpSender.bandwidthEstimator.addListener(
             object : BandwidthEstimator.Listener {
-                override fun bandwidthEstimationChanged(newValue: Bandwidth) {
+                override fun bandwidthEstimationChanged(newValue: Double) {
                     eventHandler.bandwidthEstimationChanged(newValue)
                 }
             }

@@ -71,7 +71,6 @@ import org.jitsi.utils.logging.DiagnosticContext
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.CountingErrorHandler
 
-import org.jitsi.nlj.util.Bandwidth
 import org.jitsi.nlj.util.BufferPool
 
 class RtpReceiverImpl @JvmOverloads constructor(
@@ -135,7 +134,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
     private val retransmissionRequester = RetransmissionRequesterNode(rtcpSender, backgroundExecutor, logger)
     private val rembHandler = RembHandler(logger).apply {
         addListener(object : BandwidthEstimator.Listener {
-            override fun bandwidthEstimationChanged(newValue: Bandwidth) {
+            override fun bandwidthEstimationChanged(newValue: Double) {
                 eventHandler.bandwidthEstimationChanged(newValue)
             }
         })

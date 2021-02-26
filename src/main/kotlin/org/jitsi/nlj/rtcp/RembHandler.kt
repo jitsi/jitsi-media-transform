@@ -43,6 +43,6 @@ class RembHandler(parentLogger: Logger) : RtcpListener {
 
     private fun onRembPacket(rembPacket: RtcpFbRembPacket) {
         logger.debug { "Updating bandwidth to ${rembPacket.bitrate.bps}" }
-        bweUpdateListeners.forEach { it.bandwidthEstimationChanged(rembPacket.bitrate.bps) }
+        bweUpdateListeners.forEach { it.bandwidthEstimationChanged(rembPacket.bitrate.toDouble()) }
     }
 }

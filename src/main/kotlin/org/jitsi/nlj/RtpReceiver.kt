@@ -20,7 +20,6 @@ import org.jitsi.nlj.stats.EndpointConnectionStats
 import org.jitsi.nlj.stats.PacketStreamStats
 import org.jitsi.nlj.transform.NodeStatsProducer
 import org.jitsi.nlj.transform.node.incoming.IncomingStatisticsSnapshot
-import org.jitsi.nlj.util.Bandwidth
 
 abstract class RtpReceiver :
     StatsKeepingPacketHandler(),
@@ -72,5 +71,8 @@ interface RtpReceiverEventHandler {
     /**
      * The estimation of the available send bandwidth changed.
      */
-    fun bandwidthEstimationChanged(newValue: Bandwidth) {}
+    /* N.B.: This takes [Double] rather than [Bandwidth] because some implementors of this interface
+     * are in Java, and [Bandwidth] is an inline class.
+     */
+    fun bandwidthEstimationChanged(newValue: Double) {}
 }

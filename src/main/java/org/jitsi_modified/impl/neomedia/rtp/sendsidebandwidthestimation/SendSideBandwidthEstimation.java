@@ -225,13 +225,13 @@ public class SendSideBandwidthEstimation
         {
             low_loss_threshold_ = SendSideBandwidthEstimationConfig.experimentalLowLossThreshold();
             high_loss_threshold_ = SendSideBandwidthEstimationConfig.experimentalHighLossThreshold();
-            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.experimentalBitrateThreshold().getBps();
+            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.experimentalBitrateThreshold();
         }
         else
         {
             low_loss_threshold_ = SendSideBandwidthEstimationConfig.defaultLowLossThreshold();
             high_loss_threshold_ = SendSideBandwidthEstimationConfig.defaultHighLossThreshold();
-            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.defaultBitrateThreshold().getBps();
+            bitrate_threshold_bps_ = (int) SendSideBandwidthEstimationConfig.defaultBitrateThreshold();
         }
 
 

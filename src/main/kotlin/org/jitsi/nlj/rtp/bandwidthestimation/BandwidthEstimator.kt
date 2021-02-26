@@ -222,7 +222,7 @@ abstract class BandwidthEstimator(
     abstract fun reset(): Unit
 
     interface Listener {
-        fun bandwidthEstimationChanged(newValue: Bandwidth)
+        fun bandwidthEstimationChanged(newValue: Double)
     }
 
     private val listeners = LinkedList<Listener>()
@@ -253,7 +253,7 @@ abstract class BandwidthEstimator(
             return
         }
         for (listener in listeners) {
-            listener.bandwidthEstimationChanged(newValue)
+            listener.bandwidthEstimationChanged(newValue.bps)
         }
         curBandwidth = newValue
     }
