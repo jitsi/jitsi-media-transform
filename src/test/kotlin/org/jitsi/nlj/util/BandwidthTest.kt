@@ -46,25 +46,25 @@ class BandwidthTest : ShouldSpec() {
                 var b = 1.mbps
                 b += 0.5.mbps
                 b shouldBe 1.5.mbps
-                b.kbps() shouldBe 1500.0
+                b.kbps shouldBe 1500.0
                 b.bps shouldBe 1_500_000.0
 
                 b = 1.mbps
                 b -= 0.5.mbps
                 b shouldBe 0.5.mbps
-                b.kbps() shouldBe 500.0
+                b.kbps shouldBe 500.0
                 b.bps shouldBe 500_000.0
 
                 b = 1.mbps
                 b *= 2.0
                 b shouldBe 2.0.mbps
-                b.kbps() shouldBe 2_000.0
+                b.kbps shouldBe 2_000.0
                 b.bps shouldBe 2_000_000.0
 
                 b = 1.mbps
                 b /= 2.0
                 b shouldBe 0.5.mbps
-                b.kbps() shouldBe 500.0
+                b.kbps shouldBe 500.0
                 b.bps shouldBe 500_000.0
             }
         }

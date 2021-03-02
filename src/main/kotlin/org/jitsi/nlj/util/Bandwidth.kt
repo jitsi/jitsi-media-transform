@@ -25,8 +25,10 @@ import kotlin.math.sign
  * of bits per second.
  */
 inline class Bandwidth(val bps: Double) : Comparable<Bandwidth> {
-    fun kbps(): Double = bps / 1000
-    fun mbps(): Double = bps / (1000 * 1000)
+    val kbps: Double
+        get() = bps / 1000
+    val mbps: Double
+        get() = bps / (1000 * 1000)
 
     operator fun minus(other: Bandwidth): Bandwidth =
         Bandwidth(bps - other.bps)
@@ -71,8 +73,8 @@ inline class Bandwidth(val bps: Double) : Comparable<Bandwidth> {
         // in the ones place
         val format = DecimalFormat("0.##")
         return when {
-            mbps() >= 1 -> "${format.format(mbps())} mbps"
-            kbps() >= 1 -> "${format.format(kbps())} kbps"
+            mbps >= 1 -> "${format.format(mbps)} mbps"
+            kbps >= 1 -> "${format.format(kbps)} kbps"
             else -> "${format.format(bps)} bps"
         }
     }
