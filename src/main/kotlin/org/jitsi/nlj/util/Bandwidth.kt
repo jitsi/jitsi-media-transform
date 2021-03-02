@@ -108,11 +108,11 @@ val Float.mbps: Bandwidth
     get() = Bandwidth(this.toDouble() * 1000 * 1000)
 
 val Double.bps: Bandwidth
-    get() = Bandwidth(this.toDouble())
+    get() = Bandwidth(this)
 val Double.kbps: Bandwidth
-    get() = Bandwidth(this.toDouble() * 1000)
+    get() = Bandwidth(this * 1000)
 val Double.mbps: Bandwidth
-    get() = Bandwidth(this.toDouble() * 1000 * 1000)
+    get() = Bandwidth(this * 1000 * 1000)
 
 val Long.bps: Bandwidth
     get() = Bandwidth(this.toDouble())
