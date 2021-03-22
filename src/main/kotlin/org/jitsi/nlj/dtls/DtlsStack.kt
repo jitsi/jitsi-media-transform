@@ -266,7 +266,7 @@ class DtlsStack(
 
         override fun receive(buf: ByteArray, off: Int, len: Int, waitMillis: Int): Int {
             val data = try {
-                this@DtlsStack.incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
+                incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
             } catch (ie: InterruptedException) {
                 return -1
             }
@@ -283,7 +283,7 @@ class DtlsStack(
         }
 
         override fun send(buf: ByteArray, off: Int, len: Int) {
-            this@DtlsStack.outgoingDataHandler?.sendData(buf, off, len)
+            outgoingDataHandler?.sendData(buf, off, len)
         }
 
         /**
