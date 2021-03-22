@@ -88,7 +88,7 @@ class DtlsStack(
      */
     var eventHandler: EventHandler? = null
 
-    private val incomingProtocolData = ArrayBlockingQueueWithShutdown<ByteBuffer>(QUEUE_SIZE)
+    private val incomingProtocolData = ArrayBlockingQueueWithShutdown<ByteBuffer>(QUEUE_SIZE, true)
     private var numPacketDropsQueueFull = 0
 
     /**
