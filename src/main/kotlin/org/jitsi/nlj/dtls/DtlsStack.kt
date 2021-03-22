@@ -25,9 +25,9 @@ import org.jitsi.nlj.util.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
+import org.jivesoftware.smack.util.ArrayBlockingQueueWithShutdown
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -88,7 +88,7 @@ class DtlsStack(
      */
     var eventHandler: EventHandler? = null
 
-    private val incomingProtocolData = ArrayBlockingQueue<ByteBuffer>(50)
+    private val incomingProtocolData = ArrayBlockingQueueWithShutdown<ByteBuffer>(50)
     private var numPacketDropsQueueFull = 0
 
     /**
@@ -160,6 +160,7 @@ class DtlsStack(
 
     fun close() {
         datagramTransport.close()
+        incomingProtocolData.shutdown()
         incomingProtocolData.forEach {
             BufferPool.returnBuffer(it.array())
         }
@@ -221,9 +222,11 @@ class DtlsStack(
             System.arraycopy(data, off, this, 0, len)
         }
         if (!incomingProtocolData.offer(ByteBuffer.wrap(bufCopy, 0, len))) {
-            logger.warn("DTLS stack queue full, dropping packet")
             BufferPool.returnBuffer(bufCopy)
-            numPacketDropsQueueFull++
+            if (!incomingProtocolData.isShutdown) {
+                logger.warn("DTLS stack queue full, dropping packet")
+                numPacketDropsQueueFull++
+            }
         }
 
         processIncomingProtocolData()
@@ -262,7 +265,11 @@ class DtlsStack(
         private val logger = createChildLogger(parentLogger)
 
         override fun receive(buf: ByteArray, off: Int, len: Int, waitMillis: Int): Int {
-            val data = this@DtlsStack.incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
+            val data = try {
+                this@DtlsStack.incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
+            } catch (ie: InterruptedException) {
+                return -1
+            }
             val length = min(len, data.limit())
             if (length < data.limit()) {
                 logger.warn(
