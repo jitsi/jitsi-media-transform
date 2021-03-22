@@ -27,7 +27,9 @@ import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
 import java.nio.ByteBuffer
 import java.time.Duration
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.math.min
 
@@ -86,12 +88,7 @@ class DtlsStack(
      */
     var eventHandler: EventHandler? = null
 
-    private var running: Boolean = false
-    private val incomingProtocolData = java.util.ArrayDeque<ByteBuffer>(QUEUE_SIZE)
-    /**
-     * This lock is used to make access to [running] and [incomingProtocolData] atomic
-     */
-    private val lock = Any()
+    private val incomingProtocolData = ArrayBlockingQueue<ByteBuffer>(50)
     private var numPacketDropsQueueFull = 0
 
     /**
@@ -149,9 +146,6 @@ class DtlsStack(
      */
     fun start() {
         roleSet.await()
-        synchronized(lock) {
-            running = true
-        }
 
         dtlsTransport = role?.start()
         // There is a bit of a race here: It's technically possible the
@@ -166,12 +160,8 @@ class DtlsStack(
 
     fun close() {
         datagramTransport.close()
-        synchronized(lock) {
-            running = false
-            incomingProtocolData.forEach { buf ->
-                BufferPool.returnBuffer(buf.array())
-            }
-            incomingProtocolData.clear()
+        incomingProtocolData.forEach {
+            BufferPool.returnBuffer(it.array())
         }
     }
 
@@ -230,19 +220,10 @@ class DtlsStack(
         val bufCopy = BufferPool.getBuffer(len).apply {
             System.arraycopy(data, off, this, 0, len)
         }
-        synchronized(lock) {
-            if (!running) {
-                BufferPool.returnBuffer(bufCopy)
-                return
-            }
-            if (incomingProtocolData.size >= QUEUE_SIZE) {
-                logger.warn("DTLS stack queue full, dropping packet")
-                BufferPool.returnBuffer(bufCopy)
-                numPacketDropsQueueFull++
-                Unit
-            } else {
-                incomingProtocolData.add(ByteBuffer.wrap(bufCopy, 0, len))
-            }
+        if (!incomingProtocolData.offer(ByteBuffer.wrap(bufCopy, 0, len))) {
+            logger.warn("DTLS stack queue full, dropping packet")
+            BufferPool.returnBuffer(bufCopy)
+            numPacketDropsQueueFull++
         }
 
         processIncomingProtocolData()
@@ -256,7 +237,6 @@ class DtlsStack(
     }
 
     companion object {
-        private const val QUEUE_SIZE = 50
         /**
          * Because generating the certificateInfo can be expensive, we generate a single
          * one to be used everywhere which expires in 24 hours (when we'll generate
@@ -282,16 +262,7 @@ class DtlsStack(
         private val logger = createChildLogger(parentLogger)
 
         override fun receive(buf: ByteArray, off: Int, len: Int, waitMillis: Int): Int {
-            val data = synchronized(lock) {
-                if (!running || incomingProtocolData.isEmpty()) {
-                    return -1
-                }
-                // Note: we don't use the timeout values here because we don't actually need them.  We add a buffer
-                // into this queue above and then call a method which will pull it through via this method.  The
-                // only reason waitMillis exists is because the BouncyCastle DatagramTransport interface this class
-                // implements defines it that way.
-                incomingProtocolData.removeFirst()
-            }
+            val data = this@DtlsStack.incomingProtocolData.poll(waitMillis.toLong(), TimeUnit.MILLISECONDS) ?: return -1
             val length = min(len, data.limit())
             if (length < data.limit()) {
                 logger.warn(
@@ -305,7 +276,7 @@ class DtlsStack(
         }
 
         override fun send(buf: ByteArray, off: Int, len: Int) {
-            outgoingDataHandler?.sendData(buf, off, len)
+            this@DtlsStack.outgoingDataHandler?.sendData(buf, off, len)
         }
 
         /**
