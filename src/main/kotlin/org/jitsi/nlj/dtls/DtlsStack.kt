@@ -88,7 +88,7 @@ class DtlsStack(
      */
     var eventHandler: EventHandler? = null
 
-    private val incomingProtocolData = ArrayBlockingQueueWithShutdown<ByteBuffer>(50)
+    private val incomingProtocolData = ArrayBlockingQueueWithShutdown<ByteBuffer>(QUEUE_SIZE)
     private var numPacketDropsQueueFull = 0
 
     /**
@@ -160,10 +160,12 @@ class DtlsStack(
 
     fun close() {
         datagramTransport.close()
+
         incomingProtocolData.shutdown()
         incomingProtocolData.forEach {
             BufferPool.returnBuffer(it.array())
         }
+        incomingProtocolData.clear()
     }
 
     /**
@@ -240,6 +242,7 @@ class DtlsStack(
     }
 
     companion object {
+        private const val QUEUE_SIZE = 50
         /**
          * Because generating the certificateInfo can be expensive, we generate a single
          * one to be used everywhere which expires in 24 hours (when we'll generate
