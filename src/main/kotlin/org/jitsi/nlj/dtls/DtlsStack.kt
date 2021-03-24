@@ -22,10 +22,10 @@ import org.bouncycastle.tls.DatagramTransport
 import org.jitsi.nlj.srtp.TlsRole
 import org.jitsi.nlj.util.BufferPool
 import org.jitsi.nlj.util.OrderedJsonObject
+import org.jitsi.utils.concurrent.ArrayBlockingQueueWithShutdown
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.cdebug
 import org.jitsi.utils.logging2.createChildLogger
-import org.jivesoftware.smack.util.ArrayBlockingQueueWithShutdown
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
