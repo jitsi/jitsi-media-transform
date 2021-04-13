@@ -29,7 +29,7 @@ class EventTimeline(
      * in the timeline.  In the timeline this is used as time "0" and
      * all other times are represented as deltas from this 0.
      */
-    private var referenceTime: Long? = null
+    var referenceTime: Long? = null
 
     fun addEvent(desc: String) {
         val now = System.currentTimeMillis()
@@ -86,6 +86,12 @@ open class PacketInfo @JvmOverloads constructor(
      * was an incoming packet and not one created by jvb itself).
      */
     var receivedTime: Long = -1L
+        set(value) {
+            field = value
+            if (ENABLE_TIMELINE && timeline.referenceTime == null) {
+                timeline.referenceTime = value
+            }
+        }
 
     /**
      * Whether this packet has been recognized to contain only shouldDiscard.
