@@ -60,12 +60,10 @@ class EventTimeline(
     override fun toString(): String {
         return with(StringBuffer()) {
             referenceTime?.let {
-                appendln("Reference time: ${referenceTime}ms")
-                timeline.forEach {
-                    appendln(it.toString())
-                }
+                append("Reference time: ${referenceTime}ms; ")
+                append(timeline.joinToString(separator = "; "))
             } ?: run {
-                appendln("[No timeline]")
+                append("[No timeline]")
             }
             toString()
         }
