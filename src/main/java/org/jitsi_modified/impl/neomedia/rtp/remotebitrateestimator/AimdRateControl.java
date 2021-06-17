@@ -44,6 +44,8 @@ class AimdRateControl
 
     private static final long kInitializationTimeMs = 5000;
 
+    private static final long kFirstIncomingEstimateExpirationMs = 2 * kInitializationTimeMs;
+
     private static final long kLogIntervalMs = 1000;
 
     private static final long kMaxFeedbackIntervalMs = 1000;
@@ -435,11 +437,26 @@ class AimdRateControl
                 if (input.incomingBitRate > 0L)
                     timeFirstIncomingEstimate = nowMs;
             }
-            else if (nowMs - timeFirstIncomingEstimate > kInitializationTimeMs
-                    && input.incomingBitRate > 0L)
+            else
             {
-                currentBitrateBps = input.incomingBitRate;
-                bitrateIsInitialized = true;
+                long timeSinceFirstIncomingEstimate = nowMs - timeFirstIncomingEstimate;
+                if (timeSinceFirstIncomingEstimate > kFirstIncomingEstimateExpirationMs)
+                {
+                    if (input.incomingBitRate > 0L)
+                    {
+                        timeFirstIncomingEstimate = nowMs;
+                    }
+                    else
+                    {
+                        timeFirstIncomingEstimate = -1L;
+                    }
+                }
+                else if (timeSinceFirstIncomingEstimate > kInitializationTimeMs
+                    && input.incomingBitRate > 0L)
+                {
+                    currentBitrateBps = input.incomingBitRate;
+                    bitrateIsInitialized = true;
+                }
             }
         }
 
