@@ -64,6 +64,8 @@ class AimdRateControl
 
     private boolean bitrateIsInitialized;
 
+    private int incomingBitrateExpirations = 0;
+
     private long currentBitrateBps;
 
     private final RateControlInput currentInput
@@ -450,6 +452,23 @@ class AimdRateControl
                     {
                         timeFirstIncomingEstimate = -1L;
                     }
+
+                    // FIXME Where do we want to track the number of incoming
+                    // bitrate expirations (stored in the incomingBitrateExpirations
+                    // variable below)? The sum of this number across all AIMDs/bridges/deployments
+                    // will be the overall number of times we've prevented the ninjas
+                    // problem thanks to this patch. I see a couple of options:
+                    //
+                    // 1. The debug JSON output feels appropriate but that is not
+                    // something that is accessible/plottable in wavefront afaik.
+                    //
+                    // 2. Next best thing is in the videobridge statistics, but
+                    // it feels a bit awkward to put it there. If we want it in
+                    // there, how should it be bubbled up? event driven or have
+                    // it pulled?
+                    //
+                    // Anything else we should be tracking?
+                    incomingBitrateExpirations++;
                 }
                 else if (timeSinceFirstIncomingEstimate > kInitializationTimeMs
                     && input.incomingBitRate > 0L)
