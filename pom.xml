@@ -17,7 +17,7 @@
         <jitsi.utils.version>1.0-94-ge7c7a43</jitsi.utils.version>
         <ktlint.skip>false</ktlint.skip>
         <spotbugs.version>4.0.6</spotbugs.version>
-        <jicoco.version>1.1-54-g5387346</jicoco.version>
+        <jicoco.version>1.1-90-gfa0e11e</jicoco.version>
     </properties>
     <dependencies>
         <dependency>
