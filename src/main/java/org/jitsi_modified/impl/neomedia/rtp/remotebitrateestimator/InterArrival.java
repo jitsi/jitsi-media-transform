@@ -149,9 +149,7 @@ class InterArrival
             long arrivalTimeMs,
             int packetSize,
             long[] deltas){
-
-                return computeDeltas(timestamp,arrivalTimeMs,
-                        packetSize,deltas,-1L);
+        return computeDeltas(timestamp, arrivalTimeMs, packetSize, deltas, -1L);
     }
 
     public boolean computeDeltas(
