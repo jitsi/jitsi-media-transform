@@ -119,7 +119,7 @@ class RtcpRrGenerator(
             when (packets.size) {
                 0 -> {}
                 1 -> rtcpSender(packets.first())
-                else -> for (packet in CompoundRtcpPacket.generateSplit(packets)) { rtcpSender(packet) }
+                else -> for (packet in CompoundRtcpPacket.createWithMtu(packets)) { rtcpSender(packet) }
             }
             backgroundExecutor.schedule(this::doWork, reportingInterval)
         }
