@@ -16,6 +16,7 @@
 package org.jitsi_modified.impl.neomedia.rtp.remotebitrateestimator;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging.DiagnosticContext;
 import org.jitsi.utils.logging.TimeSeriesLogger;
 
@@ -37,14 +38,21 @@ class AimdRateControl
      * <tt>RemoteBitrateEstimatorAbsSendTime</tt> class and its instances for
      * logging output.
      */
-    private static final TimeSeriesLogger logger
+    private static final TimeSeriesLogger timeSeriesLogger
         = TimeSeriesLogger.getTimeSeriesLogger(AimdRateControl.class);
+
+     /**
+     * The <tt>Logger</tt> used by the <tt>AimdRateControl</tt> class and its
+     * instances to print debug information.
+     */
+    private static final Logger logger
+     = new LoggerImpl(AimdRateControl.class.getName());
 
     private static final int kDefaultRttMs = 200;
 
     private static final long kInitializationTimeMs = 5000;
 
-    private static final long kFirstIncomingEstimateExpirationMs = 2 * kInitializationTimeMs;
+    private static final long kFirstIncomingEstimateExpirationMs = 2000;
 
     private static final long kLogIntervalMs = 1000;
 
@@ -85,6 +93,8 @@ class AimdRateControl
     private long rtt;
 
     private long timeFirstIncomingEstimate;
+
+    private long timeOfMostRecentlyProcessedPacketMs;
 
     private long timeLastBitrateChange;
 
@@ -253,9 +263,9 @@ class AimdRateControl
 
         rateControlRegion = region;
 
-        if (logger.isTraceEnabled())
+        if (timeSeriesLogger.isTraceEnabled())
         {
-            logger.trace(diagnosticContext
+            timeSeriesLogger.trace(diagnosticContext
                     .makeTimeSeriesPoint("aimd_region", nowMs)
                     .addField("aimd_id", hashCode())
                     .addField("region", region));
@@ -296,9 +306,9 @@ class AimdRateControl
 
         rateControlState = newState;
 
-        if (logger.isTraceEnabled())
+        if (timeSeriesLogger.isTraceEnabled())
         {
-            logger.trace(diagnosticContext
+            timeSeriesLogger.trace(diagnosticContext
                     .makeTimeSeriesPoint("aimd_state", nowMs)
                     .addField("aimd_id", hashCode())
                     .addField("state", rateControlState));
@@ -405,6 +415,7 @@ class AimdRateControl
         currentInput.noiseVar = 1D;
         updated = false;
         timeFirstIncomingEstimate = -1L;
+        timeOfMostRecentlyProcessedPacketMs = -1L;
         bitrateIsInitialized = false;
         beta = 0.85F;
         rtt = kDefaultRttMs;
@@ -427,9 +438,9 @@ class AimdRateControl
 
     public void setRtt(long nowMs, long rtt)
     {
-        if (logger.isTraceEnabled())
+        if (timeSeriesLogger.isTraceEnabled())
         {
-            logger.trace(diagnosticContext
+            timeSeriesLogger.trace(diagnosticContext
                     .makeTimeSeriesPoint("aimd_rtt", nowMs)
                     .addField("aimd_id", hashCode())
                     .addField("rtt", rtt));
@@ -455,7 +466,12 @@ class AimdRateControl
             else
             {
                 long timeSinceFirstIncomingEstimate = nowMs - timeFirstIncomingEstimate;
-                if (timeSinceFirstIncomingEstimate > kFirstIncomingEstimateExpirationMs)
+                long timeSinceMostRecentlyProcessedPacketMs = nowMs - timeOfMostRecentlyProcessedPacketMs;
+                // reset the first incoming estimate if we don't see any media
+                // for 2 seconds (maybe because media flows through P2P, or
+                // there's no media to send because the user has turned off
+                // their video).
+                if (timeSinceMostRecentlyProcessedPacketMs > kFirstIncomingEstimateExpirationMs)
                 {
                     if (input.incomingBitRate > 0L)
                     {
@@ -465,7 +481,10 @@ class AimdRateControl
                     {
                         timeFirstIncomingEstimate = -1L;
                     }
+                    timeOfMostRecentlyProcessedPacketMs = -1L;
 
+                    logger.info("Media traffic resumed after " + timeSinceMostRecentlyProcessedPacketMs
+                     + ". The first incoming estimate was reset.");
                     incomingBitrateExpirations++;
                 }
                 else if (timeSinceFirstIncomingEstimate > kInitializationTimeMs
@@ -475,6 +494,7 @@ class AimdRateControl
                     bitrateIsInitialized = true;
                 }
             }
+            timeOfMostRecentlyProcessedPacketMs = nowMs;
         }
 
         if (updated && currentInput.bwState == BandwidthUsage.kBwOverusing)
