@@ -24,12 +24,14 @@ import org.jitsi.rtp.rtcp.RtcpPacket
 import org.jitsi.rtp.rtcp.rtcpfb.payload_specific_fb.RtcpFbRembPacket
 import org.jitsi.utils.logging2.Logger
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 
 class RembHandler(
     val streamInformationStore: ReadOnlyStreamInformationStore,
     parentLogger: Logger
 ) : RtcpListener {
     private val logger = createChildLogger(parentLogger)
+    private var sawSpuriousRemb = false
 
     private val bweUpdateListeners: MutableList<BandwidthEstimator.Listener> =
         CopyOnWriteArrayList()
@@ -48,9 +50,19 @@ class RembHandler(
     private fun onRembPacket(rembPacket: RtcpFbRembPacket) {
         if (streamInformationStore.supportsTcc) {
             logger.warn { "Ignoring unexpected REMB, when using TCC (for ${rembPacket.bitrate.bps} bps)" }
+            if (!sawSpuriousRemb) {
+                endpointsWithSpuriousRemb.incrementAndGet()
+                sawSpuriousRemb = true
+            }
             return
         }
         logger.debug { "Updating bandwidth to ${rembPacket.bitrate.bps}" }
         bweUpdateListeners.forEach { it.bandwidthEstimationChanged(rembPacket.bitrate.bps) }
+    }
+
+    companion object {
+        private val endpointsWithSpuriousRemb = AtomicInteger()
+
+        fun endpointsWithSpuriousRemb() = endpointsWithSpuriousRemb.get()
     }
 }
