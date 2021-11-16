@@ -68,10 +68,16 @@ class IncomingStatisticsTracker(
 
     override fun trace(f: () -> Unit) = f.invoke()
 
-    fun getSnapshot(): IncomingStatisticsSnapshot {
+    fun getSnapshot(
+        /**
+         * Whether to include stats for all streams (when [onlyActive] is `false`) or only streams which have had
+         * activity since the last time stats were queried with [onlyActive] = true.
+         */
+        onlyActive: Boolean = false
+    ): IncomingStatisticsSnapshot {
         return IncomingStatisticsSnapshot(
             ssrcStats.mapNotNull { (ssrc, stats) ->
-                stats.getSnapshot()?.let { Pair(ssrc, it) }
+                stats.getSnapshot(onlyActive)?.let { Pair(ssrc, it) }
             }.toMap()
         )
     }
@@ -119,6 +125,10 @@ class IncomingSsrcStats(
     private val jitterStats = JitterStats()
     private var numReceivedPackets: Int = 0
     private var numReceivedBytes: Int = 0
+    /**
+     * Whether there has been any activity (packets received) since the last time the stats were queried with
+     * onlyActive = true.
+     */
     private var activitySinceLastSnapshot: Boolean = false
     // End variables protected by statsLock
 
@@ -159,12 +169,14 @@ class IncomingSsrcStats(
         }
     }
 
-    fun getSnapshot(): Snapshot? {
+    fun getSnapshot(onlyActive: Boolean = false): Snapshot? {
         synchronized(statsLock) {
-            if (!activitySinceLastSnapshot) {
-                return null
+            if (onlyActive) {
+                if (!activitySinceLastSnapshot) {
+                    return null
+                }
+                activitySinceLastSnapshot = false
             }
-            activitySinceLastSnapshot = false
             return Snapshot(
                 numReceivedPackets, numReceivedBytes, maxSeqNum, seqNumCycles, numExpectedPackets,
                 cumulativePacketsLost, jitterStats.jitter
