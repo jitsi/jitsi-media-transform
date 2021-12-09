@@ -186,7 +186,7 @@ class AudioRedHandler(
                     // Don't attempt to encode packets with timestamp diff that's too large to encode (happens with
                     // 400ms opus frames e.g. when DTX is used)
                     if (getTimestampDiffAsInt(primaryTimestamp, it.timestamp) <=
-                        RedundancyBlockHeader.MAX_TIMESTAMP_DIFF
+                        RedundancyBlockHeader.MAX_TIMESTAMP_OFFSET
                     ) {
                         return it
                     }
