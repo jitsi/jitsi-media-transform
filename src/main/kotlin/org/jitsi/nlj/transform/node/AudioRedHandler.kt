@@ -178,7 +178,7 @@ class AudioRedHandler(
 
         private fun getPacketToProtect(seq: Int, primaryTimestamp: Long, vadOnly: Boolean): RtpPacket? {
             // All of the transform pipeline runs in a single thread, and we only use the packet momentarily to make a
-            // copy into a new RED packet, so its safe to just peek() at it.
+            // copy into a new RED packet, so it's safe to just peek() at it.
             sentAudioCache.peek(seq)?.item?.let {
                 // In vad-only mode, we only add redundancy for packets that have an audio level extension with the VAD
                 // bit set.
