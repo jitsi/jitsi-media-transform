@@ -61,7 +61,7 @@ class AudioLevelReader(
                     packetInfo.shouldDiscard = true
                     numSilencePacketsDiscarded++
                 } else {
-                    forwardedSilencePackets = if (level == MUTED_LEVEL) +1 else 0
+                    forwardedSilencePackets = if (level == MUTED_LEVEL) forwardedSilencePackets + 1 else 0
                     audioLevelListener?.onLevelReceived(audioRtpPacket.ssrc, (127 - level).toPositiveLong())
                 }
             }
