@@ -117,16 +117,15 @@ class EndpointConnectionStats(
     }
 
     // TODO: change this flow to pass Instant instead of Long
-    override fun rtcpPacketReceived(packet: RtcpPacket, receivedTime: Long) {
-        val receivedInstant = Instant.ofEpochMilli(receivedTime)
+    override fun rtcpPacketReceived(packet: RtcpPacket, receivedTime: Instant) {
         when (packet) {
             is RtcpSrPacket -> {
                 logger.cdebug { "Received SR packet with ${packet.reportBlocks.size} report blocks" }
-                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedInstant, reportBlock) }
+                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedTime, reportBlock) }
             }
             is RtcpRrPacket -> {
                 logger.cdebug { "Received RR packet with ${packet.reportBlocks.size} report blocks" }
-                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedInstant, reportBlock) }
+                packet.reportBlocks.forEach { reportBlock -> processReportBlock(receivedTime, reportBlock) }
             }
             // Received TCC feedback reports loss on packets we *sent*
             is RtcpFbTccPacket -> processTcc(packet, outgoingLossTracker)

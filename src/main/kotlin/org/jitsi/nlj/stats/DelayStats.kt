@@ -18,10 +18,15 @@ package org.jitsi.nlj.stats
 
 import org.jitsi.nlj.PacketInfo
 import org.jitsi.utils.stats.BucketStats
+import java.time.Clock
+import java.time.Duration
 
 open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) :
     BucketStats(thresholdsNoMax, "_delay_ms", " ms") {
 
+    fun addDelay(delay: Duration?) {
+        if (delay != null) addDelay(delay.toMillis())
+    }
     fun addDelay(delayMs: Long) = addValue(delayMs)
 
     companion object {
@@ -29,13 +34,16 @@ open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) :
     }
 }
 
-class PacketDelayStats(thresholdsNoMax: LongArray = defaultThresholds) : DelayStats(thresholdsNoMax) {
+class PacketDelayStats(
+    thresholdsNoMax: LongArray = defaultThresholds,
+    private val clock: Clock = Clock.systemUTC()
+) : DelayStats(thresholdsNoMax) {
     fun addPacket(packetInfo: PacketInfo) {
-        val delayMs = if (packetInfo.receivedTime > 0) {
-            System.currentTimeMillis() - packetInfo.receivedTime
+        val delay = if (packetInfo.receivedTime != null) {
+            Duration.between(packetInfo.receivedTime, clock.instant())
         } else {
-            -1
+            null
         }
-        addDelay(delayMs)
+        addDelay(delay)
     }
 }
