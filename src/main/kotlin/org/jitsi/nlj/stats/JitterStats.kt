@@ -91,8 +91,6 @@ class BridgeJitterStats(
 ) : JitterStats() {
 
     fun packetSent(packetInfo: PacketInfo) {
-        if (packetInfo.receivedTime != null) {
-            super.addPacket(packetInfo.receivedTime!!, clock.instant())
-        }
+        packetInfo.receivedTime?.let { super.addPacket(it, clock.instant()) }
     }
 }
