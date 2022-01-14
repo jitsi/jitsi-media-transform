@@ -24,8 +24,8 @@ import java.time.Duration
 open class DelayStats(thresholdsNoMax: LongArray = defaultThresholds) :
     BucketStats(thresholdsNoMax, "_delay_ms", " ms") {
 
-    fun addDelay(delay: Duration?) {
-        if (delay != null) addDelay(delay.toMillis())
+    fun addDelay(delay: Duration) {
+        addDelay(delay.toMillis())
     }
     fun addDelay(delayMs: Long) = addValue(delayMs)
 
