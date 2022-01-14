@@ -63,6 +63,7 @@ open class JitterStats {
              *
              * D(i,j) = (Rj - Ri) - (Sj - Si) = (Rj - Sj) - (Ri - Si)
              */
+            // TODO(boris) take wraps into account
             val delta = Duration.between(previousPacketSentTimestamp, previousPacketReceivedTimestamp) -
                 Duration.between(currentPacketSentTimestamp, currentPacketReceivedTimestamp)
 
