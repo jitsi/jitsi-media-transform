@@ -52,7 +52,7 @@ class NackHandler(
     private val logger = createChildLogger(parentLogger)
     private var currRtt: Double = -1.0
 
-    override fun rtcpPacketReceived(packet: RtcpPacket, receivedTime: Instant) {
+    override fun rtcpPacketReceived(packet: RtcpPacket, receivedTime: Instant?) {
         if (packet is RtcpFbNackPacket) {
             onNackPacket(packet)
         }

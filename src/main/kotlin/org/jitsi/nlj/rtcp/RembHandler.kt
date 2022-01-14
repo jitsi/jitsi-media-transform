@@ -37,7 +37,7 @@ class RembHandler(
     private val bweUpdateListeners: MutableList<BandwidthEstimator.Listener> =
         CopyOnWriteArrayList()
 
-    override fun rtcpPacketReceived(packet: RtcpPacket?, receivedTime: Instant) {
+    override fun rtcpPacketReceived(packet: RtcpPacket?, receivedTime: Instant?) {
         if (packet is RtcpFbRembPacket) {
             logger.debug { "Received REMB packet" }
             onRembPacket(packet)
