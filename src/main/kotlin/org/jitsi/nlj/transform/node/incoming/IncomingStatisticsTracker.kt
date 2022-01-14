@@ -135,7 +135,7 @@ class IncomingSsrcStats(
     private val jitterStats = JitterStats()
     private var numReceivedPackets: Int = 0
     private var numReceivedBytes: Int = 0
-    /** How long this SSRC has been active, in milliseconds. */
+    /** How long this SSRC has been active. */
     private var durationActive = Duration.ZERO
     /** The receiveTime of the last packet */
     private var lastPacketReceivedTime: Instant? = null
