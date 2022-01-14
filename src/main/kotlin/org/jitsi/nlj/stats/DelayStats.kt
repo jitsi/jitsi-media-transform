@@ -39,11 +39,6 @@ class PacketDelayStats(
     private val clock: Clock = Clock.systemUTC()
 ) : DelayStats(thresholdsNoMax) {
     fun addPacket(packetInfo: PacketInfo) {
-        val delay = if (packetInfo.receivedTime != null) {
-            Duration.between(packetInfo.receivedTime, clock.instant())
-        } else {
-            null
-        }
-        addDelay(delay)
+        packetInfo.receivedTime?.let { addDelay(Duration.between(it, clock.instant())) }
     }
 }
