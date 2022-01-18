@@ -228,7 +228,7 @@ class IncomingSsrcStats(
      * Notify this [IncomingSsrcStats] instance that an RTP packet [packet] for the stream it is
      * tracking has been received and that it: was sent at [packetSentTimestamp] (note this is NOT the
      * raw RTP timestamp, but the 'translated' timestamp which is a function of the RTP timestamp and the clockrate)
-     * and was received at [packetReceivedTimeMs]
+     * and was received at [packetReceivedTime]
      */
     fun packetReceived(
         packet: RtpPacket,
