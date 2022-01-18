@@ -242,7 +242,7 @@ class IncomingSsrcStats(
             numReceivedBytes += packet.length
             if (lastPacketReceivedTime != null) {
                 val timeSincePreviousPacket = Duration.between(lastPacketReceivedTime, packetReceivedTime)
-                if (timeSincePreviousPacket in Duration.ZERO..ACTIVITY_TIMEOUT) {
+                if (timeSincePreviousPacket < ACTIVITY_TIMEOUT) {
                     durationActive += timeSincePreviousPacket
                 }
             }
