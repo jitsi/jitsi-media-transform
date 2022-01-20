@@ -65,9 +65,9 @@ fun Instant.toEpochMicro(): Long {
  * @throws DateTimeException if the instant exceeds the maximum or minimum instant
  */
 fun instantOfEpochMicro(epochMicro: Long): Instant {
-    val secs = Math.floorDiv(epochMicro, 1000_000).toLong()
+    val secs = Math.floorDiv(epochMicro, 1000_000)
     val micros = Math.floorMod(epochMicro, 1000_000)
-    return Instant.ofEpochSecond(secs, micros * 1000)
+    return Instant.ofEpochSecond(secs, micros * 1000L)
 }
 
 fun <T> Iterable<T>.sumOf(selector: (T) -> Duration): Duration {
