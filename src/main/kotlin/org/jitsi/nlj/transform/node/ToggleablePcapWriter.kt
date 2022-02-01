@@ -48,6 +48,8 @@ class ToggleablePcapWriter(
         }
     }
 
+    init { enable() }
+
     fun isEnabled(): Boolean = pcapWriter != null
 
     fun newObserverNode(): Node = PcapWriterNode("Toggleable pcap writer: $prefix")
