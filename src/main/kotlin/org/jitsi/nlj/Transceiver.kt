@@ -86,7 +86,7 @@ class Transceiver(
      * SRs and RRs and calculating RTT.  Since it is used for both send and receive, it is held here and passed to
      * the sender and receive so each can push or subscribe to updates.
      */
-    private val rtcpEventNotifier = RtcpEventNotifier()
+    val rtcpEventNotifier = RtcpEventNotifier()
 
     private var mediaSources = MediaSources()
 
