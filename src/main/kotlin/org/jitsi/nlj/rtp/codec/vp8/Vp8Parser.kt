@@ -45,9 +45,15 @@ class Vp8Parser(
         if (vp8Packet.height > -1) {
             // TODO: handle case where new height is from a packet older than the
             //  latest height we've seen.
-            findRtpEncodingDesc(vp8Packet)?.let { enc ->
-                val newLayers = enc.layers.map { layer -> layer.copy(height = vp8Packet.height) }
-                enc.layers = newLayers.toTypedArray()
+            findSourceDescAndRtpEncodingDesc(vp8Packet)?.let { (src, enc) ->
+                if (enc.layers.getOrNull(0)?.height != vp8Packet.height) {
+                    logger.info {
+                        "Changing height of encoding ${vp8Packet.ssrc} " +
+                            "from ${enc.layers.getOrNull(0)?.height} to ${vp8Packet.height}"
+                    }
+                    val newLayers = enc.layers.map { layer -> layer.copy(height = vp8Packet.height) }.toTypedArray()
+                    src.setEncodingLayers(newLayers, vp8Packet.ssrc)
+                }
             }
         }
 
