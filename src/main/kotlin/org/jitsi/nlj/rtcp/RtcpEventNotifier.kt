@@ -26,17 +26,21 @@ import java.time.Instant
  */
 // TODO(brian): maybe post the notifications to another pool, so we don't hold up the caller?
 class RtcpEventNotifier {
-    private val rtcpListeners: MutableList<RtcpListener> = CopyOnWriteArrayList<RtcpListener>()
+    private val rtcpListeners: MutableList<Pair<RtcpListener, Boolean>> = CopyOnWriteArrayList()
 
-    fun addRtcpEventListener(listener: RtcpListener) {
-        rtcpListeners.add(listener)
+    fun addRtcpEventListener(listener: RtcpListener, external: Boolean = false) {
+        rtcpListeners.add(Pair(listener, external))
     }
 
-    fun notifyRtcpReceived(packet: RtcpPacket, receivedTime: Instant?) {
-        rtcpListeners.forEach { it.rtcpPacketReceived(packet, receivedTime) }
+    fun notifyRtcpReceived(packet: RtcpPacket, receivedTime: Instant?, external: Boolean = false) {
+        rtcpListeners.forEach { (listener, listenerIsExternal) ->
+            if (!external || !listenerIsExternal) listener.rtcpPacketReceived(packet, receivedTime)
+        }
     }
 
-    fun notifyRtcpSent(rtcpPacket: RtcpPacket) {
-        rtcpListeners.forEach { it.rtcpPacketSent(rtcpPacket) }
+    fun notifyRtcpSent(rtcpPacket: RtcpPacket, external: Boolean = false) {
+        rtcpListeners.forEach { (listener, listenerIsExternal) ->
+            if (!external || !listenerIsExternal) listener.rtcpPacketSent(rtcpPacket)
+        }
     }
 }
