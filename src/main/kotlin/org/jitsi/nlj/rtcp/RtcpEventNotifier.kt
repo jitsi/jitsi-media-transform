@@ -28,6 +28,11 @@ import java.time.Instant
 class RtcpEventNotifier {
     private val rtcpListeners: MutableList<Pair<RtcpListener, Boolean>> = CopyOnWriteArrayList()
 
+    /**
+     * Add an [RtcpListener].  An [external] listener will not receive notifications that are themselves
+     * marked as external.  This allows notifications to be passed between multiple listeners without
+     * creating an infinite loop.
+     */
     fun addRtcpEventListener(listener: RtcpListener, external: Boolean = false) {
         rtcpListeners.add(Pair(listener, external))
     }
