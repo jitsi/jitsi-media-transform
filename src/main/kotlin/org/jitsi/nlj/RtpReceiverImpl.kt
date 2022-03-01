@@ -101,6 +101,7 @@ class RtpReceiverImpl @JvmOverloads constructor(
 ) : RtpReceiver() {
     private val logger = createChildLogger(parentLogger)
     private var running: Boolean = true
+    private val inputPipelineSyncRoot = Any()
     private val inputTreeRoot: Node
     private val incomingPacketQueue = PacketInfoQueue(
         "rtp-receiver-incoming-packet-queue",
@@ -275,12 +276,16 @@ class RtpReceiverImpl @JvmOverloads constructor(
         }
     }
 
-    override fun doProcessPacket(packetInfo: PacketInfo) = inputTreeRoot.processPacket(packetInfo)
+    override fun doProcessPacket(packetInfo: PacketInfo) = synchronized(inputPipelineSyncRoot) {
+        inputTreeRoot.processPacket(packetInfo)
+    }
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP receiver $id").apply {
         addBlock(super.getNodeStats())
         addBoolean("running", running)
-        NodeStatsVisitor(this).visit(inputTreeRoot)
+        synchronized(inputPipelineSyncRoot) {
+            NodeStatsVisitor(this).visit(inputTreeRoot)
+        }
     }
 
     override fun enqueuePacket(p: PacketInfo) {
@@ -298,15 +303,17 @@ class RtpReceiverImpl @JvmOverloads constructor(
         srtcpDecryptWrapper.transformer = srtpTransformers.srtcpDecryptTransformer
     }
 
-    override fun handleEvent(event: Event) {
+    override fun handleEvent(event: Event) = synchronized(inputPipelineSyncRoot) {
         NodeEventVisitor(event).visit(inputTreeRoot)
     }
 
-    override fun getStats(): RtpReceiverStats = RtpReceiverStats(
-        incomingStats = statsTracker.getSnapshot(),
-        packetStreamStats = packetStreamStats.snapshot(),
-        videoParserStats = videoParser.getStats()
-    )
+    override fun getStats(): RtpReceiverStats = synchronized(inputPipelineSyncRoot) {
+        RtpReceiverStats(
+            incomingStats = statsTracker.getSnapshot(),
+            packetStreamStats = packetStreamStats.snapshot(),
+            videoParserStats = videoParser.getStats()
+        )
+    }
 
     override fun forceMuteAudio(shouldMute: Boolean) {
         audioLevelReader.forceMute = shouldMute
@@ -342,7 +349,9 @@ class RtpReceiverImpl @JvmOverloads constructor(
 
     override fun tearDown() {
         logger.info("Tearing down")
-        NodeTeardownVisitor().visit(inputTreeRoot)
+        synchronized(inputPipelineSyncRoot) {
+            NodeTeardownVisitor().visit(inputTreeRoot)
+        }
         incomingPacketQueue.close()
         toggleablePcapWriter.disable()
     }
