@@ -83,6 +83,7 @@ class RtpSenderImpl(
     diagnosticContext: DiagnosticContext = DiagnosticContext()
 ) : RtpSender() {
     private val logger = createChildLogger(parentLogger)
+    private val outgoingPipelineSyncRoot = Any()
     private val outgoingRtpRoot: Node
     private val outgoingRtxRoot: Node
     private val outgoingRtcpRoot: Node
@@ -159,7 +160,15 @@ class RtpSenderImpl(
             node(absSendTime)
         }
 
-        nackHandler = NackHandler(outgoingPacketCache.getPacketCache(), outgoingRtxRoot, logger)
+        nackHandler = NackHandler(
+            outgoingPacketCache.getPacketCache(),
+            object : PacketHandler {
+                override fun processPacket(packetInfo: PacketInfo) = synchronized(outgoingPipelineSyncRoot) {
+                    outgoingRtxRoot.processPacket(packetInfo)
+                }
+            },
+            logger
+        )
         rtcpEventNotifier.addRtcpEventListener(nackHandler)
         rtcpEventNotifier.addRtcpEventListener(transportCcEngine)
 
@@ -189,8 +198,17 @@ class RtpSenderImpl(
 
         probingDataSender = ProbingDataSender(
             packetCache = outgoingPacketCache.getPacketCache(),
-            rtxDataSender = outgoingRtxRoot,
-            garbageDataSender = absSendTime,
+            rtxDataSender = object : PacketHandler {
+                override fun processPacket(packetInfo: PacketInfo) = synchronized(outgoingPipelineSyncRoot) {
+                    outgoingRtxRoot.processPacket(packetInfo)
+                }
+            },
+            garbageDataSender = object : PacketHandler {
+                override fun processPacket(packetInfo: PacketInfo) = synchronized(outgoingPipelineSyncRoot) {
+                    // Insert the packet into the existing pipeline at the absSendTime node.
+                    absSendTime.processPacket(packetInfo)
+                }
+            },
             diagnosticContext = diagnosticContext,
             streamInformationStore = streamInformationStore,
             parentLogger = logger
@@ -232,7 +250,9 @@ class RtpSenderImpl(
     }
 
     override fun requestKeyframe(mediaSsrc: Long?) {
-        keyframeRequester.requestKeyframe(mediaSsrc)
+        synchronized(outgoingPipelineSyncRoot) {
+            keyframeRequester.requestKeyframe(mediaSsrc)
+        }
     }
 
     override fun setFeature(feature: Features, enabled: Boolean) {
@@ -265,7 +285,9 @@ class RtpSenderImpl(
                 is RtcpPacket -> outgoingRtcpRoot
                 else -> outgoingRtpRoot
             }
-            root.processPacket(packetInfo)
+            synchronized(outgoingPipelineSyncRoot) {
+                root.processPacket(packetInfo)
+            }
             true
         } else {
             BufferPool.returnBuffer(packetInfo.packet.buffer)
@@ -294,16 +316,18 @@ class RtpSenderImpl(
     }
 
     override fun getNodeStats(): NodeStatsBlock = NodeStatsBlock("RTP sender $id").apply {
-        addBlock(nackHandler.getNodeStats())
-        addBlock(probingDataSender.getNodeStats())
-        addJson("packetQueue", incomingPacketQueue.debugState)
-        NodeStatsVisitor(this).reverseVisit(outputPipelineTerminationNode)
+        synchronized(outgoingPipelineSyncRoot) {
+            addBlock(nackHandler.getNodeStats())
+            addBlock(probingDataSender.getNodeStats())
+            addJson("packetQueue", incomingPacketQueue.debugState)
+            NodeStatsVisitor(this).reverseVisit(outputPipelineTerminationNode)
 
-        addString("running", running.toString())
-        addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
-        addString("localAudioSsrc", localAudioSsrc?.toString() ?: "null")
-        addJson("transportCcEngine", transportCcEngine.getStatistics().toJson())
-        addJson("Bandwidth Estimation", bandwidthEstimator.getStats().toJson())
+            addString("running", running.toString())
+            addString("localVideoSsrc", localVideoSsrc?.toString() ?: "null")
+            addString("localAudioSsrc", localAudioSsrc?.toString() ?: "null")
+            addJson("transportCcEngine", transportCcEngine.getStatistics().toJson())
+            addJson("Bandwidth Estimation", bandwidthEstimator.getStats().toJson())
+        }
     }
 
     override fun stop() {
@@ -312,7 +336,9 @@ class RtpSenderImpl(
 
     override fun tearDown() {
         logger.info("Tearing down")
-        NodeTeardownVisitor().reverseVisit(outputPipelineTerminationNode)
+        synchronized(outgoingPipelineSyncRoot) {
+            NodeTeardownVisitor().reverseVisit(outputPipelineTerminationNode)
+        }
         incomingPacketQueue.close()
         toggleablePcapWriter.disable()
     }
