@@ -101,8 +101,7 @@ class TlsServerImpl(
 
     override fun getCipherSuites(): IntArray {
         return intArrayOf(
-            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
         )
     }
 
