@@ -43,7 +43,7 @@ class TccGeneratorNodeTest : ShouldSpec() {
 
     private lateinit var tccGenerator: TccGeneratorNode
 
-    override suspend fun beforeSpec(spec: Spec) {
+    override fun beforeSpec(spec: Spec) {
         super.beforeSpec(spec)
         streamInformationStore.addRtpExtensionMapping(
             RtpExtension(tccExtensionId.toByte(), RtpExtensionType.TRANSPORT_CC)

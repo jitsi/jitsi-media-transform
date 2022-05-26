@@ -54,7 +54,7 @@ class RetransmissionSenderTest : ShouldSpec() {
     private val dummyPacketInfo = PacketInfo(dummyPacket)
     private val retransmissionSender = RetransmissionSender(streamInformationStore, StdoutLogger())
 
-    override suspend fun beforeTest(testCase: TestCase) {
+    override fun beforeTest(testCase: TestCase) {
         super.beforeTest(testCase)
 
         // Setup: add the rtx payload type and the rtx ssrc association
